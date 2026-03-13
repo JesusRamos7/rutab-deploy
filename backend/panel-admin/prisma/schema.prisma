@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model administradores {
+  id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre          String
+  telefono        String?
+  correo          String  @unique
+  password        String
+  rol             String?
+  foto_perfil_url String?
+  rutas           rutas[]
+}
+
+model choferes {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String
+  licencia          String?
+  correo            String              @unique
+  password          String
+  telefono          String?
+  foto_perfil_url   String?
+  historial_rastreo historial_rastreo[]
+  incidencias       incidencias[]
+  rutas             rutas[]
+}
+
+model clientes {
+  id          String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String
+  telefono    String?
+  direccion   String?
+  correo      String?
+  coordenadas Unsupported("geography")?
+  pedidos     pedidos[]
+}
+
+model detalles_ruta {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruta_id       String?  @db.Uuid
+  pedido_id     String?  @db.Uuid
+  orden_entrega Int?
+  comentarios   String?
+  pedidos       pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas         rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model evidencias {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pedido_id           String?                   @db.Uuid
+  foto_url            String?
+  firma_url           String?
+  coordenadas_entrega Unsupported("geography")?
+  fecha_hora          DateTime?                 @default(now()) @db.Timestamptz(6)
+  pedidos             pedidos?                  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model historial_rastreo {
+  id          BigInt                    @id @default(autoincrement())
+  chofer_id   String?                   @db.Uuid
+  ruta_id     String?                   @db.Uuid
+  coordenadas Unsupported("geography")?
+  fecha_hora  DateTime?                 @default(now()) @db.Timestamptz(6)
+  choferes    choferes?                 @relation(fields: [chofer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas       rutas?                    @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model incidencias {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruta_id     String?   @db.Uuid
+  chofer_id   String?   @db.Uuid
+  tipo        String?
+  descripcion String?
+  foto_url    String?
+  choferes    choferes? @relation(fields: [chofer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas       rutas?    @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pedidos {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id        String?         @db.Uuid
+  descripcion_carga String?
+  codigo_rastreo    String?         @unique
+  estado_pedido     String?         @default("pendiente")
+  detalles_ruta     detalles_ruta[]
+  evidencias        evidencias[]
+  clientes          clientes?       @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model rutas {
+  id                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehiculo_id              String?             @db.Uuid
+  chofer_id                String?             @db.Uuid
+  creado_por               String?             @db.Uuid
+  fecha_programada         DateTime?           @db.Date
+  distancia_total_estimada Decimal?            @db.Decimal
+  google_polyline          String?
+  tiempo_estimado_entrega  DateTime?           @db.Timestamptz(6)
+  estatus_ruta             String?             @default("borrador")
+  detalles_ruta            detalles_ruta[]
+  historial_rastreo        historial_rastreo[]
+  incidencias              incidencias[]
+  choferes                 choferes?           @relation(fields: [chofer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  administradores          administradores?    @relation(fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehiculos                vehiculos?          @relation(fields: [vehiculo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model seguimiento_real_time {
+  id                   BigInt                    @id @default(autoincrement())
+  vehiculo_id          String?                   @db.Uuid
+  coordenadas_actuales Unsupported("geography")?
+  ultima_actualizacion DateTime?                 @default(now()) @db.Timestamptz(6)
+  velocidad_kmh        Float?
+  vehiculos            vehiculos?                @relation(fields: [vehiculo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model vehiculos {
+  id                      String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  placas                  String                  @unique
+  marca                   String?
+  modelo                  String?
+  rendimiento_combustible Decimal?                @db.Decimal
+  estatus                 String?                 @default("disponible")
+  foto_unidad_url         String?
+  rutas                   rutas[]
+  seguimiento_real_time   seguimiento_real_time[]
+}
