@@ -10,13 +10,13 @@ async function main() {
 
   // 2. Usamos upsert para que, si ejecutas el script 2 veces, no marque error por correo duplicado
   const superAdmin = await prisma.administradores.upsert({
-    where: { correo: 'admin@gmail.com' },
+    where: { correo: 'logistica@gmail.com' },
     update: {}, // Si ya existe, no hace nada
     create: {
       nombre: 'Claudia Ruth',
-      correo: 'admin@gmail.com',
+      correo: 'logistica@gmail.com',
       password: passwordHasheada,
-      rol: 'superAdmin',
+      rol: 'logistico',
       // telefono y foto_perfil_url los dejamos vacíos por ahora ya que son "null" en tu tabla
     },
   });
