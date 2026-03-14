@@ -12,6 +12,6 @@ async function bootstrap() {
   });
 
   await app.listen(3000);
-  console.log(`Backend corriendo en: http://localhost:3000`);
+  console.log(`Backend corriendo en: ${process.env.FRONTEND_URL}`);
 }
 bootstrap();
