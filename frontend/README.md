@@ -1,8 +1,3 @@
-## 3. README del Frontend (`rutab/frontend/README.md`)
-
-Este archivo explica la estructura de módulos y cómo conectar con la API.
-
-```markdown
 # Rutab - Frontend (Panel Web) 🖥️
 
 Interfaz administrativa construida con React y TypeScript, enfocada en una experiencia de usuario fluida y segura.
