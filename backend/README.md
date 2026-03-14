@@ -21,11 +21,11 @@ FRONTEND_URL="url_de_vercel" para produccion
 # Instalar dependencias
 npm install
 
-# Levantar en desarrollo
-npm run start:dev
-
 # Generar cliente de Prisma
 npx prisma generate
 
-# Ejecutar Seed (Usuario inicial)
+# Levantar en desarrollo
+npm run start:dev
+
+# Ejecutar Seed (Usuario inicial, opcional)
 npx prisma db seed
