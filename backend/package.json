@@ -1,11 +1,14 @@
 {
   "name": "backend",
   "version": "0.0.1",
+  "engines": {
+    "node": "22.x"
+  },
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "prisma" : {
+  "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "scripts": {

@@ -16,7 +16,7 @@ async function main() {
       nombre: 'Claudia Ruth',
       correo: 'logistica@gmail.com',
       password: passwordHasheada,
-      rol: 'logistico',
+      rol: 'logístico',
       // telefono y foto_perfil_url los dejamos vacíos por ahora ya que son "null" en tu tabla
     },
   });

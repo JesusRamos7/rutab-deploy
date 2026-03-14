@@ -1,30 +1,32 @@
-# React + TypeScript + Vite
+## 3. README del Frontend (`rutab/frontend/README.md`)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este archivo explica la estructura de módulos y cómo conectar con la API.
 
-Currently, two official plugins are available:
+```markdown
+# Rutab - Frontend (Panel Web) 🖥️
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Interfaz administrativa construida con React y TypeScript, enfocada en una experiencia de usuario fluida y segura.
 
-## Expanding the ESLint configuration
+## 📐 Arquitectura
+Utilizamos **Feature-Driven Architecture**:
+- `src/modulos`: Módulos independientes (Auth, Inicio, etc.) con sus propios hooks, tipos y servicios.
+- `src/context`: Gestión del estado global de autenticación.
+- `src/layouts`: Estructura visual y barra lateral con control de roles.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## 🎨 Paleta de Colores
+- **Celeste Negro:** #123a5d
+- **Negro:** #000000
+- **Blanco:** #ffffff
 
-- Configure the top-level `parserOptions` property like this:
+## 🔑 Variables de Entorno (.env)
+Crea un archivo `.env` en la raíz de esta carpeta:
+```env
+VITE_API_URL="http://localhost:3000"
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Comandos Principales
+# Instalar dependencias
+npm install
+
+# Levantar en desarrollo
+npm run dev
