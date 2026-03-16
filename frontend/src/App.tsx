@@ -8,7 +8,7 @@ import { useAuth } from './context/AuthContext';
 import { ModuloInicio } from './modulos/inicio';
 import { ModuloLogistica } from './modulos/logistica';
 import { ModuloAuditoria } from './modulos/auditoria';
-import { VehiculosModulo } from './modulos/logistica/vehiculos/vehiculosModulo';
+import { VehiculosPage } from './modulos/logistica/vehiculos/VehiculosPage';
 
 function App() {
   const { token, usuario } = useAuth();
@@ -32,7 +32,7 @@ function App() {
           {/* Ruta de logistica/vehiculos (dentro del menu principal)*/}
           <Route path="logistica/vehiculos" element={
             (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico')
-              ? <VehiculosModulo /> : <Navigate to="/panel/inicio" replace />
+              ? <VehiculosPage /> : <Navigate to="/panel/inicio" replace />
           } />
 
           <Route path="auditoria" element={

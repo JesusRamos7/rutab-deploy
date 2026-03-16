@@ -33,7 +33,7 @@ export class VehiculosController {
   }
 
   @Delete(':id')
-  @Roles('admin') // Solo el admin puede eliminar
+  @Roles('superAdmin') // Solo el admin puede eliminar
   remove(@Param('id') id: string) {
     return this.vehiculosService.remove(id);
   }

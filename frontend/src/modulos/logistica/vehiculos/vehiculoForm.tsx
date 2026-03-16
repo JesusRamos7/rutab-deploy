@@ -1,70 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Vehiculo } from './types';
+// VehiculoForm.tsx
+import React from 'react';
+import { VehiculoFormProps } from './types';
+import { useVehiculosForm } from './hooks/useVehiculosForm';
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  vehiculo?: Vehiculo | null; // Si viene, es edición. Si no, es creación.
-}
-
-export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) => {
-  const [formData, setFormData] = useState({
-    placas: '',
-    marca: '',
-    modelo: '',
-    rendimiento_combustible: '',
-    estatus: 'disponible'
-  });
-
-  useEffect(() => {
-  if (vehiculo) {
-    setFormData({
-      placas: vehiculo.placas || '',
-      marca: vehiculo.marca || '',
-      modelo: vehiculo.modelo || '',
-      // Agregamos el operador || '' para evitar el error del toString()
-      rendimiento_combustible: vehiculo.rendimiento_combustible?.toString() || '',
-      estatus: vehiculo.estatus || 'disponible'
-    });
-  } else {
-    setFormData({ 
-      placas: '', 
-      marca: '', 
-      modelo: '', 
-      rendimiento_combustible: '', 
-      estatus: 'disponible' 
-    });
-  }
-}, [vehiculo, isOpen]);
+export const VehiculoForm: React.FC<VehiculoFormProps> = ({ isOpen, onClose, onSuccess, vehiculo }) => {
+  const { formData, isLoading, handleChange, handleSubmit } = useVehiculosForm(
+    vehiculo,
+    isOpen,
+    onSuccess,
+    onClose
+  );
 
   if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const url = vehiculo
-      ? `http://localhost:3000/vehiculos/${vehiculo.id}`
-      : 'http://localhost:3000/vehiculos';
-
-    const method = vehiculo ? 'PATCH' : 'POST';
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...formData,
-        rendimiento_combustible: parseFloat(formData.rendimiento_combustible)
-      }),
-    });
-
-    if (res.ok) {
-      onSuccess();
-      onClose();
-    } else {
-      const error = await res.json();
-      alert(error.message || "Error al guardar");
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -83,8 +30,9 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
               required
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               value={formData.placas}
-              onChange={e => setFormData({ ...formData, placas: e.target.value })}
+              onChange={e => handleChange('placas', e.target.value)}
               placeholder="TAB-123-A"
+              disabled={isLoading}
             />
           </div>
 
@@ -94,7 +42,8 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
               <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.marca}
-                onChange={e => setFormData({ ...formData, marca: e.target.value })}
+                onChange={e => handleChange('marca', e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -102,7 +51,8 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
               <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.modelo}
-                onChange={e => setFormData({ ...formData, modelo: e.target.value })}
+                onChange={e => handleChange('modelo', e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -113,7 +63,8 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
               <select
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.estatus}
-                onChange={e => setFormData({ ...formData, estatus: e.target.value })}
+                onChange={e => handleChange('estatus', e.target.value)}
+                disabled={isLoading}
               >
                 <option value="disponible">Disponible / Activo</option>
                 <option value="mantenimiento">En Mantenimiento</option>
@@ -124,20 +75,31 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Rendimiento: (km/L)</label>
               <input
+                type="number"
+                step="0.01"
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.rendimiento_combustible}
-                onChange={e => setFormData({ ...formData, rendimiento_combustible: e.target.value })}
+                onChange={e => handleChange('rendimiento_combustible', e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </div>
 
-
           <div className="pt-4 flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl transition-colors">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={isLoading}
+              className="flex-1 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl transition-colors disabled:opacity-50"
+            >
               Cancelar
             </button>
-            <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
-              Guardar Unidad
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 flex justify-center items-center"
+            >
+              {isLoading ? 'Guardando...' : 'Guardar Unidad'}
             </button>
           </div>
         </form>
