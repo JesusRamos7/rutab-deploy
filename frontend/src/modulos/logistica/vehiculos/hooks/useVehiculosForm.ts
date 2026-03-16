@@ -2,6 +2,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Vehiculo, VehiculoFormData } from '../types';
 import { vehiculosService } from '../services/vehiculo.service';
+import { toast } from 'sonner';
 
 const INITIAL_STATE: VehiculoFormData = {
   placas: '',
@@ -47,13 +48,15 @@ export const useVehiculosForm = (
     try {
       if (vehiculo?.id) {
         await vehiculosService.update(vehiculo.id, formData);
+        toast.success('Vehículo actualizado correctamente');
       } else {
         await vehiculosService.create(formData);
+        toast.success('Vehículo registrado exitosamente');
       }
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(error.message || 'Error al guardar');
+      toast.error(error.message || 'Error al guardar el vehículo');
     } finally {
       setIsLoading(false);
     }

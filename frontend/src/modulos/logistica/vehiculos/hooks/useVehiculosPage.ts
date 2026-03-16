@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Vehiculo } from "../types";
 import { vehiculosService } from "../services/vehiculo.service";
+import { toast } from 'sonner';
 
 export const useVehiculosPage = () => {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
@@ -16,9 +17,10 @@ export const useVehiculosPage = () => {
     try {
       const data = await vehiculosService.getAll();
       setVehiculos(data);
+  
     } catch (error) {
       console.error("Error fetching vehiculos:", error);
-      alert("Hubo un problema al cargar la lista de vehículos");
+      toast.error("Hubo un problema al cargar la lista de vehículos");
     } finally {
       setIsLoading(false);
     }
@@ -33,10 +35,12 @@ export const useVehiculosPage = () => {
       try {
         await vehiculosService.delete(id);
         await fetchVehiculos(); // Recargar la lista tras borrar
+        toast.success("Unidad eliminada correctamente");
+        
       } catch (error: any) {
         console.error("Error deleting vehiculo:", error);
         // Ahora mostramos el mensaje real que viene del backend/servicio
-        alert(error.message || "Error desconocido al eliminar la unidad");
+        toast.error(error.message || "Hubo un problema al cargar los vehículos");
       }
     }
   };
