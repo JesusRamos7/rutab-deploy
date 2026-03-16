@@ -18,27 +18,34 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
   });
 
   useEffect(() => {
-    if (vehiculo) {
-      setFormData({
-        placas: vehiculo.placas,
-        marca: vehiculo.marca,
-        modelo: vehiculo.modelo,
-        rendimiento_combustible: vehiculo.rendimiento_combustible.toString(),
-        estatus: vehiculo.estatus
-      });
-    } else {
-      setFormData({ placas: '', marca: '', modelo: '', rendimiento_combustible: '', estatus: 'disponible' });
-    }
-  }, [vehiculo, isOpen]);
+  if (vehiculo) {
+    setFormData({
+      placas: vehiculo.placas || '',
+      marca: vehiculo.marca || '',
+      modelo: vehiculo.modelo || '',
+      // Agregamos el operador || '' para evitar el error del toString()
+      rendimiento_combustible: vehiculo.rendimiento_combustible?.toString() || '',
+      estatus: vehiculo.estatus || 'disponible'
+    });
+  } else {
+    setFormData({ 
+      placas: '', 
+      marca: '', 
+      modelo: '', 
+      rendimiento_combustible: '', 
+      estatus: 'disponible' 
+    });
+  }
+}, [vehiculo, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = vehiculo 
-      ? `http://localhost:3000/vehiculos/${vehiculo.id}` 
+    const url = vehiculo
+      ? `http://localhost:3000/vehiculos/${vehiculo.id}`
       : 'http://localhost:3000/vehiculos';
-    
+
     const method = vehiculo ? 'PATCH' : 'POST';
 
     const res = await fetch(url, {
@@ -72,11 +79,11 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Placas (AAA-000-A)</label>
-            <input 
+            <input
               required
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               value={formData.placas}
-              onChange={e => setFormData({...formData, placas: e.target.value})}
+              onChange={e => setFormData({ ...formData, placas: e.target.value })}
               placeholder="TAB-123-A"
             />
           </div>
@@ -84,34 +91,46 @@ export const VehiculoForm = ({ isOpen, onClose, onSuccess, vehiculo }: Props) =>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Marca</label>
-              <input 
+              <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.marca}
-                onChange={e => setFormData({...formData, marca: e.target.value})}
+                onChange={e => setFormData({ ...formData, marca: e.target.value })}
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Modelo</label>
-              <input 
+              <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.modelo}
-                onChange={e => setFormData({...formData, modelo: e.target.value})}
+                onChange={e => setFormData({ ...formData, modelo: e.target.value })}
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Estatus</label>
-            <select 
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-              value={formData.estatus}
-              onChange={e => setFormData({...formData, estatus: e.target.value})}
-            >
-              <option value="disponible">Disponible / Activo</option>
-              <option value="mantenimiento">En Mantenimiento</option>
-              <option value="fuera_servicio">Fuera de Servicio</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Estatus</label>
+              <select
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={formData.estatus}
+                onChange={e => setFormData({ ...formData, estatus: e.target.value })}
+              >
+                <option value="disponible">Disponible / Activo</option>
+                <option value="mantenimiento">En Mantenimiento</option>
+                <option value="fuera_servicio">Fuera de Servicio</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Rendimiento: (km/L)</label>
+              <input
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={formData.rendimiento_combustible}
+                onChange={e => setFormData({ ...formData, rendimiento_combustible: e.target.value })}
+              />
+            </div>
           </div>
+
 
           <div className="pt-4 flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-500 font-medium hover:bg-slate-50 rounded-xl transition-colors">

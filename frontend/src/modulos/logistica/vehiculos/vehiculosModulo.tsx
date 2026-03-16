@@ -23,7 +23,7 @@ export const VehiculosModulo = () => {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen p-8">
+        <div className="p-4 lg:p-8">
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800">Panel de Administrador</h1>
@@ -34,7 +34,7 @@ export const VehiculosModulo = () => {
                         setSelectedVehiculo(null);
                         setIsModalOpen(true);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all"
+                    className="bg-[#123a5d] hover:bg-[#0e2d4a] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all"
                 >
                     + Nuevo Vehículo
                 </button>

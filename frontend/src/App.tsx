@@ -17,26 +17,32 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={!token ? <ModuloAuth /> : <Navigate to="/panel/inicio" replace />} />
-        
+
         {/* Rutas protegidas que usan el AdminLayout */}
         <Route path="/panel" element={token ? <AdminLayout /> : <Navigate to="/login" replace />}>
           <Route index element={<Navigate to="inicio" replace />} />
           <Route path="inicio" element={<ModuloInicio />} />
-          
+
+          {/* Ruta de Logística (Menú Principal) */}
           <Route path="logistica" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico') 
+            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico')
               ? <ModuloLogistica /> : <Navigate to="/panel/inicio" replace />
           } />
-          
+
+          {/* Ruta de logistica/vehiculos (dentro del menu principal)*/}
+          <Route path="logistica/vehiculos" element={
+            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico')
+              ? <VehiculosModulo /> : <Navigate to="/panel/inicio" replace />
+          } />
+
           <Route path="auditoria" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'auditor') 
+            (admin?.rol === 'superAdmin' || admin?.rol === 'auditor')
               ? <ModuloAuditoria /> : <Navigate to="/panel/inicio" replace />
           } />
         </Route>
         
         <Route path="*" element={<Navigate to={token ? "/panel/inicio" : "/login"} replace />} />
 
-        <Route path="/admin/logistica/vehiculos" element={<VehiculosModulo />} />
       </Routes>
     </Router>
   );
