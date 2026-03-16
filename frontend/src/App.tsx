@@ -31,7 +31,7 @@ function App() {
 
           {/* Ruta de logistica/vehiculos (dentro del menu principal)*/}
           <Route path="logistica/vehiculos" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico')
+            (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico')
               ? <VehiculosModulo /> : <Navigate to="/panel/inicio" replace />
           } />
 
