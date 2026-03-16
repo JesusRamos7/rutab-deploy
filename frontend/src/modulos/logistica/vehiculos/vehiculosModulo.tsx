@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Vehiculo } from './types';
 import { VehiculoForm } from './vehiculoForm';
 
