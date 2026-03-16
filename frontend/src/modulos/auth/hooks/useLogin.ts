@@ -1,3 +1,5 @@
+// frontend/src/modulos/auth/hooks/useLogin.ts
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -16,11 +18,17 @@ export const useLogin = () => {
     setError('');
 
     try {
-      // Llamamos a nuestro servicio limpio
-      const data = await loginService({ correo, password });
+      // 1. Mandamos explícitamente el tipo de acceso que requiere este frontend
+      const data = await loginService({ 
+        correo, 
+        password, 
+        tipoAcceso: 'ADMIN' 
+      });
       
-      // Guardamos en el contexto global
-      login(data.access_token, data.admin);
+      // 2. Guardamos en el contexto global con la nueva estructura
+      // Pasamos token, el objeto usuario y el tipo que nos devuelve el backend
+      login(data.access_token, data.usuario, data.tipo);
+      
       navigate('/panel'); 
     } catch (err: any) {
       setError(err.message || 'Error al conectar con el servidor');

@@ -11,7 +11,7 @@ import { ModuloAuditoria } from './modulos/auditoria';
 import { VehiculosModulo } from './modulos/logistica/vehiculos/vehiculosModulo';
 
 function App() {
-  const { token, admin } = useAuth();
+  const { token, usuario } = useAuth();
 
   return (
     <Router>
@@ -25,7 +25,7 @@ function App() {
 
           {/* Ruta de Logística (Menú Principal) */}
           <Route path="logistica" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico')
+            (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico') 
               ? <ModuloLogistica /> : <Navigate to="/panel/inicio" replace />
           } />
 
@@ -36,7 +36,7 @@ function App() {
           } />
 
           <Route path="auditoria" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'auditor')
+            (usuario?.rol === 'superAdmin' || usuario?.rol === 'auditor') 
               ? <ModuloAuditoria /> : <Navigate to="/panel/inicio" replace />
           } />
         </Route>
