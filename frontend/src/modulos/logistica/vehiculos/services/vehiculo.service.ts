@@ -1,72 +1,69 @@
 // vehiculos.service.ts
-import { VehiculoFormData } from "../types";
+import { isAxiosError } from 'axios';
+import { api } from '../../../../config/api'; // Ajusta la ruta según dónde guardaste api.ts
+import { VehiculoFormData } from '../types';
 
-const API_URL = "http://localhost:3000/vehiculos";
+const ENDPOINT = '/vehiculos';
 
-const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+// Interceptamos la estructura de error por defecto de NestJS
+const handleNestError = (error: unknown) => {
+  if (isAxiosError(error) && error.response) {
+    const data = error.response.data;
+    
+    // Buscamos el mensaje en las diferentes propiedades que NestJS suele usar
+    const message = data.message || data.error || error.response.statusText;
+    const finalMessage = Array.isArray(message) ? message.join(', ') : message;
+    
+    // Si es un 403, podemos ser aún más específicos para el usuario
+    if (error.response.status === 403) {
+      throw new Error('No tienes permisos suficientes para realizar esta acción.');
+    }
+
+    throw new Error(finalMessage || 'Error en la petición al servidor');
+  }
+  throw new Error('Error de conexión con el servidor');
 };
 
 export const vehiculosService = {
-  
-  create: async (data: VehiculoFormData) => {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        ...data,
-        rendimiento_combustible: parseFloat(data.rendimiento_combustible) || 0,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al crear el vehículo");
-    }
-    return response.json();
-  },
-
-  update: async (id: string | number, data: VehiculoFormData) => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        ...data,
-        rendimiento_combustible: parseFloat(data.rendimiento_combustible) || 0,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Error al actualizar el vehículo");
-    }
-    return response.json();
-  },
-
-
   getAll: async () => {
-    const response = await fetch(API_URL, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al obtener los vehículos");
-    return response.json();
+    try {
+      const { data } = await api.get(ENDPOINT);
+      return data;
+    } catch (error) {
+      handleNestError(error);
+    }
+  },
+
+  create: async (formData: VehiculoFormData) => {
+    try {
+      const { data } = await api.post(ENDPOINT, {
+        ...formData,
+        rendimiento_combustible: parseFloat(formData.rendimiento_combustible) || 0
+      });
+      return data;
+    } catch (error) {
+      handleNestError(error);
+    }
+  },
+
+  update: async (id: string | number, formData: VehiculoFormData) => {
+    try {
+      const { data } = await api.patch(`${ENDPOINT}/${id}`, {
+        ...formData,
+        rendimiento_combustible: parseFloat(formData.rendimiento_combustible) || 0
+      });
+      return data;
+    } catch (error) {
+      handleNestError(error);
+    }
   },
 
   delete: async (id: string | number) => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error("Error al eliminar el vehículo");
-
-    // Algunos backends no devuelven body en un DELETE (204 No Content)
-    const text = await response.text();
-    return text ? JSON.parse(text) : {};
-  },
-  
+    try {
+      const { data } = await api.delete(`${ENDPOINT}/${id}`);
+      return data;
+    } catch (error) {
+      handleNestError(error);
+    }
+  }
 };

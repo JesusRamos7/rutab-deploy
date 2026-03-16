@@ -29,13 +29,14 @@ export const useVehiculosPage = () => {
   }, [fetchVehiculos]);
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm("¿Deseas eliminar esta unidad?")) {
+    if (window.confirm('¿Deseas eliminar esta unidad?')) {
       try {
         await vehiculosService.delete(id);
         await fetchVehiculos(); // Recargar la lista tras borrar
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting vehiculo:", error);
-        alert("Error al eliminar la unidad");
+        // Ahora mostramos el mensaje real que viene del backend/servicio
+        alert(error.message || "Error desconocido al eliminar la unidad");
       }
     }
   };
