@@ -8,6 +8,7 @@ import { useAuth } from './context/AuthContext';
 import { ModuloInicio } from './modulos/inicio';
 import { ModuloLogistica } from './modulos/logistica';
 import { ModuloAuditoria } from './modulos/auditoria';
+import { VehiculosModulo } from './modulos/logistica/vehiculos/vehiculosModulo';
 
 function App() {
   const { token, admin } = useAuth();
@@ -34,6 +35,8 @@ function App() {
         </Route>
         
         <Route path="*" element={<Navigate to={token ? "/panel/inicio" : "/login"} replace />} />
+
+        <Route path="/admin/logistica/vehiculos" element={<VehiculosModulo />} />
       </Routes>
     </Router>
   );
