@@ -1,7 +1,7 @@
 // vehiculos.service.ts
 import { isAxiosError } from 'axios';
-import { api } from '../../../../config/api'; // Ajusta la ruta según dónde guardaste api.ts
-import { VehiculoFormData } from '../types';
+import { api } from '../../../config/api'; // Ajusta la ruta según dónde guardaste api.ts
+import { VehiculoFormData } from './types';
 
 const ENDPOINT = '/vehiculos';
 

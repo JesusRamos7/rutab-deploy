@@ -1,7 +1,8 @@
-// VehiculosPage.tsx
+// frontend/src/modulos/logistica/vehiculos/VehiculosPage.tsx
 import React from "react";
-import { VehiculoForm } from "./VehiculoForm"; // Asegúrate de que la ruta sea correcta
+import { VehiculoForm } from "./VehiculoForm";
 import { useVehiculosPage } from "./hooks/useVehiculosPage";
+import { ConfirmModal } from "../../../components/ui/ConfirmModal"; // Ajusta esta ruta a donde guardaste el modal genérico
 
 export const VehiculosPage: React.FC = () => {
   const {
@@ -10,14 +11,21 @@ export const VehiculosPage: React.FC = () => {
     isModalOpen,
     selectedVehiculo,
     fetchVehiculos,
-    handleDelete,
     openNewModal,
     openEditModal,
     closeModal,
+    // Propiedades del modal de confirmación
+    isConfirmOpen,
+    vehiculoToDelete,
+    isDeleting,
+    confirmDelete,
+    closeConfirmModal,
+    executeDelete,
   } = useVehiculosPage();
 
   return (
     <div className="p-4 lg:p-8">
+      {/* Encabezado */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
@@ -33,12 +41,14 @@ export const VehiculosPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Estado de Carga */}
       {isLoading ? (
         <div className="text-center text-slate-500 py-10">
           Cargando vehículos...
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Listado de Vehículos */}
           {vehiculos.map((v) => (
             <div
               key={v.id}
@@ -65,17 +75,17 @@ export const VehiculosPage: React.FC = () => {
 
               <div className="space-y-3 border-b border-slate-100 pb-6 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Marca:</span>{" "}
+                  <span className="text-slate-400">Marca:</span>
                   <span className="font-semibold text-slate-700">
                     {v.marca}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Placa:</span>{" "}
+                  <span className="text-slate-400">Placa:</span>
                   <span className="font-bold text-slate-700">{v.placas}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Rendimiento:</span>{" "}
+                  <span className="text-slate-400">Rendimiento:</span>
                   <span className="font-semibold text-slate-700">
                     {v.rendimiento_combustible} km/L
                   </span>
@@ -90,7 +100,7 @@ export const VehiculosPage: React.FC = () => {
                   ✏️ Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(v.id)}
+                  onClick={() => confirmDelete(v)}
                   className="px-4 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 py-2.5 rounded-xl transition-all"
                 >
                   🗑️
@@ -99,7 +109,7 @@ export const VehiculosPage: React.FC = () => {
             </div>
           ))}
 
-          {/* Mensaje por si la lista está vacía */}
+          {/* Estado Vacío */}
           {!isLoading && vehiculos.length === 0 && (
             <div className="col-span-full text-center text-slate-500 py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               No hay vehículos registrados en la flota.
@@ -108,7 +118,7 @@ export const VehiculosPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL CON RENDERIZADO CONDICIONAL */}
+      {/* Modal del Formulario (Crear/Editar) */}
       {isModalOpen && (
         <VehiculoForm
           isOpen={isModalOpen}
@@ -117,6 +127,26 @@ export const VehiculosPage: React.FC = () => {
           vehiculo={selectedVehiculo}
         />
       )}
+
+      {/* Modal de Confirmación Global (Eliminar) */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        title="Eliminar Vehículo"
+        message={
+          <>
+            ¿Estás seguro de que deseas eliminar la unidad con placas{" "}
+            <strong className="text-slate-700">
+              {vehiculoToDelete?.placas}
+            </strong>
+            ? Esta acción no se puede deshacer.
+          </>
+        }
+        confirmText="Sí, eliminar"
+        isDestructive={true}
+        isLoading={isDeleting}
+        onConfirm={executeDelete}
+        onCancel={closeConfirmModal}
+      />
     </div>
   );
 };

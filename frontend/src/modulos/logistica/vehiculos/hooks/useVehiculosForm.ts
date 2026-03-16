@@ -1,7 +1,7 @@
 // useVehiculosForm.ts
 import { useState, useEffect, FormEvent } from 'react';
 import { Vehiculo, VehiculoFormData } from '../types';
-import { vehiculosService } from '../services/vehiculo.service';
+import { vehiculosService } from '../vehiculos.service';
 import { toast } from 'sonner';
 
 const INITIAL_STATE: VehiculoFormData = {
