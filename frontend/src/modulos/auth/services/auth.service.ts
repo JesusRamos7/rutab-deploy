@@ -1,3 +1,5 @@
+//frontend/src/modulos/auth/services/auth.service.ts
+
 import { LoginCredentials, LoginResponse } from '../types/auth.types';
 
 // Vite usa import.meta.env para leer variables de entorno. 

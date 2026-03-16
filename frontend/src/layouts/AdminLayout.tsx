@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const AdminLayout = () => {
-  const { admin, logout } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation(); // Para saber en qué ruta estamos y pintar el botón activo
 
@@ -35,9 +35,9 @@ export const AdminLayout = () => {
         {/* Perfil del Usuario */}
         <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Panel Administrativo</h2>
-          <p style={{ margin: '1rem 0 0', fontWeight: 'bold' }}>{admin?.nombre}</p>
+          <p style={{ margin: '1rem 0 0', fontWeight: 'bold' }}>{usuario?.nombre}</p>
           <span style={{ fontSize: '0.75rem', backgroundColor: '#000000', padding: '0.3rem 0.6rem', borderRadius: '12px', marginTop: '0.5rem', display: 'inline-block', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            {admin?.rol}
+            {usuario?.rol}
           </span>
         </div>
 
@@ -46,11 +46,11 @@ export const AdminLayout = () => {
           
           <Link to="/panel/inicio" style={getLinkStyle('/panel/inicio')}>Inicio</Link>
 
-          {(admin?.rol === 'superAdmin' || admin?.rol === 'logístico') && (
+          {(usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico') && (
             <Link to="/panel/logistica" style={getLinkStyle('/panel/logistica')}>Módulo Logística</Link>
           )}
 
-          {(admin?.rol === 'superAdmin' || admin?.rol === 'auditor') && (
+          {(usuario?.rol === 'superAdmin' || usuario?.rol === 'auditor') && (
             <Link to="/panel/auditoria" style={getLinkStyle('/panel/auditoria')}>Módulo Auditoría</Link>
           )}
 

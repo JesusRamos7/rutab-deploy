@@ -10,7 +10,7 @@ import { ModuloLogistica } from './modulos/logistica';
 import { ModuloAuditoria } from './modulos/auditoria';
 
 function App() {
-  const { token, admin } = useAuth();
+  const { token, usuario } = useAuth();
 
   return (
     <Router>
@@ -23,12 +23,12 @@ function App() {
           <Route path="inicio" element={<ModuloInicio />} />
           
           <Route path="logistica" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'logístico') 
+            (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico') 
               ? <ModuloLogistica /> : <Navigate to="/panel/inicio" replace />
           } />
           
           <Route path="auditoria" element={
-            (admin?.rol === 'superAdmin' || admin?.rol === 'auditor') 
+            (usuario?.rol === 'superAdmin' || usuario?.rol === 'auditor') 
               ? <ModuloAuditoria /> : <Navigate to="/panel/inicio" replace />
           } />
         </Route>
