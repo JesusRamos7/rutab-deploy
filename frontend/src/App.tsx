@@ -1,52 +1,64 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import { ModuloAuth } from './modulos/auth';
 import { AdminLayout } from './layouts/AdminLayout';
-import { useAuth } from './context/AuthContext';
-
-// Importamos los módulos desde su carpeta correspondiente
 import { ModuloInicio } from './modulos/inicio';
 import { ModuloLogistica } from './modulos/logistica';
 import { ModuloAuditoria } from './modulos/auditoria';
 import { VehiculosPage } from './modulos/logistica/vehiculos/VehiculosPage';
 
-function App() {
-  const { token, usuario } = useAuth();
+// 1. CREAMOS EL WRAPPER AQUÍ MISMO
+const RoleGuard = ({ allowedRoles, children }: { allowedRoles: string[], children: JSX.Element }) => {
+  const { usuario } = useAuth();
+  
+  // Siempre permitimos al superAdmin, más los roles específicos que pida la ruta
+  if (usuario?.rol === 'superAdmin' || allowedRoles.includes(usuario?.rol || '')) {
+    return children;
+  }
+  return <Navigate to="/panel/inicio" replace />;
+};
+
+export default function App() {
+  const { token } = useAuth();
 
   return (
     <Router>
       <Routes>
+        {/* Ruta pública / Login */}
         <Route path="/login" element={!token ? <ModuloAuth /> : <Navigate to="/panel/inicio" replace />} />
+        
+        {/* Ruta base */}
+        <Route path="/" element={<Navigate to={token ? "/panel/inicio" : "/login"} replace />} />
 
-        {/* Rutas protegidas que usan el AdminLayout */}
+        {/* Rutas protegidas globales */}
         <Route path="/panel" element={token ? <AdminLayout /> : <Navigate to="/login" replace />}>
           <Route index element={<Navigate to="inicio" replace />} />
           <Route path="inicio" element={<ModuloInicio />} />
 
-          {/* Ruta de Logística (Menú Principal) */}
+          {/* Rutas Protegidas por Rol usando nuestro nuevo Wrapper */}
           <Route path="logistica" element={
-            (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico') 
-              ? <ModuloLogistica /> : <Navigate to="/panel/inicio" replace />
+            <RoleGuard allowedRoles={['logístico']}>
+              <ModuloLogistica />
+            </RoleGuard>
           } />
 
-          {/* Ruta de logistica/vehiculos (dentro del menu principal)*/}
           <Route path="logistica/vehiculos" element={
-            (usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico')
-              ? <VehiculosPage /> : <Navigate to="/panel/inicio" replace />
+            <RoleGuard allowedRoles={['logístico']}>
+              <VehiculosPage />
+            </RoleGuard>
           } />
 
           <Route path="auditoria" element={
-            (usuario?.rol === 'superAdmin' || usuario?.rol === 'auditor') 
-              ? <ModuloAuditoria /> : <Navigate to="/panel/inicio" replace />
+            <RoleGuard allowedRoles={['auditor']}>
+              <ModuloAuditoria />
+            </RoleGuard>
           } />
         </Route>
         
+        {/* Ruta 404 / Catch-all */}
         <Route path="*" element={<Navigate to={token ? "/panel/inicio" : "/login"} replace />} />
-
       </Routes>
     </Router>
   );
 }
-
-export default App;
-

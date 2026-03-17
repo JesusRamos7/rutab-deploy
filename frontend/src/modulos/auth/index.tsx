@@ -1,38 +1,82 @@
+// frontend/src/modulos/auth/index.ts
 import { useLogin } from './hooks/useLogin';
 
 export const ModuloAuth = () => {
-  // Extraemos las variables y funciones de nuestro controlador (hook)
-  const { correo, setCorreo, password, setPassword, error, handleSubmit } = useLogin();
+  // Extraemos las variables, funciones y el nuevo estado isLoading
+  const { 
+    correo, setCorreo, 
+    password, setPassword, 
+    error, isLoading, 
+    handleSubmit 
+  } = useLogin();
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#123a5d', fontFamily: 'sans-serif' }}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', width: '100%', maxWidth: '400px' }}>
-        
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, color: '#000000', fontSize: '1.8rem' }}>Bienvenido</h2>
-          <p style={{ margin: '0.5rem 0 0', color: '#666' }}>Ingresa tus credenciales</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#123a5d] p-4 font-sans">
+      <form 
+        onSubmit={handleSubmit} 
+        className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col gap-6 animate-in fade-in zoom-in duration-300"
+      >
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-slate-800 m-0">Bienvenido</h2>
+          <p className="text-slate-500 mt-2">Ingresa tus credenciales de administrador</p>
         </div>
         
-        {error && <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '0.75rem', borderRadius: '6px', textAlign: 'center', fontSize: '0.9rem' }}>{error}</div>}
+        {/* Mensaje de error (opcional si ya usas Sonner, pero útil mantenerlo aquí visualmente) */}
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-center text-sm font-medium">
+            {error}
+          </div>
+        )}
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="correo" style={{ color: '#000000', fontWeight: 'bold', fontSize: '0.9rem' }}>Correo Electrónico</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="correo" className="text-slate-700 font-bold text-sm">
+            Correo Electrónico
+          </label>
           <input 
-            id="correo" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} required 
-            style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', fontSize: '1rem' }}
+            id="correo" 
+            type="email" 
+            value={correo} 
+            onChange={(e) => setCorreo(e.target.value)} 
+            required 
+            disabled={isLoading}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-[#123a5d] transition-all disabled:opacity-50 disabled:bg-slate-50 text-slate-700"
+            placeholder="admin@empresa.com"
           />
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label htmlFor="password" style={{ color: '#000000', fontWeight: 'bold', fontSize: '0.9rem' }}>Contraseña</label>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="text-slate-700 font-bold text-sm">
+            Contraseña
+          </label>
           <input 
-            id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required 
-            style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', fontSize: '1rem' }}
+            id="password" 
+            type="password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+            disabled={isLoading}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-[#123a5d] transition-all disabled:opacity-50 disabled:bg-slate-50 text-slate-700"
+            placeholder="••••••••"
           />
         </div>
         
-        <button type="submit" style={{ padding: '0.8rem', backgroundColor: '#000000', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '1rem', fontWeight: 'bold', fontSize: '1rem', transition: 'opacity 0.2s' }}>
-          Iniciar Sesión
+        <button 
+          type="submit" 
+          disabled={isLoading}
+          className="w-full py-3.5 mt-2 bg-[#123a5d] text-white font-bold rounded-xl hover:bg-[#0e2d4a] shadow-lg transition-all disabled:opacity-70 flex justify-center items-center"
+        >
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              {/* Pequeño spinner SVG nativo de Tailwind */}
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Verificando...
+            </span>
+          ) : (
+            'Iniciar Sesión'
+          )}
         </button>
       </form>
     </div>
