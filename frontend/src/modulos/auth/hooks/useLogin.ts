@@ -30,13 +30,13 @@ export const useLogin = () => {
       // Asegúrate de que este context haga: localStorage.setItem('token', data.access_token)
       login(data.access_token, data.usuario, data.tipo);
       
-      toast.success(`¡Bienvenido, ${data.usuario.nombre || 'Administrador'}!`);
+      toast.success(`¡Bienvenid@, ${data.usuario.nombre || 'Administrador'}!`);
       navigate('/panel'); 
     } catch (err: any) {
       const mensajeError = err.message || 'Error al conectar con el servidor';
       
       setError(mensajeError); // Mantiene tu diseño original por si lo usas en el HTML
-      toast.error(mensajeError); // Muestra el popup moderno
+      //toast.error(mensajeError); // No es necesario que esta implementado en index.tsx
     } finally {
       setIsLoading(false); // Liberamos el formulario
     }
