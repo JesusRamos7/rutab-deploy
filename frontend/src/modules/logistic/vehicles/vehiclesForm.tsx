@@ -1,11 +1,11 @@
-// VehiculoForm.tsx
+// VehicleForm.tsx
 import React from 'react';
-import { VehiculoFormProps } from './types';
-import { useVehiculosForm } from './hooks/useVehiculosForm';
+import { VehicleFormProps } from './types';
+import { useVehiclesForm } from './hooks/useVehiclesForm';
 
-export const VehiculoForm: React.FC<VehiculoFormProps> = ({ isOpen, onClose, onSuccess, vehiculo }) => {
-  const { formData, isLoading, handleChange, handleSubmit } = useVehiculosForm(
-    vehiculo,
+export const VehicleForm: React.FC<VehicleFormProps> = ({ isOpen, onClose, onSuccess, vehicle }) => {
+  const { formData, isLoading, handleChange, handleSubmit } = useVehiclesForm(
+    vehicle,
     isOpen,
     onSuccess,
     onClose
@@ -18,7 +18,7 @@ export const VehiculoForm: React.FC<VehiculoFormProps> = ({ isOpen, onClose, onS
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h2 className="text-xl font-bold text-slate-800">
-            {vehiculo ? 'Editar Vehículo' : 'Nuevo Vehículo'}
+            {vehicle ? 'Editar Vehículo' : 'Nuevo Vehículo'}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
         </div>

@@ -1,27 +1,27 @@
-// frontend/src/modulos/logistica/vehiculos/VehiculosPage.tsx
+// frontend/src/modules/logistic/vehicles/VehiclesPage.tsx
 import React from "react";
-import { VehiculoForm } from "./VehiculoForm";
-import { useVehiculosPage } from "./hooks/useVehiculosPage";
+import { VehicleForm } from "./vehiclesForm";
+import { useVehiclesPage } from "./hooks/useVehiclesPage";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal"; // Ajusta esta ruta a donde guardaste el modal genérico
 
-export const VehiculosPage: React.FC = () => {
+export const VehiclesPage: React.FC = () => {
   const {
-    vehiculos,
+    vehicles,
     isLoading,
     isModalOpen,
-    selectedVehiculo,
-    fetchVehiculos,
+    selectedVehicle,
+    fetchVehicles,
     openNewModal,
     openEditModal,
     closeModal,
     // Propiedades del modal de confirmación
     isConfirmOpen,
-    vehiculoToDelete,
+    vehicleToDelete,
     isDeleting,
     confirmDelete,
     closeConfirmModal,
     executeDelete,
-  } = useVehiculosPage();
+  } = useVehiclesPage();
 
   return (
     <div className="p-4 lg:p-8">
@@ -49,7 +49,7 @@ export const VehiculosPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Listado de Vehículos */}
-          {vehiculos.map((v) => (
+          {vehicles.map((v) => (
             <div
               key={v.id}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
@@ -110,7 +110,7 @@ export const VehiculosPage: React.FC = () => {
           ))}
 
           {/* Estado Vacío */}
-          {!isLoading && vehiculos.length === 0 && (
+          {!isLoading && vehicles.length === 0 && (
             <div className="col-span-full text-center text-slate-500 py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               No hay vehículos registrados en la flota.
             </div>
@@ -120,11 +120,11 @@ export const VehiculosPage: React.FC = () => {
 
       {/* Modal del Formulario (Crear/Editar) */}
       {isModalOpen && (
-        <VehiculoForm
+        <VehicleForm
           isOpen={isModalOpen}
           onClose={closeModal}
-          onSuccess={fetchVehiculos}
-          vehiculo={selectedVehiculo}
+          onSuccess={fetchVehicles}
+          vehicle={selectedVehicle}
         />
       )}
 
@@ -136,7 +136,7 @@ export const VehiculosPage: React.FC = () => {
           <>
             ¿Estás seguro de que deseas eliminar la unidad con placas{" "}
             <strong className="text-slate-700">
-              {vehiculoToDelete?.placas}
+              {vehicleToDelete?.placas}
             </strong>
             ? Esta acción no se puede deshacer.
           </>

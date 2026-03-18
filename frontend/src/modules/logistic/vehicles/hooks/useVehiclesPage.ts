@@ -1,27 +1,27 @@
-// useVehiculosPage.ts
+// useVehiclesPage.ts
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Vehiculo } from '../types';
-import { vehiculosService } from '../vehiculos.service';
+import { Vehicle } from '../types';
+import { VehicleService } from '../vehicles.service';
 
-export const useVehiculosPage = () => {
-  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+export const useVehiclesPage = () => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Estados para el Modal del Formulario (Crear/Editar)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedVehiculo, setSelectedVehiculo] = useState<Vehiculo | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   // NUEVOS: Estados para el Modal de Confirmación (Eliminar)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [vehiculoToDelete, setVehiculoToDelete] = useState<Vehiculo | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchVehiculos = useCallback(async () => {
+  const fetchVehicles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await vehiculosService.getAll();
-      setVehiculos(data);
+      const data = await VehicleService.getAll();
+      setVehicles(data);
     } catch (error: any) {
       toast.error(error.message || "Hubo un problema al cargar los vehículos");
     } finally {
@@ -29,33 +29,33 @@ export const useVehiculosPage = () => {
     }
   }, []);
 
-  useEffect(() => { fetchVehiculos(); }, [fetchVehiculos]);
+  useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 
   // --- Lógica del Formulario ---
-  const openNewModal = () => { setSelectedVehiculo(null); setIsModalOpen(true); };
-  const openEditModal = (vehiculo: Vehiculo) => { setSelectedVehiculo(vehiculo); setIsModalOpen(true); };
+  const openNewModal = () => { setSelectedVehicle(null); setIsModalOpen(true); };
+  const openEditModal = (vehicle: Vehicle) => { setSelectedVehicle(vehicle); setIsModalOpen(true); };
   const closeModal = () => { setIsModalOpen(false); };
 
   // --- NUEVA: Lógica de Eliminación ---
-  const confirmDelete = (vehiculo: Vehiculo) => {
-    setVehiculoToDelete(vehiculo);
+  const confirmDelete = (vehicle: Vehicle) => {
+    setVehicleToDelete(vehicle);
     setIsConfirmOpen(true);
   };
 
   const closeConfirmModal = () => {
     setIsConfirmOpen(false);
     // Esperamos un poco antes de limpiar el estado para que la animación de cierre del modal no pierda el nombre del vehículo
-    setTimeout(() => setVehiculoToDelete(null), 200); 
+    setTimeout(() => setVehicleToDelete(null), 200); 
   };
 
   const executeDelete = async () => {
-    if (!vehiculoToDelete) return;
+    if (!vehicleToDelete) return;
 
     setIsDeleting(true);
     try {
-      await vehiculosService.delete(vehiculoToDelete.id);
-      toast.success(`Unidad ${vehiculoToDelete.placas} eliminada correctamente`);
-      await fetchVehiculos();
+      await VehicleService.delete(vehicleToDelete.id);
+      toast.success(`Unidad ${vehicleToDelete.placas} eliminada correctamente`);
+      await fetchVehicles();
       closeConfirmModal();
     } catch (error: any) {
       // Si NestJS lanza un 403 Forbidden, se mostrará aquí gracias a nuestro interceptor
@@ -65,18 +65,18 @@ export const useVehiculosPage = () => {
   };
 
   return {
-    vehiculos,
+    vehicles,
     isLoading,
     // Exportes del formulario
     isModalOpen,
-    selectedVehiculo,
+    selectedVehicle,
     openNewModal,
     openEditModal,
     closeModal,
-    fetchVehiculos,
+    fetchVehicles,
     // Exportes de confirmación
     isConfirmOpen,
-    vehiculoToDelete,
+    vehicleToDelete,
     isDeleting,
     confirmDelete,
     closeConfirmModal,

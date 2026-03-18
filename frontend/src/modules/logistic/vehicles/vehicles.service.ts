@@ -1,9 +1,9 @@
-// vehiculos.service.ts
+// vehicles.service.ts
 import { isAxiosError } from 'axios';
 import { api } from '../../../config/api'; // Ajusta la ruta según dónde guardaste api.ts
-import { VehiculoFormData } from './types';
+import { VehicleFormData } from './types';
 
-const ENDPOINT = '/vehiculos';
+const ENDPOINT = '/vehicles';
 
 // Interceptamos la estructura de error por defecto de NestJS
 const handleNestError = (error: unknown) => {
@@ -24,7 +24,7 @@ const handleNestError = (error: unknown) => {
   throw new Error('Error de conexión con el servidor');
 };
 
-export const vehiculosService = {
+export const VehicleService = {
   getAll: async () => {
     try {
       const { data } = await api.get(ENDPOINT);
@@ -34,7 +34,7 @@ export const vehiculosService = {
     }
   },
 
-  create: async (formData: VehiculoFormData) => {
+  create: async (formData: VehicleFormData) => {
     try {
       const { data } = await api.post(ENDPOINT, {
         ...formData,
@@ -46,7 +46,7 @@ export const vehiculosService = {
     }
   },
 
-  update: async (id: string | number, formData: VehiculoFormData) => {
+  update: async (id: string | number, formData: VehicleFormData) => {
     try {
       const { data } = await api.patch(`${ENDPOINT}/${id}`, {
         ...formData,

@@ -1,7 +1,7 @@
 // backend/src/modules/auth/auth.service.ts
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { PrismaService } from '../../database/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';

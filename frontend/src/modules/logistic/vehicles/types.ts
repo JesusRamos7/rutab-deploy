@@ -1,5 +1,5 @@
 // types.ts
-export interface Vehiculo {
+export interface Vehicle {
   id: string;
   placas: string;
   marca: string;
@@ -8,7 +8,7 @@ export interface Vehiculo {
   estatus: string;
 }
 
-export interface VehiculoFormData {
+export interface VehicleFormData {
   placas: string;
   marca: string;
   modelo: string;
@@ -16,9 +16,9 @@ export interface VehiculoFormData {
   estatus: string;
 }
 
-export interface VehiculoFormProps {
+export interface VehicleFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  vehiculo?: Vehiculo | null;
+  vehicle?: Vehicle | null;
 }

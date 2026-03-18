@@ -1,12 +1,12 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service'; 
-import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
+import { PrismaService } from '../../database/prisma/prisma.service'; 
+import { CreateVehicleDto } from './dto/create-vehicle.dto';
 
 @Injectable()
-export class VehiculosService {
+export class VehiclesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateVehiculoDto) {
+  async create(data: CreateVehicleDto) {
     const existe = await this.prisma.vehiculos.findUnique({ where: { placas: data.placas } });
     if (existe) throw new ConflictException('Las placas ya están registradas');
     
@@ -21,7 +21,7 @@ export class VehiculosService {
     return this.prisma.vehiculos.findUnique({ where: { id } });
   }
   
-  async update(id: string, data: Partial<CreateVehiculoDto>) {
+  async update(id: string, data: Partial<CreateVehicleDto>) {
   const existe = await this.prisma.vehiculos.findUnique({ where: { id } });
   if (!existe) throw new NotFoundException('Vehículo no encontrado');
   

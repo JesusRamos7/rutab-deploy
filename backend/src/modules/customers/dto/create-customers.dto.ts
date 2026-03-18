@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsNumber, Matches } from 'class-validator';
 
-export class CreateClienteDto {
+export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
