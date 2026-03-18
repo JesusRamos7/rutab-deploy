@@ -1,4 +1,4 @@
 // index.ts
 export * from './VehiclesPage';
-export * from './vehiclesForm';
+export * from './VehiclesForm';
 export * from './types';
