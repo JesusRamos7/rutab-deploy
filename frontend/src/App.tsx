@@ -1,12 +1,12 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { ModuloAuth } from './modulos/auth';
+import { ModuloAuth } from './modules/auth';
 import { AdminLayout } from './layouts/AdminLayout';
-import { ModuloInicio } from './modulos/inicio';
-import { ModuloLogistica } from './modulos/logistica';
-import { ModuloAuditoria } from './modulos/auditoria';
-import { VehiculosPage } from './modulos/logistica/vehiculos/VehiculosPage';
+import { ModuloInicio } from './modules/index';
+import { ModuloLogistica } from './modules/logistic/logistic-Index';
+import { ModuloAuditoria } from './modules/audit';
+import { VehiclesPage } from './modules/logistic/vehicles/VehiclesPage';
 
 // 1. CREAMOS EL WRAPPER AQUÍ MISMO
 const RoleGuard = ({ allowedRoles, children }: { allowedRoles: string[], children: JSX.Element }) => {
@@ -45,7 +45,7 @@ export default function App() {
 
           <Route path="logistica/vehiculos" element={
             <RoleGuard allowedRoles={['logístico']}>
-              <VehiculosPage />
+              <VehiclesPage />
             </RoleGuard>
           } />
 
