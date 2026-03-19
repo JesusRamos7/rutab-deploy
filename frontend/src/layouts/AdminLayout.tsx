@@ -1,73 +1,94 @@
 // src/layouts/AdminLayout.tsx
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import logo from '../assets/logo_admin_layout.png';
 
 export const AdminLayout = () => {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation(); // Para saber en qué ruta estamos y pintar el botón activo
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
-  // Función para darle estilo al enlace activo
-  const getLinkStyle = (path: string) => {
+  // Función para obtener las clases de Tailwind del enlace activo
+  const getLinkClasses = (path: string) => {
     const isActive = location.pathname.includes(path);
-    return {
-      display: 'block',
-      padding: '1rem',
-      color: '#ffffff',
-      textDecoration: 'none',
-      backgroundColor: isActive ? '#000000' : 'transparent',
-      borderLeft: isActive ? '4px solid #ffffff' : '4px solid transparent',
-      transition: 'background-color 0.2s'
-    };
+    const baseClasses =
+      "flex items-center gap-3 p-4 rounded-xl transition-colors font-medium text-sm";
+
+    if (isActive) {
+      return `${baseClasses} bg-blue-600 text-white`;
+    }
+    return `${baseClasses} text-neutral-50 hover:bg-neutral-800`;
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', backgroundColor: '#f9fafb' }}>
-      
-      {/* Barra Lateral (Celeste Negro) */}
-      <aside style={{ width: '260px', backgroundColor: '#123a5d', color: '#ffffff', display: 'flex', flexDirection: 'column', boxShadow: '2px 0 5px rgba(0,0,0,0.1)' }}>
-        
-        {/* Perfil del Usuario */}
-        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Panel Administrativo</h2>
-          <p style={{ margin: '1rem 0 0', fontWeight: 'bold' }}>{usuario?.nombre}</p>
-          <span style={{ fontSize: '0.75rem', backgroundColor: '#000000', padding: '0.3rem 0.6rem', borderRadius: '12px', marginTop: '0.5rem', display: 'inline-block', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            {usuario?.rol}
-          </span>
+    <div className="flex min-h-screen bg-neutral-100">
+      {/* Barra Lateral (Tema Oscuro - w-[260px]) */}
+      <aside className="w-260px bg-neutral-900 text-neutral-50 flex flex-col shadow-lg">
+        {/* Encabezado (Logo + Título - p-8, border-b) */}
+        <div className="p-8 border-b border-neutral-800">
+          <div className="flex items-center gap-4">
+            {/* Contenedor del Logo (cuadrado blanco rounded-xl) */}
+            <div className="p-2 bg-white rounded-xl shadow-inner w-16 h-16 flex items-center justify-center">
+              <img
+                src={logo}
+                alt="Logo RuTAB"
+                //className="max-w-full max-h-full"
+              />
+            </div>
+            {/* Títulos (RuTAB, Admin Panel) */}
+            <div>
+              <h1 className="text-xl font-semibold">RuTAB</h1>
+              <p className="text-sm text-neutral-400">Admin Panel</p>
+            </div>
+          </div>
         </div>
 
         {/* Menú de Módulos condicionado por Rol */}
-        <nav style={{ flex: 1, padding: '1rem 0', display: 'flex', flexDirection: 'column' }}>
-          
-          <Link to="/panel/inicio" style={getLinkStyle('/panel/inicio')}>Inicio</Link>
+        <nav className="flex-1 p-4 space-y-1">
+          {/* Aquí integraríamos los iconos de Lucide en el siguiente paso */}
+          <Link to="/panel/inicio" className={getLinkClasses("/panel/inicio")}>
+            Inicio
+          </Link>
 
-          {(usuario?.rol === 'superAdmin' || usuario?.rol === 'logístico') && (
-            <Link to="/panel/logistica" style={getLinkStyle('/panel/logistica')}>Módulo Logística</Link>
+          {(usuario?.rol === "superAdmin" || usuario?.rol === "logístico") && (
+            <Link
+              to="/panel/logistica"
+              className={getLinkClasses("/panel/logistica")}
+            >
+              Módulo Logística
+            </Link>
           )}
 
-          {(usuario?.rol === 'superAdmin' || usuario?.rol === 'auditor') && (
-            <Link to="/panel/auditoria" style={getLinkStyle('/panel/auditoria')}>Módulo Auditoría</Link>
+          {(usuario?.rol === "superAdmin" || usuario?.rol === "auditor") && (
+            <Link
+              to="/panel/auditoria"
+              className={getLinkClasses("/panel/auditoria")}
+            >
+              Módulo Auditoría
+            </Link>
           )}
-
         </nav>
 
-        {/* Botón de Cerrar Sesión */}
-        <div style={{ padding: '1.5rem' }}>
-          <button onClick={handleLogout} style={{ width: '100%', padding: '0.8rem', backgroundColor: '#000000', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+        {/* Sección de Cerrar Sesión (al final del sidebar, p-6 mt-auto) */}
+        <div className="p-6 mt-auto">
+          <button
+            onClick={handleLogout}
+            className="w-full p-4 bg-neutral-950 text-neutral-50 rounded-lg hover:bg-neutral-800 transition-colors font-bold text-sm"
+          >
             Cerrar Sesión
           </button>
         </div>
       </aside>
 
-      {/* Área de Contenido Principal (Blanco) */}
-      <main style={{ flex: 1, backgroundColor: '#ffffff', color: '#000000', margin: '1rem', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflowY: 'auto' }}>
+      {/* Área de Contenido Principal (Blanco rounded-2xl shadow-sm m-4 p-8) */}
+      <main className="flex-1 bg-white text-neutral-950 m-4 p-8 rounded-2xl shadow-sm overflow-y-auto">
         {/* El componente <Outlet /> inyectará aquí el contenido del módulo seleccionado */}
-        <Outlet /> 
+        <Outlet />
       </main>
     </div>
   );
