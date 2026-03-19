@@ -35,12 +35,6 @@ export const menuConfig: MenuItem[] = [
     roles: ["superAdmin", "logístico", "auditor"],
   },
   {
-    title: "Módulo Logística",
-    path: "/panel/logistica",
-    icon: Truck,
-    roles: ["superAdmin", "logístico"],
-  },
-  {
     title: "Módulo Auditoría",
     path: "/panel/auditoria",
     icon: ShieldCheck,
@@ -54,7 +48,7 @@ export const menuConfig: MenuItem[] = [
       {
         title: "Vehículos",
         path: "/panel/gestion/vehiculos",
-        icon: CarFront, // Añadido
+        icon: Truck, // Añadido
         roles: ["superAdmin", "logístico"],
       },
       {

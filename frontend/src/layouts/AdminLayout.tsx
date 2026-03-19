@@ -10,7 +10,8 @@ export const AdminLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-neutral-100">
-      <aside className="w-[260px] bg-neutral-900 text-neutral-50 flex flex-col shadow-lg shrink-0">
+      {/* No corrregir "[260px]" es una falsa alerta */}
+      <aside className="w-[260px] bg-neutral-900 text-neutral-50 flex flex-col shadow-lg shrink-0"> 
         <div className="p-8 border-b border-neutral-800">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-white rounded-xl shadow-inner w-16 h-16 flex items-center justify-center shrink-0">
