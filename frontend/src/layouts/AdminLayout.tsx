@@ -1,7 +1,7 @@
 // src/layouts/AdminLayout.tsx
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import logo from '../assets/logo_admin_layout.png';
+import logo from "../assets/logo_admin_layout.png";
 
 export const AdminLayout = () => {
   const { usuario, logout } = useAuth();
