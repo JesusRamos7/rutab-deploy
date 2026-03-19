@@ -26,7 +26,7 @@ export const LoginScreen = () => {
         <View className="items-center mb-10">
           <View className="bg-gray-50 rounded-full w-32 h-32 justify-center items-center overflow-hidden border border-gray-100">
             <Image
-              source={require("../../../assets/logo1.png")}
+              source={require("../../../assets/logo.png")}
               className="w-24 h-24"
               resizeMode="contain"
             />
