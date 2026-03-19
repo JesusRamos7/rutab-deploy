@@ -48,6 +48,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUsuario(null);
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
+    // Redirección forzada: Limpia la memoria de React y envía al usuario al login
+    window.location.href = '/login';
   };
 
   return (
