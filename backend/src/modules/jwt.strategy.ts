@@ -1,25 +1,47 @@
-//backend/src/modules/jwt.strategy.ts
+// src/modules/jwt.strategy.ts
 
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 
+/**
+ * Estrategia de Validación JWT.
+ * Implementa la lógica necesaria para extraer y verificar tokens Bearer
+ * en cada petición entrante a rutas protegidas.
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
+    /**
+     * Configuración de la estrategia:
+     * - jwtFromRequest: Define dónde buscar el token (Cabecera Authorization: Bearer).
+     * - ignoreExpiration: Rechaza automáticamente tokens cuya fecha 'exp' haya pasado.
+     * - secretOrKey: Clave simétrica para validar la firma del token.
+     */
     super({
-      // Extrae el token de la cabecera 'Authorization: Bearer <token>'
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // IMPORTANTE: Esto debe coincidir con el secreto que usas en tu JwtModule
-      secretOrKey: process.env.JWT_SECRET || 'secreto_temporal', 
+      secretOrKey: process.env.JWT_SECRET || 'secreto_temporal',
     });
   }
 
-  // Si el token es válido, NestJS ejecuta esta función automáticamente
+  /**
+   * Método de Validación Post-Verificación.
+   * Se ejecuta únicamente si la firma del token es válida y no ha expirado.
+   * * @param payload - Contenido decodificado del JWT (proveniente del AuthService).
+   * @returns Un objeto que NestJS inyectará automáticamente en 'req.user'.
+   */
   async validate(payload: any) {
-    // Retornamos los datos tal cual los guardamos en el auth.service.ts
-    // NestJS automáticamente pondrá esto dentro de "req.user"
-    return { userId: payload.sub, correo: payload.correo, rol: payload.rol };
+    /**
+     * Mapeo del Payload al Objeto User:
+     * - userId: Recuperado de 'sub' (Subject).
+     * - correo: Identificador del usuario.
+     * - rol: Clave fundamental para el funcionamiento del RolesGuard (RBAC).
+     */
+    return {
+      userId: payload.sub,
+      correo: payload.correo,
+      rol: payload.rol,
+    };
   }
 }

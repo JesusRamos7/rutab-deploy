@@ -1,26 +1,46 @@
+// src/common/guards/roles.guard.ts
+
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+/**
+ * Guard de Autorización Basado en Roles (RBAC).
+ * Valida que el usuario autenticado posea los privilegios necesarios para ejecutar una acción.
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
+  /**
+   * Determina si el usuario tiene permiso para acceder al recurso solicitado.
+   * Se ejecuta después del JwtAuthGuard para asegurar que el objeto 'user' ya esté disponible.
+   */
   canActivate(context: ExecutionContext): boolean {
-    // 1. Buscamos qué roles exige la ruta a la que intentan acceder
+    /**
+     * Extracción de roles requeridos.
+     * El Reflector busca los metadatos 'roles' definidos en el controlador o en el método.
+     */
     const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
       context.getHandler(),
       context.getClass(),
     ]);
-    
-    // Si la ruta no tiene la etiqueta @Roles, dejamos pasar a cualquiera
+
+    // Si no se han definido roles específicos, la ruta se considera permitida para cualquier usuario autenticado
     if (!requiredRoles) {
       return true;
     }
-    
-    // 2. Extraemos el usuario que hizo la petición (gracias al JwtStrategy)
+
+    /**
+     * Recuperación del usuario desde la petición HTTP.
+     * Nota: El objeto 'user' es inyectado previamente por la estrategia de Passport (JWT).
+     */
     const { user } = context.switchToHttp().getRequest();
-    
-    // 3. Verificamos si el rol del usuario está dentro de los permitidos
+
+    /**
+     * Validación de privilegios:
+     * Verifica si el rol asignado al usuario en la base de datos coincide con alguno
+     * de los roles exigidos por el decorador @Roles().
+     */
     return requiredRoles.some((role) => user?.rol === role);
   }
 }

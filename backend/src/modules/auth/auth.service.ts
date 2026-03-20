@@ -1,4 +1,4 @@
-// backend/src/modules/auth/auth.service.ts
+// src/modules/auth/auth.service.ts
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
@@ -6,6 +6,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 
+/**
+ * Servicio de lógica de negocio para la autenticación.
+ * Gestiona la validación de credenciales, comparación de hashes y emisión de tokens.
+ */
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,17 +17,22 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  /**
+   * Proceso central de inicio de sesión.
+   * Utiliza el campo 'tipoAcceso' para decidir contra qué tabla de la BD validar.
+   * @param loginDto - Credenciales y contexto de acceso.
+   * @returns Token de acceso y perfil básico del usuario.
+   */
   async login(loginDto: LoginDto) {
     const { correo, password, tipoAcceso } = loginDto;
 
-    // ---------------------------------------------------------
-    // CASO 1: EL LOGIN VIENE DEL PANEL WEB (ADMINISTRADORES)
-    // ---------------------------------------------------------
+    // --- ESCENARIO A: Acceso para Personal Administrativo (Web) ---
     if (tipoAcceso === 'ADMIN') {
       const admin = await this.prisma.administradores.findUnique({
         where: { correo },
       });
 
+      // Validación de existencia y de integridad de contraseña mediante Bcrypt
       if (!admin) {
         throw new UnauthorizedException('Credenciales incorrectas');
       }
@@ -33,6 +42,10 @@ export class AuthService {
         throw new UnauthorizedException('Credenciales incorrectas');
       }
 
+      /**
+       * Generación del Payload del JWT:
+       * 'sub' (Subject) guarda el ID único del usuario para futuras consultas.
+       */
       const payload = { sub: admin.id, correo: admin.correo, rol: admin.rol };
 
       return {
@@ -48,9 +61,7 @@ export class AuthService {
       };
     }
 
-    // ---------------------------------------------------------
-    // CASO 2: EL LOGIN VIENE DE LA APP MÓVIL (CHOFERES)
-    // ---------------------------------------------------------
+    // --- ESCENARIO B: Acceso para Operadores / Choferes (App Móvil) ---
     if (tipoAcceso === 'CHOFER') {
       const chofer = await this.prisma.choferes.findUnique({
         where: { correo },
@@ -65,7 +76,7 @@ export class AuthService {
         throw new UnauthorizedException('Credenciales incorrectas');
       }
 
-      // Los choferes no tienen campo rol en BD, se lo asignamos por defecto
+      // Los choferes se marcan con un rol estático 'CHOFER' para el sistema de Guards (RBAC)
       const payload = { sub: chofer.id, correo: chofer.correo, rol: 'CHOFER' };
 
       return {
@@ -83,14 +94,16 @@ export class AuthService {
       };
     }
 
-    // ---------------------------------------------------------
-    // CASO 3: TIPO DE ACCESO DESCONOCIDO O FALTANTE
-    // ---------------------------------------------------------
+    // Fallback de seguridad para tipos de acceso no contemplados
     throw new UnauthorizedException('Petición de inicio de sesión inválida');
   }
 
+  /**
+   * Recupera la información detallada del usuario a partir de los datos del token.
+   * Utilizado para "re-hidratar" la sesión en el Frontend.
+   */
   async getProfile(userId: string, rol: string) {
-    // Si el rol es de un admin (o superAdmin, etc.)
+    // Lógica de recuperación para perfiles administrativos
     if (rol !== 'CHOFER') {
       const admin = await this.prisma.administradores.findUnique({
         where: { id: userId },
@@ -98,7 +111,6 @@ export class AuthService {
 
       if (!admin) throw new UnauthorizedException('Usuario no encontrado');
 
-      // Devolvemos la estructura que espera el Frontend
       return {
         id: admin.id,
         nombre: admin.nombre,
@@ -108,7 +120,7 @@ export class AuthService {
       };
     }
 
-    // Si es un chofer
+    // Lógica de recuperación para perfiles de operadores
     const chofer = await this.prisma.choferes.findUnique({
       where: { id: userId },
     });
@@ -121,7 +133,6 @@ export class AuthService {
       correo: chofer.correo,
       rol: 'CHOFER',
       foto_perfil_url: chofer.foto_perfil_url,
-      // puedes incluir licencia o telefono si lo necesitas en el front
     };
   }
 }
