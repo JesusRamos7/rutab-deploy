@@ -3,7 +3,6 @@ import {
   Truck,
   ShieldCheck,
   Database,
-  CarFront,
   Users,
   ShoppingCart,
   LucideIcon,
