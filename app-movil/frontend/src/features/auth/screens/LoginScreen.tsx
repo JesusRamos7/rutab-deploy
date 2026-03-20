@@ -1,6 +1,6 @@
 // src/features/auth/screends/LoginScreen.tsx
 
-import React from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import { useLogin } from "../hooks/useLogin";
 export const LoginScreen = () => {
   const { usuario, setUsuario, password, setPassword, loading, handleLogin } =
     useLogin();
+
+  // Referencia para saltar al segundo input automáticamente
+  const passwordRef = useRef<TextInput>(null);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -45,7 +48,7 @@ export const LoginScreen = () => {
         </View>
 
         {/* === FORMULARIO === */}
-        <View className="w-full space-y-6">
+        <View className="w-full space-y-5">
           <View>
             <Text className="text-sm font-semibold text-gray-700 mb-2">
               Usuario
@@ -57,6 +60,11 @@ export const LoginScreen = () => {
               value={usuario}
               onChangeText={setUsuario}
               autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              textContentType="username"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
 
@@ -65,12 +73,19 @@ export const LoginScreen = () => {
               Contraseña
             </Text>
             <TextInput
+              ref={passwordRef}
               className="bg-gray-100 border border-gray-200 rounded-2xl px-5 py-4 text-base text-gray-900"
               placeholder="Ingresa tu contraseña"
               secureTextEntry
               placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
           </View>
 
@@ -80,6 +95,7 @@ export const LoginScreen = () => {
             }`}
             onPress={handleLogin}
             disabled={loading}
+            activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />

@@ -12,7 +12,8 @@ export const useLogin = () => {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!usuario || !password) {
+    // 1. Validaciones básicas de UI
+    if (!usuario.trim() || !password.trim()) {
       Alert.alert("Atención", "Por favor ingresa tu usuario y contraseña.");
       return;
     }
@@ -20,20 +21,28 @@ export const useLogin = () => {
     setLoading(true);
 
     try {
-      // Enviamos directamente las credenciales al servicio
-      const data = await loginService(usuario, password);
+      // 2. Llamada al servicio (ya tipado y centralizado)
+      const data = await loginService(usuario.trim(), password);
 
+      // 3. Validación de rol (Regla de negocio: Solo Choferes)
       if (data.tipo !== "CHOFER") {
-        throw new Error("Esta aplicación es exclusiva para choferes.");
+        Alert.alert(
+          "Acceso Denegado",
+          "Esta aplicación es exclusiva para choferes.",
+        );
+        return;
       }
 
+      // 4. Persistencia en Contexto y Storage
       await login(data.access_token, data.usuario);
     } catch (error: any) {
+      // 5. Manejo de errores exhaustivo
       const mensajeError =
         error.response?.data?.message ||
         error.message ||
-        "Error al iniciar sesión";
-      Alert.alert("Error de Acceso", mensajeError);
+        "No se pudo conectar con el servidor.";
+
+      Alert.alert("Error de Inicio de Sesión", mensajeError);
     } finally {
       setLoading(false);
     }
