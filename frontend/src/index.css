@@ -1,1 +1,13 @@
+/* src/index.css */
 @import "tailwindcss";
+
+/* Definimos la animación de la barra de progreso */
+@theme {
+  @keyframes progress-infinity {
+    0% { transform: translateX(-100%) scaleX(0.1); }
+    50% { transform: translateX(0%) scaleX(0.5); }
+    100% { transform: translateX(100%) scaleX(0.1); }
+  }
+  
+  --animate-progress-infinity: progress-infinity 1.5s infinite linear;
+}

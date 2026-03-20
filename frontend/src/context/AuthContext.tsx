@@ -1,7 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// 1. Cambiamos el nombre de Admin a Usuario para que coincida con el backend.
-// Opcional: Agregué foto_perfil_url ya que el backend del admin lo devuelve.
 interface Usuario {
   id: string;
   nombre: string;
@@ -10,11 +8,10 @@ interface Usuario {
   foto_perfil_url?: string | null;
 }
 
-// 2. Actualizamos el tipo del contexto
 interface AuthContextType {
   token: string | null;
   usuario: Usuario | null;
-  // Agregamos el parámetro 'tipo' a la firma de la función
+  cargandoAuth: boolean; // <-- Nuevo: Para saber si estamos leyendo el storage
   login: (token: string, usuario: Usuario, tipo: string) => void;
   logout: () => void;
 }
@@ -22,17 +19,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  // Cambiamos 'admin' a 'usuario' para el estado y el localStorage
-  const [usuario, setUsuario] = useState<Usuario | null>(() => {
-    const savedUsuario = localStorage.getItem('usuario');
-    return savedUsuario ? JSON.parse(savedUsuario) : null;
-  });
+  const [token, setToken] = useState<string | null>(null);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [cargandoAuth, setCargandoAuth] = useState(true); // Iniciamos en true
 
-  // 3. Modificamos el login para incluir el filtro de seguridad
+  // 1. Efecto de Hidratación Inicial
+  useEffect(() => {
+    const recuperarDatos = () => {
+      try {
+        const savedToken = localStorage.getItem('token');
+        const savedUsuario = localStorage.getItem('usuario');
+
+        if (savedToken && savedUsuario) {
+          setToken(savedToken);
+          setUsuario(JSON.parse(savedUsuario));
+        }
+      } catch (error) {
+        console.error("Error recuperando sesión:", error);
+        // Si el JSON está mal formado, limpiamos por seguridad
+        localStorage.clear();
+      } finally {
+        // IMPORTANTE: Una vez que revisamos el storage, terminamos la carga
+        setCargandoAuth(false);
+      }
+    };
+
+    recuperarDatos();
+  }, []);
+
   const login = (newToken: string, newUsuario: Usuario, tipo: string) => {
-    
-    // FILTRO DE SEGURIDAD: Si no es admin, bloqueamos el acceso en el frontend.
+    // FILTRO DE SEGURIDAD
     if (tipo !== 'ADMIN') {
       throw new Error('Acceso denegado. Esta plataforma es exclusiva para administradores.');
     }
@@ -48,13 +64,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUsuario(null);
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
-    // Redirección forzada: Limpia la memoria de React y envía al usuario al login
+    // window.location.href es radical pero efectivo para limpiar fugas de memoria
     window.location.href = '/login';
   };
 
   return (
-    // Pasamos 'usuario' en lugar de 'admin'
-    <AuthContext.Provider value={{ token, usuario, login, logout }}>
+    <AuthContext.Provider value={{ token, usuario, cargandoAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
