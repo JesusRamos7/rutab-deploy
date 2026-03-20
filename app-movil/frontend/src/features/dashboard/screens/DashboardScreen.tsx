@@ -1,3 +1,5 @@
+// src/features/dashboard/screens/DashboardScreen.tsx
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../../core/context/AuthContext';
