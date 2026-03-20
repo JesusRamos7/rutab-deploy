@@ -1,8 +1,16 @@
-// frontend/src/config/api.ts
+// src/config/api.ts
 import axios from "axios";
 
+/**
+ * Configuración de la URL base del backend.
+ * Utiliza variables de entorno de Vite para facilitar la escalabilidad entre entornos (dev/prod).
+ */
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+/**
+ * Instancia global de Axios para consumo de la API.
+ * Centraliza la configuración de cabeceras y tiempo de espera.
+ */
 export const api = axios.create({
   baseURL,
   headers: {
@@ -10,7 +18,11 @@ export const api = axios.create({
   },
 });
 
-// 1. Interceptor de PETICIONES (el que ya teníamos, inyecta el token)
+/**
+ * Interceptor de Peticiones (Request Interceptor).
+ * Se ejecuta antes de enviar cada solicitud al servidor.
+ * Inyecta automáticamente el token JWT almacenado en el cliente para rutas protegidas.
+ */
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -22,23 +34,29 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// 2. NUEVO: Interceptor de RESPUESTAS (atrapa los errores globales)
+/**
+ * Interceptor de Respuestas (Response Interceptor).
+ * Procesa las respuestas del servidor y captura errores globales de forma centralizada.
+ */
 api.interceptors.response.use(
-  (response) => response, // Si la respuesta es exitosa, la dejamos pasar
+  (response) => response,
   (error) => {
-    // Si NestJS nos devuelve un 401 Unauthorized...
+    // Manejo de errores de autenticación (401 Unauthorized)
     if (error.response && error.response.status === 401) {
-      // 1. Evitamos el bucle infinito: Si el 401 viene del endpoint de login, no hacemos la expulsión forzada,
-      // porque significa que simplemente se equivocó de contraseña.
+      /**
+       * Prevención de bucles de redirección:
+       * Si el error proviene del login, se permite que el componente maneje el error
+       * (ej. mostrar 'Contraseña incorrecta') sin cerrar la sesión forzosamente.
+       */
       const isLoginRequest = error.config.url.includes("/auth/login");
 
       if (!isLoginRequest) {
-        // 2. Limpiamos los rastros de la sesión expirada
+        // Limpieza de datos de sesión por token expirado o inválido
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
 
-        // 3. Redirigimos al usuario a la pantalla de inicio de sesión
-        window.location.href = "/"; // Asegúrate de que esta ruta coincida con tu vista de login
+        // Redirección forzada al punto de entrada de la aplicación
+        window.location.href = "/";
       }
     }
 

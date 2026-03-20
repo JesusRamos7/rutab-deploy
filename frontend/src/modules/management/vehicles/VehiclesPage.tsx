@@ -1,10 +1,17 @@
-// frontend/src/modules/logistic/vehicles/VehiclesPage.tsx
+// src/modules/management/vehicles/VehiclesPage.tsx
+
 import React from "react";
 import { VehicleForm } from "./VehiclesForm";
 import { useVehiclesPage } from "./hooks/useVehiclesPage";
-import { ConfirmModal } from "../../../components/ui/ConfirmModal"; // Ajusta esta ruta a donde guardaste el modal genérico
+import { ConfirmModal } from "../../../components/ui/ConfirmModal";
 
+/**
+ * Componente de página principal para la gestión de flota.
+ * Orquesta la visualización de datos, estados de carga y la interacción con
+ * modales de creación, edición y eliminación.
+ */
 export const VehiclesPage: React.FC = () => {
+  // Desacoplamiento de la lógica de negocio mediante hook especializado
   const {
     vehicles,
     isLoading,
@@ -14,7 +21,7 @@ export const VehiclesPage: React.FC = () => {
     openNewModal,
     openEditModal,
     closeModal,
-    // Propiedades del modal de confirmación
+    // Propiedades del flujo de eliminación segura
     isConfirmOpen,
     vehicleToDelete,
     isDeleting,
@@ -25,7 +32,7 @@ export const VehiclesPage: React.FC = () => {
 
   return (
     <div className="p-4 lg:p-8">
-      {/* Encabezado */}
+      {/* Header: Título de sección y acción principal de creación */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
@@ -41,14 +48,14 @@ export const VehiclesPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Estado de Carga */}
+      {/* Renderizado Condicional: Estado de Carga / Listado de Datos */}
       {isLoading ? (
         <div className="text-center text-slate-500 py-10">
           Cargando vehículos...
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Listado de Vehículos */}
+          {/* Mapeo de la colección de vehículos en tarjetas individuales */}
           {vehicles.map((v) => (
             <div
               key={v.id}
@@ -66,6 +73,7 @@ export const VehiclesPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
+                {/* Badge dinámico para estatus operativo */}
                 <span
                   className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${v.estatus === "disponible" ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500"}`}
                 >
@@ -73,6 +81,7 @@ export const VehiclesPage: React.FC = () => {
                 </span>
               </div>
 
+              {/* Información técnica resumida */}
               <div className="space-y-3 border-b border-slate-100 pb-6 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Marca:</span>
@@ -92,6 +101,7 @@ export const VehiclesPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Acciones por ítem: Edición y Disparador de eliminación */}
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => openEditModal(v)}
@@ -109,7 +119,7 @@ export const VehiclesPage: React.FC = () => {
             </div>
           ))}
 
-          {/* Estado Vacío */}
+          {/* Estado Vacío: Feedback visual si la colección está vacía tras la carga */}
           {!isLoading && vehicles.length === 0 && (
             <div className="col-span-full text-center text-slate-500 py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               No hay vehículos registrados en la flota.
@@ -118,7 +128,7 @@ export const VehiclesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal del Formulario (Crear/Editar) */}
+      {/* Modal de Formulario: Se monta condicionalmente para limpieza de estados */}
       {isModalOpen && (
         <VehicleForm
           isOpen={isModalOpen}
@@ -128,7 +138,7 @@ export const VehiclesPage: React.FC = () => {
         />
       )}
 
-      {/* Modal de Confirmación Global (Eliminar) */}
+      {/* Modal de Confirmación Global: Implementación genérica para seguridad de borrado */}
       <ConfirmModal
         isOpen={isConfirmOpen}
         title="Eliminar Vehículo"

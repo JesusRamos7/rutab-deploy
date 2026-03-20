@@ -1,3 +1,5 @@
+// src/config/menuConfig.ts
+
 import {
   LayoutDashboard,
   Truck,
@@ -8,24 +10,38 @@ import {
   LucideIcon,
 } from "lucide-react";
 
+/**
+ * Tipado de roles permitidos para el control de acceso en la navegación.
+ */
 export type RolPermitido = "superAdmin" | "logístico" | "auditor" | string;
 
-// Nueva interfaz estricta para los hijos
+/**
+ * Interfaz para elementos de segundo nivel (Submenús).
+ * Requiere estrictamente una ruta y un icono para mantener la consistencia visual.
+ */
 export interface SubMenuItem {
   title: string;
-  path: string; // Aquí es estrictamente un string, resolviendo el error de TS
-  icon: LucideIcon; // Añadimos el icono obligatorio
+  path: string;
+  icon: LucideIcon;
   roles: RolPermitido[];
 }
 
+/**
+ * Interfaz para elementos principales del menú.
+ * Si contiene 'subItems', el 'path' se vuelve opcional ya que actúa como contenedor.
+ */
 export interface MenuItem {
   title: string;
   icon: LucideIcon;
-  path?: string; // Sigue siendo opcional para los padres (como Gestión de Datos)
+  path?: string;
   roles: RolPermitido[];
-  subItems?: SubMenuItem[]; // Usamos la nueva interfaz
+  subItems?: SubMenuItem[];
 }
 
+/**
+ * Configuración maestra del menú lateral.
+ * Define la estructura, iconos y niveles de acceso por rol para toda la aplicación.
+ */
 export const menuConfig: MenuItem[] = [
   {
     title: "Inicio",
@@ -40,6 +56,7 @@ export const menuConfig: MenuItem[] = [
     roles: ["superAdmin", "auditor"],
   },
   {
+    // Elemento tipo acordeón: no redirige, expande sus subItems
     title: "Gestión de Datos",
     icon: Database,
     roles: ["superAdmin", "logístico", "auditor"],
@@ -47,19 +64,19 @@ export const menuConfig: MenuItem[] = [
       {
         title: "Vehículos",
         path: "/panel/gestion/vehiculos",
-        icon: Truck, // Añadido
+        icon: Truck,
         roles: ["superAdmin", "logístico"],
       },
       {
         title: "Clientes",
         path: "/panel/gestion/clientes",
-        icon: Users, // Añadido
+        icon: Users,
         roles: ["superAdmin"],
       },
       {
         title: "Pedidos",
         path: "/panel/gestion/pedidos",
-        icon: ShoppingCart, // Añadido
+        icon: ShoppingCart,
         roles: ["superAdmin", "logístico"],
       },
     ],

@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import { lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
@@ -8,16 +10,15 @@ import {
 } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { RoleGuard } from "./components/guards/RoleGuard";
-// Importamos el nuevo loader sutil
 import { ContentLoader } from "./components/ui/ContentLoader";
-
-// 1. IMPORTACIÓN DIRECTA del Layout y componentes de carga inicial
 import { AdminLayout } from "./layouts/AdminLayout";
 
-// Componente de carga inicial (Full Screen con Blur evidente)
-// Solo se usa al abrir la app por primera vez
+/**
+ * Indicador de carga de pantalla completa.
+ * Se utiliza exclusivamente durante la hidratación inicial del estado de autenticación
+ * o cambios mayores de contexto para evitar "flickering" visual.
+ */
 const FullScreenLoader = () => (
-  // bg-white/30 + backdrop-blur-xl para que el blur se note mucho sobre el fondo
   <div className="fixed inset-0 flex items-center justify-center bg-white/30 backdrop-blur-xl z-[100]">
     <div className="flex space-x-2">
       <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -27,7 +28,10 @@ const FullScreenLoader = () => (
   </div>
 );
 
-// 2. LAZY solo para los contenidos pesados
+/**
+ * Definición de Módulos mediante Lazy Loading.
+ * Optimiza el bundle inicial cargando el código de cada módulo solo cuando se requiere.
+ */
 const ModuloAuth = lazy(() =>
   import("./modules/auth").then((m) => ({ default: m.ModuloAuth })),
 );
@@ -43,23 +47,29 @@ const VehiclesPage = lazy(() =>
   })),
 );
 
+/**
+ * Orquestador principal de Rutas y Seguridad.
+ */
 export default function App() {
   const { token, cargandoAuth } = useAuth();
 
-  // Carga inicial de hidratación (se usa el loader con Blur fuerte aquí)
+  // Bloqueo de renderizado hasta que el servidor valide la sesión actual (Hidratación)
   if (cargandoAuth) return <FullScreenLoader />;
 
   return (
     <Router>
-      {/* Suspense global para rutas públicas o fallbacks mayores */}
+      {/* Suspense Global: Captura la carga de los módulos lazy importados */}
       <Suspense fallback={<FullScreenLoader />}>
         <Routes>
+          {/* RUTA PÚBLICA: Login. Redirige al panel si el usuario ya está autenticado */}
           <Route
             path="/login"
             element={
               !token ? <ModuloAuth /> : <Navigate to="/panel/inicio" replace />
             }
           />
+
+          {/* Root Redirect: Gestión inteligente del punto de entrada */}
           <Route
             path="/"
             element={
@@ -67,24 +77,30 @@ export default function App() {
             }
           />
 
-          {/* AdminLayout estático */}
+          {/* GRUPO DE RUTAS PROTEGIDAS: Requieren token de sesión activo */}
           <Route
             path="/panel"
             element={token ? <AdminLayout /> : <Navigate to="/login" replace />}
           >
+            {/* Redirección interna por defecto dentro del layout */}
             <Route index element={<Navigate to="inicio" replace />} />
 
-            {/* 3. TRUCO PROFESIONAL: Envolvemos las rutas hijas en otro Suspense */}
-            {/* Al navegar entre ellas, el Layout no cambia, solo aparece la barra superior */}
+            {/* Estrategia de Renderizado de Contenido Interno:
+                Se utiliza un Suspense anidado con ContentLoader (barra de progreso + skeleton).
+                Esto permite que el Sidebar y Header (Layout) se mantengan estáticos mientras
+                la sección central carga la nueva vista.
+            */}
             <Route
               element={
                 <Suspense fallback={<ContentLoader />}>
-                  <Outlet /> {/* Aquí se renderizan Inicio, Vehículos, etc. */}
+                  <Outlet />
                 </Suspense>
               }
             >
+              {/* Ruta pública para cualquier usuario autenticado */}
               <Route path="inicio" element={<ModuloInicio />} />
 
+              {/* Rutas con Control de Acceso basado en Roles (RBAC) */}
               <Route
                 path="gestion/vehiculos"
                 element={
@@ -105,6 +121,7 @@ export default function App() {
             </Route>
           </Route>
 
+          {/* Catch-all: Redirección de seguridad para rutas inexistentes */}
           <Route
             path="*"
             element={
