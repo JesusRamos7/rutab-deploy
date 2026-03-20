@@ -55,14 +55,17 @@ export const LoginScreen = () => {
             </Text>
             <TextInput
               className="bg-gray-100 border border-gray-200 rounded-2xl px-5 py-4 text-base text-gray-900"
-              placeholder="Ingresa tu usuario"
+              placeholder="ejemplo@rutab.com"
               placeholderTextColor="#9CA3AF"
               value={usuario}
               onChangeText={setUsuario}
+              // Mejoras de seguridad y usabilidad:
+              keyboardType="email-address" // Optimiza el teclado para correos (incluye @ y números)
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
-              textContentType="username"
+              autoComplete="email" // Ayuda al autocompletado seguro del sistema
+              textContentType="emailAddress"
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
             />
@@ -75,15 +78,16 @@ export const LoginScreen = () => {
             <TextInput
               ref={passwordRef}
               className="bg-gray-100 border border-gray-200 rounded-2xl px-5 py-4 text-base text-gray-900"
-              placeholder="Ingresa tu contraseña"
+              placeholder="••••••••"
               secureTextEntry
               placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={setPassword}
+              // Mejoras de seguridad:
               autoCapitalize="none"
               autoCorrect={false}
-              spellCheck={false}
               textContentType="password"
+              autoComplete="password"
               returnKeyType="done"
               onSubmitEditing={handleLogin}
             />
