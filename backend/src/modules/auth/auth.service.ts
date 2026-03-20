@@ -34,7 +34,7 @@ export class AuthService {
       }
 
       const payload = { sub: admin.id, correo: admin.correo, rol: admin.rol };
-      
+
       return {
         access_token: await this.jwtService.signAsync(payload),
         tipo: 'ADMIN',
@@ -44,7 +44,7 @@ export class AuthService {
           correo: admin.correo,
           rol: admin.rol,
           foto_perfil_url: admin.foto_perfil_url,
-        }
+        },
       };
     }
 
@@ -78,8 +78,8 @@ export class AuthService {
           licencia: chofer.licencia,
           telefono: chofer.telefono,
           foto_perfil_url: chofer.foto_perfil_url,
-          rol: 'CHOFER', 
-        }
+          rol: 'CHOFER',
+        },
       };
     }
 
@@ -87,5 +87,41 @@ export class AuthService {
     // CASO 3: TIPO DE ACCESO DESCONOCIDO O FALTANTE
     // ---------------------------------------------------------
     throw new UnauthorizedException('Petición de inicio de sesión inválida');
+  }
+
+  async getProfile(userId: string, rol: string) {
+    // Si el rol es de un admin (o superAdmin, etc.)
+    if (rol !== 'CHOFER') {
+      const admin = await this.prisma.administradores.findUnique({
+        where: { id: userId },
+      });
+
+      if (!admin) throw new UnauthorizedException('Usuario no encontrado');
+
+      // Devolvemos la estructura que espera el Frontend
+      return {
+        id: admin.id,
+        nombre: admin.nombre,
+        correo: admin.correo,
+        rol: admin.rol,
+        foto_perfil_url: admin.foto_perfil_url,
+      };
+    }
+
+    // Si es un chofer
+    const chofer = await this.prisma.choferes.findUnique({
+      where: { id: userId },
+    });
+
+    if (!chofer) throw new UnauthorizedException('Chofer no encontrado');
+
+    return {
+      id: chofer.id,
+      nombre: chofer.nombre,
+      correo: chofer.correo,
+      rol: 'CHOFER',
+      foto_perfil_url: chofer.foto_perfil_url,
+      // puedes incluir licencia o telefono si lo necesitas en el front
+    };
   }
 }
