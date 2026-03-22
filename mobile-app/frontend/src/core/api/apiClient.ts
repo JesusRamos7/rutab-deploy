@@ -4,6 +4,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Configuración de la IP centralizada
+// para conocer tu IP utiliza el comando ipConfig en la terminal
 const IP_RED_LOCAL = "192.168.100.7";
 const BASE_URL = __DEV__
   ? `http://${IP_RED_LOCAL}:3000`
