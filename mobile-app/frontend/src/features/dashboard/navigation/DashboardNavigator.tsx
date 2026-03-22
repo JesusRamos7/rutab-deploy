@@ -5,12 +5,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DrawerActions } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { DashboardRoutes, DashboardStackParamList } from './navigation-types';
-import { commonHeaderOptions } from './styles/navigation-styles';
+import { DashboardRoutes, DashboardStackParamList } from '../../../navigation/navigation-types';
+import { commonHeaderOptions } from '../../../navigation/styles/navigation-styles';
 
 // Pantallas
-import { DashboardScreen } from '../features/dashboard/screens/DashboardScreen';
-import { DashboardDetailScreen } from '../features/dashboard/screens/DashboardDetailScreen'; // <--- Importación clave
+import { DashboardScreen } from '../screens/DashboardScreen';
+import { DashboardDetailScreen } from '../screens/DashboardDetailScreen'; // <--- Importación clave
 
 const Stack = createNativeStackNavigator<DashboardStackParamList>();
 

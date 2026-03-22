@@ -5,9 +5,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Tipos y Navigators internos
 import { MainRoutes, MainDrawerParamList } from './navigation-types';
-import { DashboardNavigator } from './DashboardNavigator';
-import { ProfileScreen } from '../features/profile/screens/ProfileScreen'; // Luego lo haremos Navigator
+import { DashboardNavigator } from '../features/dashboard/navigation/DashboardNavigator';
 import { CustomDrawerContent } from './components/CustomDrawerContent';
+import { ProfileNavigator } from '../features/profile/navigation/ProfileNavigator';
 
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 
@@ -38,7 +38,7 @@ export const MainNavigator = () => {
 
       <Drawer.Screen
         name={MainRoutes.PROFILE}
-        component={ProfileScreen}
+        component={ProfileNavigator}
         options={{
           drawerLabel: 'Mi Perfil',
           drawerIcon: ({ color, size }) => (
