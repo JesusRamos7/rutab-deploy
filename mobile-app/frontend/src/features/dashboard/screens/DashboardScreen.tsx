@@ -1,32 +1,30 @@
 // src/features/dashboard/screens/DashboardScreen.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-
-// Definimos los tipos para TypeScript (Buena práctica)
-type RootStackParamList = {
-  DashboardHome: undefined;
-  DashboardDetail: { id: string }; // Ejemplo pasando un ID
-};
+import { useDashboard } from '../hooks/useDashboard';
 
 export const DashboardScreen = () => {
-  // Tipamos el hook para tener autocompletado
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-  // Esta función SOLO se ejecuta cuando el chofer pulsa el botón
-  const handleVerDetalle = () => {
-    navigation.navigate('DashboardDetail', { id: 'VIAJE-123' });
-  };
+  // Ahora tenemos acceso a todo desde un solo lugar
+  const { usuario, handleVerDetalle, handleLogout } = useDashboard();
 
   return (
     <View className="flex-1 items-center justify-center bg-white p-4">
-      <Text className="mb-4 text-xl font-bold text-gray-800">Panel del Chofer</Text>
+      <Text className="mb-2 text-gray-500">Bienvenido,</Text>
+      <Text className="mb-6 text-2xl font-bold text-gray-800">{usuario?.nombre || 'Chofer'}</Text>
 
-      <TouchableOpacity
-        onPress={handleVerDetalle}
-        className="rounded-xl bg-blue-900 px-6 py-3 active:bg-blue-700">
-        <Text className="font-semibold text-white">Ver Detalle de Ruta</Text>
-      </TouchableOpacity>
+      <View className="w-full space-y-4">
+        <TouchableOpacity
+          onPress={() => handleVerDetalle('VIAJE-123')}
+          className="rounded-xl bg-blue-600 px-6 py-4 shadow-sm active:bg-blue-700">
+          <Text className="text-center font-bold text-white">Ver Detalle de Ruta</Text>
+        </TouchableOpacity>
+
+        {/* <TouchableOpacity
+          onPress={handleLogout}
+          className="rounded-xl border border-red-200 bg-red-50 px-6 py-4 active:bg-red-100">
+          <Text className="text-center font-bold text-red-600">Cerrar Sesión</Text>
+        </TouchableOpacity> */}
+      </View>
     </View>
   );
 };

@@ -1,4 +1,4 @@
-// src/navigation/DashboardNavigator.tsx
+// src/feature/dashboard/navigation/DashboardNavigator.tsx
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
