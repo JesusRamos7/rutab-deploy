@@ -1,47 +1,35 @@
 // src/navigation/MainNavigator.tsx
-import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import React from 'react';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Pantallas
-import { DashboardScreen } from "../features/dashboard/screens/DashboardScreen";
-import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
+// Tipos y Navigators internos
+import { MainRoutes, MainDrawerParamList } from './navigation-types';
+import { DashboardNavigator } from './DashboardNavigator';
+import { ProfileScreen } from '../features/profile/screens/ProfileScreen'; // Luego lo haremos Navigator
+import { CustomDrawerContent } from './components/CustomDrawerContent';
 
-// Componente personalizado
-import { CustomDrawerContent } from "./components/CustomDrawerContent";
-
-const Drawer = createDrawerNavigator();
+const Drawer = createDrawerNavigator<MainDrawerParamList>();
 
 export const MainNavigator = () => {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        // Estilos del Header (se mantienen similares a tu Stack original)
-        headerStyle: { 
-          backgroundColor: "#2563EB",
-          elevation: 0, // Quita sombra en Android
-          shadowOpacity: 0, // Quita sombra en iOS
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: { fontWeight: "bold" },
-        
-        // Estilos de la barra lateral
-        drawerActiveBackgroundColor: "#EFF6FF", // Azul muy claro para el item activo
-        drawerActiveTintColor: "#2563EB",       // Texto azul para el activo
-        drawerInactiveTintColor: "#4B5563",     // Texto gris para inactivos
+        headerShown: false, // El header lo manejan los Stacks internos
+        drawerActiveBackgroundColor: '#EFF6FF',
+        drawerActiveTintColor: '#123a5d',
+        drawerInactiveTintColor: '#4B5563',
         drawerLabelStyle: {
-          marginLeft: -10, // Ajuste fino para acercar el texto al icono
-          fontWeight: "500",
+          marginLeft: -10,
+          fontWeight: '600',
         },
-      }}
-    >
+      }}>
       <Drawer.Screen
-        name="MainDashboard"
-        component={DashboardScreen}
+        name={MainRoutes.DASHBOARD_STACK}
+        component={DashboardNavigator}
         options={{
-          title: "Inicio",
-          drawerLabel: "Panel Principal",
+          drawerLabel: 'Inicio',
           drawerIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="view-dashboard-outline" size={size} color={color} />
           ),
@@ -49,20 +37,15 @@ export const MainNavigator = () => {
       />
 
       <Drawer.Screen
-        name="Profile"
+        name={MainRoutes.PROFILE}
         component={ProfileScreen}
         options={{
-          title: "Mi Perfil",
-          drawerLabel: "Mi Perfil",
+          drawerLabel: 'Mi Perfil',
           drawerIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account-circle-outline" size={size} color={color} />
           ),
         }}
       />
-      
-      {/* A futuro, solo tendrás que añadir aquí los nuevos módulos:
-          <Drawer.Screen name="Viajes" ... /> 
-      */}
     </Drawer.Navigator>
   );
 };

@@ -1,55 +1,62 @@
 // src/navigation/components/CustomDrawerContent.tsx
-import React from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import React from 'react';
+import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItemList,
-} from "@react-navigation/drawer";
-import { useAuth } from "../../core/context/AuthContext";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+} from '@react-navigation/drawer';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../../core/context/AuthContext';
 
 export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { usuario, logout } = useAuth();
 
+  const handleLogout = () => {
+    Alert.alert('Cerrar Sesión', '¿Estás seguro de que quieres salir?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Salir',
+        onPress: logout,
+        style: 'destructive',
+      },
+    ]);
+  };
+
   return (
     <View className="flex-1">
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
-        {/* Header con información del Chofer */}
-        <View className="bg-blue-600 p-6 pt-12 mb-2">
-          <View className="h-16 w-16 rounded-full bg-white items-center justify-center mb-3 overflow-hidden">
+        {/* Header - Info del Chofer */}
+        <View className="mb-2 bg-blue-800 p-6 pt-12">
+          <View className="mb-3 h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/20">
             {usuario?.foto_perfil_url ? (
-              <Image 
-                source={{ uri: usuario.foto_perfil_url }} 
-                className="h-16 w-16"
-              />
+              <Image source={{ uri: usuario.foto_perfil_url }} className="h-16 w-16" />
             ) : (
-              <MaterialCommunityIcons name="account" size={40} color="#2563EB" />
+              <MaterialCommunityIcons name="account" size={40} color="white" />
             )}
           </View>
-          <Text className="text-white font-bold text-lg" numberOfLines={1}>
-            {usuario?.nombre || "Chofer"}
+          <Text className="text-lg font-bold leading-tight text-white" numberOfLines={1}>
+            {usuario?.nombre || 'Chofer'}
           </Text>
-          <Text className="text-blue-100 text-sm" numberOfLines={1}>
+          <Text className="text-xs text-blue-100 opacity-80" numberOfLines={1}>
             {usuario?.correo}
           </Text>
         </View>
 
-        {/* Lista de módulos (se inyectan automáticamente desde el Navigator) */}
-        <View className="flex-1 px-2">
+        {/* Módulos */}
+        <View className="px-2">
           <DrawerItemList {...props} />
         </View>
       </DrawerContentScrollView>
 
-      {/* Botón de Cerrar Sesión al final */}
-      <View className="border-t border-gray-200 p-4 mb-4">
+      {/* Footer - Logout */}
+      <View className="mb-4 border-t border-gray-100 p-4">
         <TouchableOpacity
-          onPress={logout}
-          className="flex-row items-center p-3 rounded-lg"
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="logout" size={22} color="#EF4444" />
-          <Text className="ml-3 text-red-500 font-semibold">Cerrar Sesión</Text>
+          onPress={handleLogout}
+          className="flex-row items-center rounded-xl bg-red-50 p-3"
+          activeOpacity={0.7}>
+          <MaterialCommunityIcons name="logout" size={20} color="#EF4444" />
+          <Text className="ml-3 font-bold text-red-600">Cerrar Sesión</Text>
         </TouchableOpacity>
       </View>
     </View>
