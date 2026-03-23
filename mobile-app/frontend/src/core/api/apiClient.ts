@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const IP_RED_LOCAL = "192.168.100.7";
 const BASE_URL = __DEV__
   ? `http://${IP_RED_LOCAL}:3000`
-  : "https://tu-backend-produccion.com";
+  : "https://rutab-deploy.onrender.com";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
