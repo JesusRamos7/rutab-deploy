@@ -46,6 +46,11 @@ const VehiclesPage = lazy(() =>
     default: m.VehiclesPage,
   })),
 );
+const CustomersPage = lazy(() =>
+  import("./modules/management/customers/CustomersPage").then((m) => ({
+    default: m.CustomersPage,
+  })),
+);
 
 /**
  * Orquestador principal de Rutas y Seguridad.
