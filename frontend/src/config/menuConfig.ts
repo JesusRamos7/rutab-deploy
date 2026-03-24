@@ -8,6 +8,7 @@ import {
   Users,
   ShoppingCart,
   LucideIcon,
+  UserRound,
 } from "lucide-react";
 
 /**
@@ -65,6 +66,12 @@ export const menuConfig: MenuItem[] = [
         title: "Vehículos",
         path: "/panel/gestion/vehiculos",
         icon: Truck,
+        roles: ["superAdmin", "logístico"],
+      },
+      {
+        title: "Conductores",
+        path: "/panel/gestion/choferes",
+        icon: UserRound,
         roles: ["superAdmin", "logístico"],
       },
       {
