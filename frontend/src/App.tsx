@@ -116,6 +116,15 @@ export default function App() {
               />
 
               <Route
+                path="gestion/clientes"
+                element={
+                  <RoleGuard allowedRoles={["logístico"]}>
+                    <CustomersPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
                 path="auditoria"
                 element={
                   <RoleGuard allowedRoles={["auditor"]}>

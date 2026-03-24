@@ -6,8 +6,6 @@ import { CreateCustomerDto } from './dto/create-customers.dto'
 export class CustomersService {
   constructor(private prisma: PrismaService) { }
 
-  // En tu backend: src/customers/customers.service.ts
-
   async create(createCustomerDto: CreateCustomerDto) {
 
     // Verificar si el correo ya existe ANTES de intentar guardar
