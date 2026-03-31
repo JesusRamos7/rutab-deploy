@@ -50,7 +50,9 @@ export const PedidoCard = ({ pedido }: Props) => {
         <div className="flex items-center text-xs text-gray-500 mt-1">
           <MapPin size={12} className="mr-1" />
           <span className="truncate">
-            {pedido.lat.toFixed(4)}, {pedido.lng.toFixed(4)}
+            {pedido.lat !== null && pedido.lng !== null
+              ? `${pedido.lat.toFixed(4)}, ${pedido.lng.toFixed(4)}`
+              : "Sin dirección"}
           </span>
         </div>
       </div>

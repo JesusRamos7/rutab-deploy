@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
  */
 async function main() {
   // Configuración de credenciales de prueba
-  const correo = 'auditor@gmail.com';
+  const correo = 'admin@gmail.com';
   const passwordPlana = '1234';
 
   /**
@@ -35,10 +35,10 @@ async function main() {
     where: { correo: correo },
     update: {},
     create: {
-      nombre: 'Jorge Gabriel',
+      nombre: 'Claudia Ruth',
       correo: correo,
       password: passwordHasheada,
-      rol: 'auditor',
+      rol: 'superAdmin',
       // Campos opcionales (nullables) se omiten para mantener el seed minimalista
     },
   });
