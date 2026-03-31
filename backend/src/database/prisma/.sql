@@ -39,7 +39,7 @@ CREATE TABLE public.clientes (
   nombre text NOT NULL,
   telefono text,
   direccion text NOT NULL,
-  correo text UNIQUE,
+  correo text NOT NULL UNIQUE,
   coordenadas GEOGRAPHY(Point, 4326) NOT NULL,
   codigo text,
   contacto text,

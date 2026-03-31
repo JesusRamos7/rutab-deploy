@@ -36,7 +36,7 @@ model clientes {
   nombre      String
   telefono    String?
   direccion   String
-  correo      String?                  @unique
+  correo      String                   @unique
   coordenadas Unsupported("geography")
   codigo      String?
   contacto    String?

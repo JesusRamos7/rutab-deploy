@@ -53,13 +53,17 @@ export const useCustomersForm = (
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validación preventiva en el cliente
+    // Validación preventiva: nombre, correo, dirección y coordenadas
     if (
+      !formData.nombre ||
+      !formData.correo ||
       !formData.direccion ||
       formData.latitude === null ||
       formData.longitude === null
     ) {
-      toast.error("La dirección y las coordenadas son obligatorias");
+      toast.error(
+        "Nombre, correo, dirección y coordenadas son campos obligatorios",
+      );
       return;
     }
 

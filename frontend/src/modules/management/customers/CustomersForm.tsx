@@ -127,10 +127,12 @@ export const CustomersForm: React.FC<CustomerFormProps> = ({
             {/* Correo */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Correo Electrónico
+                Correo Electrónico <span className="text-red-500">*</span>{" "}
+                {/* Añadido asterisco */}
               </label>
               <input
                 type="email"
+                required // Añadido atributo required
                 value={formData.correo}
                 onChange={(e) => handleChange("correo", e.target.value)}
                 placeholder="Ej. contacto@empresa.com"

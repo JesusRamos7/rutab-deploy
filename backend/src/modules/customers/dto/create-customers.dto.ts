@@ -14,8 +14,8 @@ export class CreateCustomerDto {
   direccion: string;
 
   @IsEmail({}, { message: 'El formato del correo es inválido' })
-  @IsOptional()
-  correo?: string;
+  @IsNotEmpty({ message: 'El correo electrónico es obligatorio' }) // Cambiado: de @IsOptional a @IsNotEmpty
+  correo: string;
 
   // Campos para manejar la ubicación
   @IsNumber()

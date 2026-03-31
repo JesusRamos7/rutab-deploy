@@ -54,25 +54,31 @@ export class CustomersService {
   }
 
   async findAll() {
-    // Obtenemos latitud y longitud extrayéndolas del tipo geography
+    // Agregamos LEFT JOIN y COUNT para obtener el total de pedidos
     return this.prisma.$queryRaw`
       SELECT 
-        id, nombre, telefono, direccion, correo, codigo, contacto, estatus, created_at,
-        ST_Y(coordenadas::geometry) as latitude, 
-        ST_X(coordenadas::geometry) as longitude
-      FROM clientes
-      ORDER BY created_at DESC;
+        c.id, c.nombre, c.telefono, c.direccion, c.correo, c.codigo, c.contacto, c.estatus, c.created_at,
+        ST_Y(c.coordenadas::geometry) as latitude, 
+        ST_X(c.coordenadas::geometry) as longitude,
+        COUNT(p.id)::int as "totalPedidos"
+      FROM clientes c
+      LEFT JOIN pedidos p ON c.id = p.cliente_id
+      GROUP BY c.id
+      ORDER BY c.created_at DESC;
     `;
   }
 
   async findOne(id: string) {
     const result = await this.prisma.$queryRaw<any[]>`
       SELECT 
-        id, nombre, telefono, direccion, correo, codigo, contacto, estatus, created_at,
-        ST_Y(coordenadas::geometry) as latitude, 
-        ST_X(coordenadas::geometry) as longitude
-      FROM clientes
-      WHERE id = ${id}::uuid;
+        c.id, c.nombre, c.telefono, c.direccion, c.correo, c.codigo, c.contacto, c.estatus, c.created_at,
+        ST_Y(c.coordenadas::geometry) as latitude, 
+        ST_X(c.coordenadas::geometry) as longitude,
+        COUNT(p.id)::int as "totalPedidos"
+      FROM clientes c
+      LEFT JOIN pedidos p ON c.id = p.cliente_id
+      WHERE c.id = ${id}::uuid
+      GROUP BY c.id;
     `;
 
     if (!result || result.length === 0) {
@@ -83,28 +89,51 @@ export class CustomersService {
   }
 
   async update(id: string, updateCustomerDto: Partial<CreateCustomerDto>) {
-    const existe = await this.prisma.clientes.findUnique({ where: { id } });
-    if (!existe) throw new NotFoundException('Cliente no encontrado.');
+    const clienteActual = await this.prisma.clientes.findUnique({
+      where: { id },
+    });
+    if (!clienteActual) throw new NotFoundException('Cliente no encontrado.');
 
     const { latitude, longitude, ...rest } = updateCustomerDto;
 
-    // Actualización con SQL Raw para manejar el campo geography dinámicamente
+    // Si viene el correo en el DTO, validamos duplicados (excluyendo al actual)
+    if (rest.correo) {
+      const duplicado = await this.prisma.clientes.findFirst({
+        where: {
+          correo: rest.correo,
+          NOT: { id },
+        },
+      });
+      if (duplicado)
+        throw new ConflictException(
+          'Este correo electrónico ya está registrado en otro cliente.',
+        );
+    }
+
+    // Valores finales
+    const nombre = rest.nombre ?? clienteActual.nombre;
+    const telefono = rest.telefono ?? clienteActual.telefono;
+    const direccion = rest.direccion ?? clienteActual.direccion;
+    const correo = rest.correo ?? clienteActual.correo; // Ahora es directo
+    const contacto = rest.contacto ?? clienteActual.contacto;
+    const estatus = rest.estatus ?? clienteActual.estatus;
+
     await this.prisma.$executeRaw`
-      UPDATE clientes
-      SET 
-        nombre = COALESCE(${rest.nombre}, nombre),
-        telefono = COALESCE(${rest.telefono}, telefono),
-        direccion = COALESCE(${rest.direccion}, direccion),
-        correo = COALESCE(${rest.correo}, correo),
-        contacto = COALESCE(${rest.contacto}, contacto),
-        estatus = COALESCE(${rest.estatus}, estatus),
-        coordenadas = CASE 
-          WHEN ${latitude}::float IS NOT NULL AND ${longitude}::float IS NOT NULL 
-          THEN ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
-          ELSE coordenadas
-        END
-      WHERE id = ${id}::uuid;
-    `;
+    UPDATE clientes
+    SET 
+      nombre = ${nombre},
+      telefono = ${telefono},
+      direccion = ${direccion},
+      correo = ${correo}, -- Valor obligatorio
+      contacto = ${contacto},
+      estatus = ${estatus},
+      coordenadas = CASE 
+        WHEN ${latitude}::float IS NOT NULL AND ${longitude}::float IS NOT NULL 
+        THEN ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
+        ELSE coordenadas
+      END
+    WHERE id = ${id}::uuid;
+  `;
 
     return this.findOne(id);
   }

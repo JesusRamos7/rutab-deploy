@@ -2,7 +2,7 @@ export interface Customer {
   id: string;
   nombre: string;
   telefono: string | null;
-  correo: string | null;
+  correo: string;
   direccion: string; // Obligatorio
   latitude: number;  // Obligatorio para PostGIS
   longitude: number; // Obligatorio para PostGIS
