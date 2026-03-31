@@ -13,7 +13,7 @@ import {
 export class OptimizacionService {
   constructor(
     private prisma: PrismaService,
-    private googleService: GoogleMapsService,
+    private googleService: GoogleMapsService, // Ahora lo usaremos mediante métodos
   ) {}
 
   async generarSugerenciaClusters(vehiculoId: string, fecha: string) {
@@ -130,5 +130,12 @@ export class OptimizacionService {
         : '',
       pedidosAsignados: ruta._count.detalles_ruta,
     }));
+  }
+
+  /**
+   * Expone el servicio de Google para ordenar cualquier lista de puntos.
+   */
+  async optimizarPuntos(puntos: PuntoPedido[]): Promise<DetalleRutaOrdenado> {
+    return await this.googleService.obtenerOrdenOptimo(puntos);
   }
 }

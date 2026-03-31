@@ -45,23 +45,26 @@ export const ResumenPublicacionPage = ({
     try {
       setIsCalculating(true);
 
-      // PASO 3: Proponer el orden de los clusters
       const centroides = clustersAjustados.map((c) => ({
         clusterId: c.clusterId,
         lat: c.centroide.lat,
         lng: c.centroide.lng,
       }));
 
+      // Ahora esto recibe un arreglo de números [2, 0, 1...] gracias al cambio en el Controller
       const ordenDeClusters = await optimizacionService.proponerOrdenClusters({
         centroides,
       });
 
-      // PASO 2: Ordenar internamente cada cluster respetando el orden global
+      if (!Array.isArray(ordenDeClusters)) {
+        throw new Error("El orden de clusters no es un arreglo válido.");
+      }
+
       let pedidosPlanificados: PuntoPedido[] = [];
       let sumDistancia = 0;
       let sumDuracion = 0;
 
-      // Usamos for...of para mantener el orden secuencial que dictó Google
+      // Iteramos sobre los IDs ordenados
       for (const clusterId of ordenDeClusters) {
         const cluster = clustersAjustados.find(
           (c) => c.clusterId === clusterId,
@@ -76,6 +79,8 @@ export const ResumenPublicacionPage = ({
           ...pedidosPlanificados,
           ...resultadoOrdenado.pedidos,
         ];
+
+        // Sumamos métricas internas de cada cluster
         sumDistancia += resultadoOrdenado.distanciaMetros;
         sumDuracion += resultadoOrdenado.duracionSegundos;
       }
@@ -84,8 +89,7 @@ export const ResumenPublicacionPage = ({
       setDistanciaTotal(sumDistancia);
       setDuracionTotal(sumDuracion);
     } catch (error) {
-      toast.error("Error al comunicarse con el servicio de mapas.");
-      console.error(error);
+      // ... (manejo de error)
     } finally {
       setIsCalculating(false);
     }

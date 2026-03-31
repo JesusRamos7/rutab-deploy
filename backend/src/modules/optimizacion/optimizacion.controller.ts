@@ -45,12 +45,14 @@ export class OptimizacionController {
 
   /**
    * PASO 3: Orden de visita entre grupos (Google Maps)
+   * CORRECCIÓN: Ahora extrae solo los IDs para que el frontend pueda iterar.
    */
   @Post('proponer-orden-clusters')
   @Roles('superAdmin', 'logístico')
   async proponerOrdenClusters(@Body() dto: OrdenClustersRequest) {
-    // Puente directo al servicio de Google
-    return await this.optimizacionService['googleService'].obtenerOrdenOptimo(
+    const resultado = await this.optimizacionService[
+      'googleService'
+    ].obtenerOrdenOptimo(
       dto.centroides.map((c) => ({
         id: String(c.clusterId),
         cliente: 'Centroide',
@@ -58,6 +60,9 @@ export class OptimizacionController {
         lng: c.lng,
       })),
     );
+
+    // Retornamos únicamente el arreglo de IDs (convertidos a número)
+    return resultado.pedidos.map((p) => Number(p.id));
   }
 
   /**
