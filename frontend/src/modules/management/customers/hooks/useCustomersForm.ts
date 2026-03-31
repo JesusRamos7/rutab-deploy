@@ -1,84 +1,99 @@
-// /src/modules/clientes/hooks/useCustomersForm.ts
-import { useState, useEffect, FormEvent } from 'react';
-import { Customer } from '../types';
-import { CustomerService } from '../Customers.service';
-import { toast } from 'sonner';
+import { useState, useEffect, FormEvent } from "react";
+import { Customer, CustomerFormData } from "../types";
+import { CustomerService } from "../Customers.service";
+import { toast } from "sonner";
 
-// Definimos el estado inicial sin ID ni campos calculados
-const INITIAL_STATE = {
-  nombre: '',
-  telefono: '',
-  correo: '',
-  direccion: '',
-  codigo: '',
-  contacto: '',
-  estatus: 'Activo' as 'Activo' | 'Inactivo'
+const INITIAL_STATE: CustomerFormData = {
+  nombre: "",
+  telefono: "",
+  correo: "",
+  direccion: "",
+  contacto: "",
+  latitude: null,
+  longitude: null,
+  estatus: "Activo",
 };
-
-// Usamos typeof para inferir el tipo directamente del INITIAL_STATE
-type FormDataState = typeof INITIAL_STATE;
 
 export const useCustomersForm = (
   customer: Customer | null | undefined,
   isOpen: boolean,
   onSuccess: () => void,
-  onClose: () => void
+  onClose: () => void,
 ) => {
-  const [formData, setFormData] = useState<FormDataState>(INITIAL_STATE);
+  const [formData, setFormData] = useState<CustomerFormData>(INITIAL_STATE);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sincronizar el estado cuando se abre el modal o cambia el cliente
   useEffect(() => {
-    if (customer) {
-      setFormData({
-        nombre: customer.nombre || '',
-        telefono: customer.telefono || '',
-        correo: customer.correo || '',
-        direccion: customer.direccion || '',
-        codigo: customer.codigo || '',
-        contacto: customer.contacto || '',
-        estatus: customer.estatus || 'Activo'
-      });
-    } else {
-      setFormData(INITIAL_STATE);
+    if (isOpen) {
+      if (customer) {
+        setFormData({
+          nombre: customer.nombre || "",
+          telefono: customer.telefono || "",
+          correo: customer.correo || "",
+          direccion: customer.direccion || "",
+          contacto: customer.contacto || "",
+          latitude: customer.latitude ?? null,
+          longitude: customer.longitude ?? null,
+          estatus: customer.estatus || "Activo",
+        });
+      } else {
+        setFormData(INITIAL_STATE);
+      }
     }
   }, [customer, isOpen]);
 
-  // Manejador dinámico para los inputs (mismo formato que en vehículos)
-  const handleChange = (field: keyof FormDataState, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // Manejador dinámico actualizado para aceptar números (coordenadas)
+  const handleChange = (
+    field: keyof CustomerFormData,
+    value: string | number | null,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
- const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
 
-  try {
-    if (customer?.id) {
-      // Enviamos TODO el formData (incluyendo estatus, contacto, etc.)
-      await CustomerService.update(customer.id, formData);
-      toast.success('Cliente actualizado correctamente');
-    } else {
-      // Enviamos TODO el formData
-      await CustomerService.create(formData);
-      toast.success('Cliente registrado exitosamente');
+    // Validación preventiva en el cliente
+    if (
+      !formData.direccion ||
+      formData.latitude === null ||
+      formData.longitude === null
+    ) {
+      toast.error("La dirección y las coordenadas son obligatorias");
+      return;
     }
-    onSuccess();
-    onClose();
-  } catch (error: any) {
-    // Si el error viene de Axios, intentamos sacar el mensaje real del backend
-    const errorMsg = error.response?.data?.message || error.message || 'Error al guardar';
-    toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
-    
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+
+    try {
+      // Aseguramos que las coordenadas viajen como números al backend
+      const payload = {
+        ...formData,
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+      };
+
+      if (customer?.id) {
+        await CustomerService.update(customer.id, payload);
+        toast.success("Cliente actualizado correctamente");
+      } else {
+        await CustomerService.create(payload);
+        toast.success("Cliente registrado exitosamente");
+      }
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      // Capturamos el mensaje procesado por el servicio (handleNestError)
+      toast.error(error.message || "Error al guardar el cliente");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     formData,
     isLoading,
     handleChange,
-    handleSubmit
+    handleSubmit,
   };
 };

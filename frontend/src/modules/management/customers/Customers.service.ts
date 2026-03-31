@@ -1,63 +1,64 @@
-import { isAxiosError } from 'axios';
-import { api } from '../../../config/api'; // Ajusta la ruta según dónde guardaste api.ts
-import { CreateCustomerDto, UpdateCustomerDto } from './types';
+import { isAxiosError } from "axios";
+import { api } from "../../../config/api";
+import { Customer, CreateCustomerDto, UpdateCustomerDto } from "./types";
 
-// TODO: Verifica si tu controlador en NestJS responde a '/customers' o '/clientes'
-const ENDPOINT = '/customers';
+const ENDPOINT = "/customers";
 
-// Interceptamos la estructura de error por defecto de NestJS
 const handleNestError = (error: unknown) => {
   if (isAxiosError(error) && error.response) {
     const data = error.response.data;
-    
-    // Buscamos el mensaje en las diferentes propiedades que NestJS suele usar
+
+    // Captura los mensajes de class-validator (que suelen venir como array)
     const message = data.message || data.error || error.response.statusText;
-    const finalMessage = Array.isArray(message) ? message.join(', ') : message;
-    
-    // Si es un 403, podemos ser aún más específicos para el usuario
+    const finalMessage = Array.isArray(message) ? message.join(", ") : message;
+
     if (error.response.status === 403) {
-      throw new Error('No tienes permisos suficientes para realizar esta acción.');
+      throw new Error(
+        "No tienes permisos suficientes para realizar esta acción.",
+      );
     }
 
-    throw new Error(finalMessage || 'Error en la petición al servidor');
+    throw new Error(finalMessage || "Error en la petición al servidor");
   }
-  throw new Error('Error de conexión con el servidor');
+  throw new Error("Error de conexión con el servidor");
 };
 
 export const CustomerService = {
-  getAll: async () => {
+  getAll: async (): Promise<Customer[]> => {
     try {
-      const { data } = await api.get(ENDPOINT);
+      const { data } = await api.get<Customer[]>(ENDPOINT);
       return data;
     } catch (error) {
-      handleNestError(error);
+      throw handleNestError(error);
     }
   },
 
-  create: async (formData: CreateCustomerDto) => {
+  create: async (formData: CreateCustomerDto): Promise<Customer> => {
     try {
-      const { data } = await api.post(ENDPOINT, formData);
+      const { data } = await api.post<Customer>(ENDPOINT, formData);
       return data;
     } catch (error) {
-      handleNestError(error);
+      throw handleNestError(error);
     }
   },
 
-  update: async (id: string, formData: UpdateCustomerDto) => {
+  update: async (
+    id: string,
+    formData: UpdateCustomerDto,
+  ): Promise<Customer> => {
     try {
-      const { data } = await api.patch(`${ENDPOINT}/${id}`, formData);
+      const { data } = await api.patch<Customer>(`${ENDPOINT}/${id}`, formData);
       return data;
     } catch (error) {
-      handleNestError(error);
+      throw handleNestError(error);
     }
   },
 
-  delete: async (id: string) => {
+  delete: async (id: string): Promise<void> => {
     try {
-      const { data } = await api.delete(`${ENDPOINT}/${id}`);
-      return data;
+      await api.delete(`${ENDPOINT}/${id}`);
     } catch (error) {
-      handleNestError(error);
+      throw handleNestError(error);
     }
-  }
+  },
 };

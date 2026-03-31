@@ -1,9 +1,8 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEmail } from 'class-validator';
 
 export class CreateCustomerDto {
-
   @IsString()
-  @IsOptional()
+  @IsNotEmpty({ message: 'El nombre es obligatorio' })
   nombre: string;
 
   @IsString()
@@ -11,16 +10,21 @@ export class CreateCustomerDto {
   telefono?: string;
 
   @IsString()
-  @IsOptional()
-  direccion?: string;
+  @IsNotEmpty({ message: 'La dirección es obligatoria' })
+  direccion: string;
 
-  @IsString()
+  @IsEmail({}, { message: 'El formato del correo es inválido' })
   @IsOptional()
   correo?: string;
 
-  // Coordenadas
+  // Campos para manejar la ubicación
+  @IsNumber()
+  @IsNotEmpty({ message: 'La latitud es obligatoria' })
+  latitude: number;
 
-  // pedidos
+  @IsNumber()
+  @IsNotEmpty({ message: 'La longitud es obligatoria' })
+  longitude: number;
 
   @IsString()
   @IsOptional()
