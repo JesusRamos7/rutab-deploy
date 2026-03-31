@@ -1,14 +1,11 @@
 // /frontend/src/modules/optimizacion/pages/SeleccionVehiculoPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Truck, Calendar, Map, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { optimizacionService } from "../services/optimizacionService";
 import { ClusterResponse } from "../types/optimizacion.types";
 
-/**
- * Interfaz para la tabla de visualización (Datos de la ruta en borrador)
- */
 export interface RutaPendiente {
   rutaId: string;
   vehiculoId: string;
@@ -19,7 +16,6 @@ export interface RutaPendiente {
 }
 
 interface Props {
-  // Callback para enviar los clusters al Paso 2 (AjusteClustersPage) que hicimos anteriormente
   onClustersGenerados: (
     clusters: ClusterResponse[],
     rutaSeleccionada: RutaPendiente,
@@ -27,32 +23,28 @@ interface Props {
 }
 
 export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
+  const [rutasPendientes, setRutasPendientes] = useState<RutaPendiente[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
 
-  // NOTA: Estos datos son de ejemplo. En producción se reemplazarían por
-  // una llamada GET a tu API para traer las rutas con estatus 'borrador'.
-  const [rutasPendientes] = useState<RutaPendiente[]>([
-    {
-      rutaId: "ruta-uuid-1",
-      vehiculoId: "vehiculo-uuid-1",
-      placas: "XYZ-1234",
-      modelo: "Mercedes-Benz Sprinter",
-      fechaProgramada: new Date().toISOString().split("T")[0],
-      pedidosAsignados: 45,
-    },
-    {
-      rutaId: "ruta-uuid-2",
-      vehiculoId: "vehiculo-uuid-2",
-      placas: "ABC-9876",
-      modelo: "Ford Transit",
-      fechaProgramada: new Date().toISOString().split("T")[0],
-      pedidosAsignados: 32,
-    },
-  ]);
+  // Efecto para cargar los datos reales al montar el componente
+  useEffect(() => {
+    cargarRutas();
+  }, []);
 
-  /**
-   * Ejecuta el Paso 1: Solicita al backend la agrupación por K-Means
-   */
+  const cargarRutas = async () => {
+    try {
+      setIsLoading(true);
+      const data = await optimizacionService.obtenerRutasPendientes();
+      setRutasPendientes(data);
+    } catch (error) {
+      toast.error("Error al cargar las rutas pendientes.");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePlanificar = async (ruta: RutaPendiente) => {
     try {
       setProcesandoId(ruta.rutaId);
@@ -72,8 +64,6 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
       toast.success(
         `Se han generado ${clustersSugeridos.length} grupos de entrega exitosamente.`,
       );
-
-      // Pasamos el control y los datos a la siguiente pantalla (El tablero Drag and Drop)
       onClustersGenerados(clustersSugeridos, ruta);
     } catch (error) {
       toast.error(
@@ -118,7 +108,17 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rutasPendientes.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-gray-500">
+                    <Loader2
+                      className="animate-spin mx-auto text-blue-600 mb-2"
+                      size={24}
+                    />
+                    Cargando rutas pendientes...
+                  </td>
+                </tr>
+              ) : rutasPendientes.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-gray-500">
                     No hay rutas en estado borrador pendientes de planificar.
@@ -130,6 +130,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                     key={ruta.rutaId}
                     className="hover:bg-gray-50 transition-colors"
                   >
+                    {/* ... (El resto de las celdas de la tabla se mantienen exactamente igual que en el código anterior) ... */}
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="bg-blue-100 p-2 rounded-lg text-blue-700">

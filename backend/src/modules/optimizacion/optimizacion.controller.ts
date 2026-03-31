@@ -1,6 +1,6 @@
 // /backend/src/modules/optimizacion/optimizacion.controller.ts
 
-import { Controller, Post, Body, UseGuards, Patch } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Patch, Get } from '@nestjs/common';
 import { OptimizacionService } from './optimizacion.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -67,5 +67,14 @@ export class OptimizacionController {
   @Roles('superAdmin', 'logístico')
   async publicar(@Body() dto: PublicarRutaDto) {
     return await this.optimizacionService.publicarRuta(dto);
+  }
+
+  /**
+   * Endpoint para cargar la tabla inicial de la vista.
+   */
+  @Get('rutas-pendientes')
+  @Roles('superAdmin', 'logístico')
+  async obtenerRutasPendientes() {
+    return await this.optimizacionService.obtenerRutasPendientes();
   }
 }

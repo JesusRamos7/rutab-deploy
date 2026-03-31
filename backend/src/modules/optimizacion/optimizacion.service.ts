@@ -101,4 +101,34 @@ export class OptimizacionService {
     }
     return clusters;
   }
+
+  /**
+   * Obtiene la lista de rutas pendientes de optimizar.
+   */
+  async obtenerRutasPendientes() {
+    const rutasBorrador = await this.prisma.rutas.findMany({
+      where: { estatus_ruta: 'borrador' },
+      include: {
+        // Asumiendo que Prisma generó el nombre de relación 'vehiculos' o 'vehiculo'
+        vehiculos: {
+          select: { placas: true, modelo: true },
+        },
+        _count: {
+          select: { detalles_ruta: true },
+        },
+      },
+    });
+
+    return rutasBorrador.map((ruta) => ({
+      rutaId: ruta.id,
+      vehiculoId: ruta.vehiculo_id,
+      placas: ruta.vehiculos?.placas || 'Sin Placa',
+      modelo: ruta.vehiculos?.modelo || 'Desconocido',
+      // Formateamos la fecha para que el frontend la lea fácilmente (YYYY-MM-DD)
+      fechaProgramada: ruta.fecha_programada
+        ? ruta.fecha_programada.toISOString().split('T')[0]
+        : '',
+      pedidosAsignados: ruta._count.detalles_ruta,
+    }));
+  }
 }

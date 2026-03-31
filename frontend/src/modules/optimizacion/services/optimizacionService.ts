@@ -1,6 +1,7 @@
 // /frontend/src/modules/optimizacion/services/optimizacionService.ts
 
 import { api } from "../../../config/api";
+import { RutaPendiente } from "../pages/SeleccionVehiculoPage";
 import {
   ClusteringRequest,
   ClusterResponse,
@@ -62,6 +63,16 @@ export const optimizacionService = {
     const response = await api.patch<{ success: boolean; message?: string }>(
       "/optimizacion/publicar",
       data,
+    );
+    return response.data;
+  },
+
+  /**
+   * Obtiene las rutas en estado borrador desde la base de datos.
+   */
+  obtenerRutasPendientes: async (): Promise<RutaPendiente[]> => {
+    const response = await api.get<RutaPendiente[]>(
+      "/optimizacion/rutas-pendientes",
     );
     return response.data;
   },
