@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   LucideIcon,
   UserRound,
+  Map,
 } from "lucide-react";
 
 /**
@@ -49,6 +50,12 @@ export const menuConfig: MenuItem[] = [
     path: "/panel/inicio",
     icon: LayoutDashboard,
     roles: ["superAdmin", "logístico", "auditor"],
+  },
+  {
+    title: "Optimización Rutas", // <-- NUEVO MÓDULO INTEGRADO
+    path: "/panel/optimizacion",
+    icon: Map,
+    roles: ["superAdmin", "logístico"],
   },
   {
     title: "Módulo Auditoría",

@@ -38,6 +38,11 @@ const ModuloAuth = lazy(() =>
 const ModuloInicio = lazy(() =>
   import("./modules/index").then((m) => ({ default: m.ModuloInicio })),
 );
+const ModuloOptimizacion = lazy(() =>
+  import("./modules/optimizacion/OptimizacionIndex").then((m) => ({
+    default: m.OptimizacionIndex,
+  })),
+);
 const ModuloAuditoria = lazy(() =>
   import("./modules/audit").then((m) => ({ default: m.ModuloAuditoria })),
 );
@@ -109,6 +114,15 @@ export default function App() {
             >
               {/* Ruta pública para cualquier usuario autenticado */}
               <Route path="inicio" element={<ModuloInicio />} />
+
+              <Route
+                path="optimizacion"
+                element={
+                  <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
+                    <ModuloOptimizacion />
+                  </RoleGuard>
+                }
+              />
 
               {/* Rutas con Control de Acceso basado en Roles (RBAC) */}
               <Route

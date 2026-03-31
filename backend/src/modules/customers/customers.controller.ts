@@ -1,19 +1,24 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Patch, Delete } from '@nestjs/common'
-import { CustomersService } from './customers.service'
-import { CreateCustomerDto } from './dto/create-customers.dto'
-import { Roles } from 'src/common/decorators/roles.decorator'
-import { Public } from 'src/common/decorators/public.decorator'
-import path from 'path'
-import { PartialObserver } from 'rxjs'
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
+import { CustomersService } from './customers.service';
+import { CreateCustomerDto } from './dto/create-customers.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
-  
+
   @Post()
   @Roles('superAdmin', 'logístico')
-  create(@Body() CreateCustomerDto: CreateCustomerDto) {
-    return this.customersService.create(CreateCustomerDto);
+  create(@Body() createCustomerDto: CreateCustomerDto) {
+    return this.customersService.create(createCustomerDto);
   }
 
   @Get()
@@ -22,14 +27,17 @@ export class CustomersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string){
+  findOne(@Param('id') id: string) {
     return this.customersService.findOne(id);
   }
 
   @Patch(':id')
   @Roles('superAdmin', 'logístico')
-  update(@Param('id') id: string, @Body() updateDto: Partial<CreateCustomerDto>) {
-    return this.customersService.update(id, updateDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateCustomerDto: Partial<CreateCustomerDto>,
+  ) {
+    return this.customersService.update(id, updateCustomerDto);
   }
 
   @Delete(':id')
