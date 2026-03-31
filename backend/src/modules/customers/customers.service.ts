@@ -22,7 +22,7 @@ export class CustomersService {
 
     // Buscamos al último cliente ... (Aquí sigue tu código del CLI-00X)
     const ultimoCliente = await this.prisma.clientes.findFirst({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     // Calculamos el siguiente número
