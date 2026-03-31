@@ -36,8 +36,12 @@ model clientes {
   nombre      String
   telefono    String?
   direccion   String?
-  correo      String?
+  correo      String?                   @unique
   coordenadas Unsupported("geography")?
+  codigo      String?
+  contacto    String?
+  estatus     String?                   @default("Activo")
+  created_at  DateTime                  @default(now()) @db.Timestamp(6)
   pedidos     pedidos[]
 }
 
@@ -62,28 +66,34 @@ model evidencias {
 }
 
 model historial_rastreo {
-  id          BigInt                    @id @default(autoincrement())
+  id          Int                       @id @default(autoincrement())
   ruta_id     String?                   @db.Uuid
   coordenadas Unsupported("geography")?
   fecha_hora  DateTime?                 @default(now()) @db.Timestamptz(6)
   rutas       rutas?                    @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([coordenadas], type: Gist)
 }
 
 model incidencias {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ruta_id     String? @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruta_id     String?  @db.Uuid
   tipo        String?
   descripcion String?
   foto_url    String?
-  rutas       rutas?  @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  rutas       rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model pedidos {
   id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cliente_id        String?         @db.Uuid
   descripcion_carga String?
-  codigo_rastreo    String?         @unique
+  codigo_rastreo    String?
   estado_pedido     String?         @default("pendiente")
+  created_at        DateTime        @default(now()) @db.Timestamp(6)
+  updated_at        DateTime        @default(now()) @db.Timestamp(6)
   detalles_ruta     detalles_ruta[]
   evidencias        evidencias[]
   clientes          clientes?       @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -98,6 +108,8 @@ model rutas {
   distancia_total_estimada Decimal?            @db.Decimal
   tiempo_estimado_entrega  DateTime?           @db.Timestamptz(6)
   estatus_ruta             String?             @default("borrador")
+  created_at               DateTime            @default(now()) @db.Timestamp(6)
+  updated_at               DateTime            @default(now()) @db.Timestamp(6)
   detalles_ruta            detalles_ruta[]
   historial_rastreo        historial_rastreo[]
   incidencias              incidencias[]

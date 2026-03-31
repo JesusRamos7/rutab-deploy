@@ -39,12 +39,12 @@ CREATE TABLE public.clientes (
   nombre text NOT NULL,
   telefono text,
   direccion text,
-  correo text,
+  correo text UNIQUE,
   coordenadas GEOGRAPHY(Point, 4326),
   codigo text,
   contacto text,
   estatus text DEFAULT 'Activo',
-  createdAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT clientes_pkey PRIMARY KEY (id)
 );
 
@@ -74,8 +74,8 @@ CREATE TABLE public.rutas (
   distancia_total_estimada numeric,
   tiempo_estimado_entrega timestamp with time zone,
   estatus_ruta text DEFAULT 'borrador',
-  createdAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT rutas_pkey PRIMARY KEY (id),
   CONSTRAINT rutas_chofer_id_fkey FOREIGN KEY (chofer_id) REFERENCES public.choferes(id),
   CONSTRAINT rutas_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES public.administradores(id),
@@ -91,8 +91,8 @@ CREATE TABLE public.pedidos (
   descripcion_carga text,
   codigo_rastreo text,
   estado_pedido text DEFAULT 'pendiente',
-  createdAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pedidos_pkey PRIMARY KEY (id),
   CONSTRAINT pedidos_cliente_id_fkey FOREIGN KEY (cliente_id) REFERENCES public.clientes(id)
 );
@@ -148,8 +148,8 @@ CREATE TABLE public.incidencias (
   tipo text,
   descripcion text,
   foto_url text,
-  createdAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT incidencias_pkey PRIMARY KEY (id),
   CONSTRAINT incidencias_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id)
 );
@@ -192,7 +192,7 @@ BEGIN
     IF total_pedidos > 0 AND total_pedidos = pedidos_entregados THEN
         UPDATE rutas
         SET estatus_ruta = 'completada',
-            updatedAt = CURRENT_TIMESTAMP
+            updated_at = CURRENT_TIMESTAMP
         WHERE id = v_ruta_id;
     END IF;
 
