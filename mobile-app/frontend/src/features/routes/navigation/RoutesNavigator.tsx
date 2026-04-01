@@ -11,6 +11,7 @@ import { commonHeaderOptions } from '../../../navigation/styles/navigation-style
 // Pantallas
 import { RoutesScreen } from '../screens/RoutesScreen';
 import { RoutesDetailScreen } from '../screens/RoutesDetailScreen'; // <--- Importación clave
+import { DeliveryEvidenceScreen } from '../screens/DeliveryEvidenceScreen';
 
 const Stack = createNativeStackNavigator<RoutesStackParamList>();
 
@@ -42,6 +43,12 @@ export const RoutesNavigator = () => {
         name={RoutesRoutes.DETAIL}
         component={RoutesDetailScreen} // <--- CAMBIO AQUÍ: Ahora usa la pantalla de detalle
         options={{ title: 'Información de Ruta' }}
+      />
+
+      <Stack.Screen
+        name={RoutesRoutes.DELIVERY_EVIDENCE}
+        component={DeliveryEvidenceScreen}
+        options={{ title: 'Confirmar Entrega' }}
       />
     </Stack.Navigator>
   );

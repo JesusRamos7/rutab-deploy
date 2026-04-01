@@ -18,12 +18,14 @@ export enum MainRoutes {
 export enum RoutesRoutes {
   HOME = "RoutesHome",
   DETAIL = "RoutesDetail",
+  DELIVERY_EVIDENCE = "DeliveryEvidence",
 }
 
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
 export type RoutesStackParamList = {
   [RoutesRoutes.HOME]: undefined;
   [RoutesRoutes.DETAIL]: { id: string }; 
+  [RoutesRoutes.DELIVERY_EVIDENCE]: { pedidoId: string; cliente: string };
 };
 
 export type MainDrawerParamList = {
