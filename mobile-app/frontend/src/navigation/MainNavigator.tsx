@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Tipos y Navigators internos
 import { MainRoutes, MainDrawerParamList } from './navigation-types';
-import { DashboardNavigator } from '../features/dashboard/navigation/DashboardNavigator';
+import { RoutesNavigator } from '../features/routes/navigation/RoutesNavigator';
 import { CustomDrawerContent } from './components/CustomDrawerContent';
 import { ProfileNavigator } from '../features/profile/navigation/ProfileNavigator';
 
@@ -26,12 +26,12 @@ export const MainNavigator = () => {
         },
       }}>
       <Drawer.Screen
-        name={MainRoutes.DASHBOARD_STACK}
-        component={DashboardNavigator}
+        name={MainRoutes.ROUTES_STACK}
+        component={RoutesNavigator}
         options={{
-          drawerLabel: 'Inicio',
+          drawerLabel: 'Rutas',
           drawerIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="format-list-checks" size={size} color={color} />
           ),
         }}
       />

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useDashboard } from '../hooks/useDashboard';
+import { useRoutes } from '../hooks/useRoutes';
 
 // Datos estáticos de prueba (Mock)
 const PEDIDOS_MOCK = [
@@ -32,8 +32,8 @@ const PEDIDOS_MOCK = [
   },
 ];
 
-export const DashboardScreen = () => {
-  const { usuario } = useDashboard();
+export const RoutesScreen = () => {
+  const { usuario } = useRoutes();
 
   const handleAbrirMaps = (lat: number, lng: number, cliente: string) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;

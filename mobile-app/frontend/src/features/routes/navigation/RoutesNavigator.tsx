@@ -1,20 +1,20 @@
-// src/feature/dashboard/navigation/DashboardNavigator.tsx
+// src/feature/routes/navigation/RoutesNavigator.tsx
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DrawerActions } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { DashboardRoutes, DashboardStackParamList } from '../../../navigation/navigation-types';
+import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 import { commonHeaderOptions } from '../../../navigation/styles/navigation-styles';
 
 // Pantallas
-import { DashboardScreen } from '../screens/DashboardScreen';
-import { DashboardDetailScreen } from '../screens/DashboardDetailScreen'; // <--- Importación clave
+import { RoutesScreen } from '../screens/RoutesScreen';
+import { RoutesDetailScreen } from '../screens/RoutesDetailScreen'; // <--- Importación clave
 
-const Stack = createNativeStackNavigator<DashboardStackParamList>();
+const Stack = createNativeStackNavigator<RoutesStackParamList>();
 
-export const DashboardNavigator = () => {
+export const RoutesNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -23,8 +23,8 @@ export const DashboardNavigator = () => {
         headerBackTitle: '', // Evita que aparezca el texto "Atrás" que empuja el título
       }}>
       <Stack.Screen
-        name={DashboardRoutes.HOME}
-        component={DashboardScreen}
+        name={RoutesRoutes.HOME}
+        component={RoutesScreen}
         options={({ navigation }) => ({
           title: 'RuTAB',
           headerLeft: () => (
@@ -39,8 +39,8 @@ export const DashboardNavigator = () => {
       />
 
       <Stack.Screen
-        name={DashboardRoutes.DETAIL}
-        component={DashboardDetailScreen} // <--- CAMBIO AQUÍ: Ahora usa la pantalla de detalle
+        name={RoutesRoutes.DETAIL}
+        component={RoutesDetailScreen} // <--- CAMBIO AQUÍ: Ahora usa la pantalla de detalle
         options={{ title: 'Información de Ruta' }}
       />
     </Stack.Navigator>

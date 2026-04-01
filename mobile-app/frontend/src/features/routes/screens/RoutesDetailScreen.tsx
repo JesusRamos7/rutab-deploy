@@ -1,12 +1,12 @@
-// src/features/dashboard/screens/DashboardDetailScreen.tsx
+// src/features/routes/screens/RoutesDetailScreen.tsx
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { DashboardStackParamList, DashboardRoutes } from '../../../navigation/navigation-types';
+import { RoutesStackParamList, RoutesRoutes } from '../../../navigation/navigation-types';
 
-export const DashboardDetailScreen = () => {
-  const route = useRoute<RouteProp<DashboardStackParamList, DashboardRoutes.DETAIL>>();
+export const RoutesDetailScreen = () => {
+  const route = useRoute<RouteProp<RoutesStackParamList, RoutesRoutes.DETAIL>>();
   const { id } = route.params;
 
   return (
