@@ -1,80 +1,133 @@
-// src/features/dashboard/screens/DashboardScreen.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDashboard } from '../hooks/useDashboard';
 
+// Datos estáticos de prueba (Mock)
+const PEDIDOS_MOCK = [
+  {
+    id: 'PED-001',
+    cliente: 'Empresa Logística S.A.',
+    direccion: 'Av. Paseo de la Reforma 222, CDMX',
+    lat: 19.427,
+    lng: -99.1676,
+    estado: 'pendiente',
+  },
+  {
+    id: 'PED-002',
+    cliente: 'Tiendas Neto Centro',
+    direccion: 'Calle Mesones 123, Col. Centro',
+    lat: 19.429,
+    lng: -99.135,
+    estado: 'pendiente',
+  },
+  {
+    id: 'PED-003',
+    cliente: 'Distribuidora Oriente',
+    direccion: 'Calzada de Tlalpan 500',
+    lat: 19.35,
+    lng: -99.14,
+    estado: 'pendiente',
+  },
+];
+
 export const DashboardScreen = () => {
-  const { usuario, handleVerDetalle } = useDashboard();
+  const { usuario } = useDashboard();
+
+  const handleAbrirMaps = (lat: number, lng: number, cliente: string) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'No se pudo abrir Google Maps en este dispositivo');
+      }
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}>
-        {/* Sección de Bienvenida */}
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 30 }}>
+        {/* Header Resumido */}
         <View className="bg-primary px-6 pb-12 pt-8">
-          <Text className="text-sm font-medium uppercase tracking-wider text-white/70">
-            Panel de Control
+          <Text className="text-xs font-bold uppercase tracking-widest text-white/70">
+            Ruta del Día
           </Text>
-          <Text className="mt-1 text-3xl font-bold text-white">
-            Hola, {usuario?.nombre?.split(' ')[0] || 'Chofer'}
-          </Text>
-          <Text className="mt-2 text-xs italic text-white/60">
-            Tienes una ruta programada para hoy.
+          <Text className="mt-1 text-2xl font-bold text-white">
+            {PEDIDOS_MOCK.length} Pedidos Pendientes
           </Text>
         </View>
 
-        {/* Tarjetas de Resumen (Stats Rápidos) */}
-        <View className="-mt-6 flex-row justify-between space-x-4 px-6">
-          <View className="flex-1 items-center rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <View className="mb-2 rounded-full bg-blue-50 p-2">
-              <MaterialCommunityIcons name="map-marker-distance" size={24} color="#123a5d" />
-            </View>
-            <Text className="text-dark text-lg font-bold">0 km</Text>
-            <Text className="text-[10px] font-bold uppercase text-gray-400">Recorridos</Text>
-          </View>
+        <View className="-mt-6 px-6">
+          {PEDIDOS_MOCK.map((pedido, index) => {
+            const isFirst = index === 0;
 
-          <View className="flex-1 items-center rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <View className="mb-2 rounded-full bg-green-50 p-2">
-              <MaterialCommunityIcons name="clock-outline" size={24} color="#10B981" />
-            </View>
-            <Text className="text-dark text-lg font-bold">Activo</Text>
-            <Text className="text-[10px] font-bold uppercase text-gray-400">Estado</Text>
-          </View>
-        </View>
+            return (
+              <View
+                key={pedido.id}
+                className={`mb-4 rounded-3xl border p-5 shadow-sm ${
+                  isFirst
+                    ? 'border-primary/20 shadow-primary/10 bg-white'
+                    : 'border-gray-100 bg-gray-50 opacity-60'
+                }`}>
+                {/* Indicador de Posición */}
+                <View className="mb-3 flex-row items-start justify-between">
+                  <View
+                    className={`rounded-full px-3 py-1 ${isFirst ? 'bg-primary' : 'bg-gray-400'}`}>
+                    <Text className="text-[10px] font-bold text-white">ORDEN #{index + 1}</Text>
+                  </View>
+                  <Text className="font-mono text-xs text-gray-400">{pedido.id}</Text>
+                </View>
 
-        {/* Cuerpo del Dashboard */}
-        <View className="mt-8 px-6">
-          <Text className="text-dark mb-4 text-lg font-bold">Acciones Principales</Text>
+                {/* Info Cliente */}
+                <View className="mb-4 flex-row items-center">
+                  <View
+                    className={`h-12 w-12 items-center justify-center rounded-2xl ${isFirst ? 'bg-primary/10' : 'bg-gray-200'}`}>
+                    <MaterialCommunityIcons
+                      name={isFirst ? 'truck-delivery' : 'package-variant-closed'}
+                      size={24}
+                      color={isFirst ? '#123a5d' : '#9CA3AF'}
+                    />
+                  </View>
+                  <View className="ml-4 flex-1">
+                    <Text className="text-dark text-lg font-bold leading-5">{pedido.cliente}</Text>
+                    <Text className="mt-1 text-xs text-gray-500" numberOfLines={1}>
+                      {pedido.direccion}
+                    </Text>
+                  </View>
+                </View>
 
-          {/* Tarjeta de Acción Principal: Ruta */}
-          <TouchableOpacity
-            onPress={() => handleVerDetalle('VIAJE-123')}
-            activeOpacity={0.9}
-            className="shadow-primary/10 flex-row items-center justify-between rounded-3xl border border-gray-100 bg-white p-6 shadow-xl">
-            <View className="mr-4 flex-1">
-              <View className="bg-primary/10 mb-3 self-start rounded-full px-3 py-1">
-                <Text className="text-primary text-[10px] font-bold uppercase">Ruta en curso</Text>
+                {/* Acciones: Solo visibles para el primero de la pila */}
+                {isFirst && (
+                  <View className="mt-2 flex-row space-x-3">
+                    <TouchableOpacity
+                      onPress={() => handleAbrirMaps(pedido.lat, pedido.lng, pedido.cliente)}
+                      className="bg-primary shadow-primary/20 flex-1 flex-row items-center justify-center rounded-2xl py-4 shadow-lg">
+                      <MaterialCommunityIcons name="google-maps" size={20} color="white" />
+                      <Text className="ml-2 font-bold text-white">Ir a Entregar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      disabled={true} // Se habilitará por proximidad GPS después
+                      className="items-center justify-center rounded-2xl bg-gray-100 px-5 opacity-50">
+                      <MaterialCommunityIcons name="camera" size={24} color="#123a5d" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {!isFirst && (
+                  <View className="mt-2 flex-row items-center border-t border-gray-200 pt-3">
+                    <MaterialCommunityIcons name="lock-clock" size={16} color="#9CA3AF" />
+                    <Text className="ml-2 text-xs font-medium text-gray-400">
+                      Debes completar el pedido anterior para desbloquear
+                    </Text>
+                  </View>
+                )}
               </View>
-              <Text className="text-dark mb-1 text-xl font-bold">Viaje ID: #123</Text>
-              <Text className="text-sm leading-5 text-gray-500">
-                Presiona para ver los puntos de entrega y mapa de navegación.
-              </Text>
-            </View>
-
-            <View className="bg-primary h-14 w-14 items-center justify-center rounded-2xl">
-              <MaterialCommunityIcons name="chevron-right" size={32} color="white" />
-            </View>
-          </TouchableOpacity>
-
-          {/* Card Secundaria (Ejemplo de historial o próximas tareas) */}
-          <View className="mt-6 flex-row items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
-            <MaterialCommunityIcons name="calendar-clock" size={24} color="#9CA3AF" />
-            <Text className="ml-3 font-medium text-gray-500">No hay viajes pendientes por hoy</Text>
-          </View>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
