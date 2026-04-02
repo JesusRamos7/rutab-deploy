@@ -4,7 +4,7 @@ import { CreateOrdersDto } from "./dto/create-orders.dto";
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(createOrderDto: CreateOrdersDto) {
     const { cliente_id, ...orderData } = createOrderDto;
@@ -65,16 +65,24 @@ export class OrdersService {
 
   async update(id: string, data: Partial<CreateOrdersDto>) {
     const pedidoActual = await this.prisma.pedidos.findUnique({
-        where: { id },
+      where: { id: id, },
     });
     if (!pedidoActual) throw new NotFoundException('Pedido no encontrado.');
 
     return this.prisma.pedidos.update({
-        where: { id },
-        data,
+      where: { id: id },
+      data: {
+        descripcion_carga: data.descripcion_carga,
+        codigo_rastreo: data.codigo_rastreo,
+        estado_pedido: data.estado_pedido,
+        // En lugar de cliente_id, usamos la relación 'clientes'
+        clientes: {
+          connect: { id: data.cliente_id }
+        }
+      }
     });
   }
 
   // Sin remove, solo cambiamos el estado del pedido a cancelado
-  
+
 }

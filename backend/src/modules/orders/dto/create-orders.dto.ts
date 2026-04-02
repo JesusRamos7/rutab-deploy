@@ -1,11 +1,11 @@
 import { IsString, IsNotEmpty, IsOptional, IsUUID, IsEnum } from "class-validator";
 
 export enum OrderStatus {
-  PENDIENTE = 'pendiente',
+  PENDIENTE  = 'pendiente',
   PROCESANDO = 'procesando',
-  EN_RUTA = 'en ruta',
-  ENTREGADO = 'entregado',
-  CANCELADO = 'cancelado',
+  EN_RUTA    = 'en ruta',
+  ENTREGADO  = 'entregado',
+  CANCELADO  = 'cancelado',
 }
 
 export class CreateOrdersDto {

@@ -23,7 +23,7 @@ export const useDriverPage = () => {
             const data = await DriverService.getAll();
             setDrivers(data);
         } catch (error: any) {
-            toast.error(error.message || "Sucedión un problema al cargar los choferes.");
+            toast.error(error.message || "Sucedió un problema al cargar los choferes.");
         } finally {
             setIsLoading(false);
         }
@@ -43,7 +43,7 @@ export const useDriverPage = () => {
     setIsModalOpen(true);
   };
 
-  /** Prepara el modal para editar un vehículo existente */
+  /** Prepara el modal para editar un chofer existente */
     const openEditModal = (driver: Driver) => {
       setSelectedDriver(driver);
       setIsModalOpen(true);

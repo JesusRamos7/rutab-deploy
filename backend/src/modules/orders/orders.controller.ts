@@ -23,10 +23,10 @@ export class OrdersController {
         return this.ordersService.findOne(id);
     }
 
-    @Get(':id')
+    @Patch(':id')
     @Roles('superAdmin', 'logístico')
     update(
-        @Param(':id') id: string,
+        @Param('id') id: string,
         @Body() updateOrderDto: Partial<CreateOrdersDto>,
     ) {
         return this.ordersService.update(id, updateOrderDto);

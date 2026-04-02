@@ -61,6 +61,11 @@ const DriversPage = lazy(() =>
     default: m.DriversPage,
   })),
 );
+const OrdersPage = lazy(() =>
+import("./modules/management/orders/OrdersPage").then((m) => ({
+  default: m.OrdersPage,
+}))
+);
 
 /**
  * Orquestador principal de Rutas y Seguridad.
@@ -148,6 +153,15 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={["logístico"]}>
                     <DriversPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="gestion/pedidos"
+                element={
+                  <RoleGuard allowedRoles={["logístico"]}>
+                    <OrdersPage />
                   </RoleGuard>
                 }
               />
