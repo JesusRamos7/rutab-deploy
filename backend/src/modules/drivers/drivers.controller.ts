@@ -1,14 +1,7 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Patch, Delete } from "@nestjs/common";
-
-
-
-
+import { Controller, Get, Post, Body, Param, Patch, Delete } from "@nestjs/common";
 import { DriversService } from './drivers.service'
 import { CreateDriverDto } from "./dto/create-drivers.dto";
 import { Roles } from 'src/common/decorators/roles.decorator'
-import { Public } from 'src/common/decorators/public.decorator'
-import path from 'path'
-import { PartialObserver, retry } from 'rxjs'
 
 @Controller('drivers')
 export class DriversController {
