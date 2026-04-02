@@ -1,7 +1,7 @@
 // src/config/menuConfig.ts
 
 import {
-  LayoutDashboard,
+  List,
   Truck,
   ShieldCheck,
   Database,
@@ -46,9 +46,9 @@ export interface MenuItem {
  */
 export const menuConfig: MenuItem[] = [
   {
-    title: "Inicio",
+    title: "Rutas",
     path: "/panel/inicio",
-    icon: LayoutDashboard,
+    icon: List,
     roles: ["superAdmin", "logístico", "auditor"],
   },
   {

@@ -11,22 +11,24 @@ export enum AuthRoutes {
 }
 
 export enum MainRoutes {
-  DASHBOARD_STACK = "DashboardStack",
+  ROUTES_STACK = "RoutesStack",
   PROFILE = "Profile",
 }
 
-export enum DashboardRoutes {
-  HOME = "DashboardHome",
-  DETAIL = "DashboardDetail",
+export enum RoutesRoutes {
+  HOME = "RoutesHome",
+  DETAIL = "RoutesDetail",
+  DELIVERY_EVIDENCE = "DeliveryEvidence",
 }
 
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
-export type DashboardStackParamList = {
-  [DashboardRoutes.HOME]: undefined;
-  [DashboardRoutes.DETAIL]: { id: string }; 
+export type RoutesStackParamList = {
+  [RoutesRoutes.HOME]: undefined;
+  [RoutesRoutes.DETAIL]: { id: string }; 
+  [RoutesRoutes.DELIVERY_EVIDENCE]: { pedidoId: string; cliente: string };
 };
 
 export type MainDrawerParamList = {
-  [MainRoutes.DASHBOARD_STACK]: undefined;
+  [MainRoutes.ROUTES_STACK]: undefined;
   [MainRoutes.PROFILE]: undefined;
 };

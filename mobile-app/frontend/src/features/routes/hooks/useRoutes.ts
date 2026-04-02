@@ -1,13 +1,13 @@
-// src/features/dashboard/hooks/useDashboard.ts
+// src/features/routes/hooks/useRoutes.ts
 import { Alert } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../../../core/context/AuthContext';
-// Importamos los tipos y rutas globales
-import { DashboardRoutes, DashboardStackParamList } from '../../../navigation/navigation-types';
+// Importamos los tipos y rutas globales Routes RoutesStackParamList
+import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 
-export const useDashboard = () => {
+export const useRoutes = () => {
   const { usuario, logout } = useAuth();
-  const navigation = useNavigation<NavigationProp<DashboardStackParamList>>();
+  const navigation = useNavigation<NavigationProp<RoutesStackParamList>>();
 
   // Tu lógica original de Logout
   const handleLogout = () => {
@@ -23,7 +23,7 @@ export const useDashboard = () => {
 
   // Nueva lógica de navegación para el módulo
   const handleVerDetalle = (id: string) => {
-    navigation.navigate(DashboardRoutes.DETAIL, { id });
+    navigation.navigate(RoutesRoutes.DETAIL, { id });
   };
 
   return {
