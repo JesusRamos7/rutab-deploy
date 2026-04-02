@@ -1,0 +1,44 @@
+/*
+
+  Este es un WorkSpace de vsCode que sirve para 
+  organizar las carpetas del proyecto 
+  y prevenir conflicto entre versiones del proyecto
+
+  Para utilizarlo debes presionar en "file" y luego en "open workspace from file"
+
+*/
+
+
+{
+  "folders": [
+    {
+      "name": "backend",
+      "path": "backend",
+    },
+    {
+      "name": "frontend panel",
+      "path": "frontend",
+    },
+    {
+      "name": "frontend app",
+      "path": "mobile-app/frontend",
+    },
+    {
+      "name": "raiz",
+      "path": ".",
+    },
+  ],
+  "settings": {
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+
+    // Oculta las carpetas de código SOLO en la vista de la raíz
+    // para evitar verlas duplicadas en el explorador
+    "files.exclude": {
+      "backend/**": true,
+      "frontend/**": true,
+      "mobile-app/**": true,
+      "**/node_modules": true,
+    },
+  },
+}
