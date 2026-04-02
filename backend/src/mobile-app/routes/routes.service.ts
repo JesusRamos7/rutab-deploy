@@ -44,6 +44,7 @@ export class RoutesService {
       JOIN pedidos p ON dr.pedido_id = p.id
       JOIN clientes c ON p.cliente_id = c.id
       WHERE dr.ruta_id = ${ruta.id}::uuid
+        AND p.estado_pedido = 'pendiente' -- <--- FILTRO CRÍTICO
       ORDER BY dr.orden_entrega ASC
     `;
 

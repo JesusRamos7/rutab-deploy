@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -21,15 +21,22 @@ export const RoutesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
   const { routeData, loading, error, refresh } = useFetchRoutes();
 
+  // Actualización automática al ganar el foco (viniendo de otra pantalla)
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
+
   const handleAbrirMaps = (lat: number, lng: number) => {
-    // Usamos las coordenadas reales que vienen de PostGIS
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    // URL universal para Google Maps
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
     });
   };
 
-  if (loading) {
+  if (loading && !routeData) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#123a5d" />
@@ -38,17 +45,37 @@ export const RoutesScreen = () => {
     );
   }
 
-  if (error || !routeData) {
+  if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-10">
         <MaterialCommunityIcons name="alert-circle-outline" size={60} color="#9CA3AF" />
-        <Text className="mt-4 text-center text-lg text-gray-500">
-          {error || 'No tienes rutas activas'}
-        </Text>
+        <Text className="mt-4 text-center text-lg text-gray-500">{error}</Text>
         <TouchableOpacity onPress={refresh} className="bg-primary mt-6 rounded-xl px-8 py-3">
           <Text className="font-bold text-white">Reintentar</Text>
         </TouchableOpacity>
       </View>
+    );
+  }
+
+  // Pantalla de "Ruta Completada" si no hay pedidos pendientes
+  if (routeData && routeData.pedidos?.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 items-center justify-center px-10">
+          <View className="mb-6 rounded-full bg-green-100 p-6">
+            <MaterialCommunityIcons name="check-all" size={50} color="#15803d" />
+          </View>
+          <Text className="text-dark text-center text-xl font-bold">¡Ruta completada!</Text>
+          <Text className="mt-2 text-center text-gray-500">
+            Has entregado todos los pedidos asignados a esta ruta.
+          </Text>
+          <TouchableOpacity
+            onPress={refresh}
+            className="bg-primary shadow-primary/30 mt-8 rounded-2xl px-10 py-4 shadow-lg">
+            <Text className="text-lg font-bold text-white">Actualizar</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -65,18 +92,18 @@ export const RoutesScreen = () => {
             tintColor="#123a5d"
           />
         }>
-        {/* Info de la Unidad */}
+        {/* Header Informativo */}
         <View className="bg-primary px-6 pb-12 pt-8">
           <Text className="text-xs font-bold uppercase tracking-widest text-white/70">
-            Vehículo: {routeData.vehiculos?.placas || 'N/A'}
+            Vehículo: {routeData?.vehiculos?.placas || 'N/A'}
           </Text>
           <Text className="mt-1 text-2xl font-bold text-white">
-            {routeData.pedidos?.length || 0} Entregas Pendientes
+            {routeData?.pedidos?.length || 0} Entregas Pendientes
           </Text>
         </View>
 
         <View className="-mt-6 px-6">
-          {routeData.pedidos.map((pedido: any, index: number) => {
+          {routeData?.pedidos.map((pedido: any, index: number) => {
             const isFirst = index === 0;
 
             return (
@@ -101,7 +128,9 @@ export const RoutesScreen = () => {
 
                 <View className="mb-4 flex-row items-center">
                   <View
-                    className={`h-12 w-12 items-center justify-center rounded-2xl ${isFirst ? 'bg-primary/10' : 'bg-gray-200'}`}>
+                    className={`h-12 w-12 items-center justify-center rounded-2xl ${
+                      isFirst ? 'bg-primary/10' : 'bg-gray-200'
+                    }`}>
                     <MaterialCommunityIcons
                       name={isFirst ? 'truck-fast' : 'package-variant-closed'}
                       size={24}

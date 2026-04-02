@@ -6,11 +6,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 2. Agrega esta configuración de validación global
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,            // Remueve campos que no estén en el DTO
-    forbidNonWhitelisted: true, // Lanza error si mandan campos de más
-    transform: true,            // Convierte tipos (ej: string a number) automáticamente
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Remueve campos que no estén en el DTO
+      forbidNonWhitelisted: true, // Lanza error si mandan campos de más
+      transform: true, // Convierte tipos (ej: string a number) automáticamente
+      transformOptions: {
+        enableImplicitConversion: true, // Ayuda con las conversiones automáticas
+      },
+    }),
+  );
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || '*', // En producción tomará la variable, en local permitirá todo

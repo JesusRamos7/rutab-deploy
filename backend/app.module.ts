@@ -11,9 +11,10 @@ import { CustomersModule } from 'src/modules/customers/customers.module';
 import { DriversModule } from 'src/modules/drivers/drivers.module';
 import { OptimizacionModule } from 'src/modules/optimizacion/optimizacion.module';
 import { RoutesModule } from 'src/mobile-app/routes/routes.module';
+import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OptimizacionModule, RoutesModule],
+  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OptimizacionModule, RoutesModule, EvidenceModule],
   controllers: [AppController],
   providers: [
     AppService,
