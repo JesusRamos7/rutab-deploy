@@ -10,9 +10,10 @@ import { RolesGuard } from './src/common/guards/roles.guard';
 import { CustomersModule } from 'src/modules/customers/customers.module';
 import { DriversModule } from 'src/modules/drivers/drivers.module';
 import { OptimizacionModule } from 'src/modules/optimizacion/optimizacion.module';
+import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OptimizacionModule],
+  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OptimizacionModule, RoutesModule],
   controllers: [AppController],
   providers: [
     AppService,
