@@ -35,7 +35,7 @@ async function main() {
     where: { correo: correo },
     update: {},
     create: {
-      nombre: 'Claudia Ruth',
+      nombre: 'JojiDev',
       correo: correo,
       password: passwordHasheada,
       rol: 'superAdmin',
@@ -47,7 +47,41 @@ async function main() {
   console.log('✅ Administrador de prueba creado con éxito:');
   console.log(`Correo: ${superAdmin.correo}`);
   console.log(`Password: ${passwordPlana}`);
+
+  // Buscamos un cliente real 
+  const cliente = await prisma.clientes.findFirst();
+
+  if (!cliente) {
+    console.log("⚠️ No hay clientes en la DB. Crea uno primero.");
+    return;
+  }
+
+  // 2. Creamos pedidos asociados a ese cliente
+  await prisma.pedidos.createMany({
+    data: [
+      {
+        cliente_id: cliente.id,
+        descripcion_carga: "50 cajas de refacciones automotrices",
+        codigo_rastreo: "RT-99201",
+        estado_pedido: "en transito",
+      },
+      {
+        cliente_id: cliente.id,
+        descripcion_carga: "Material de oficina y papelería",
+        codigo_rastreo: "RT-99202",
+        estado_pedido: "pendiente",
+      },
+      {
+        cliente_id: cliente.id,
+        descripcion_carga: "Equipos de cómputo (Laptops S15)",
+        codigo_rastreo: "RT-99203",
+        estado_pedido: "completado",
+      }
+    ],
+  });
+  console.log("✅ Pedidos de prueba generados correctamente.");
 }
+
 
 /**
  * Ejecución del flujo principal con manejo de errores y cierre seguro
