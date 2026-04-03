@@ -1,6 +1,6 @@
 // /frontend/src/modules/optimizacion/pages/ResumenPublicacionPage.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Loader2,
   CheckCircle,
@@ -11,8 +11,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { optimizacionService } from "../services/optimizacionService";
-import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
-import { RutaPendiente } from "./SeleccionVehiculoPage"; // Importamos la interfaz temporal
+import {
+  ClusterResponse,
+  PuntoPedido,
+  Coordenadas,
+} from "../types/optimizacion.types";
+import { RutaPendiente } from "./SeleccionVehiculoPage";
 
 interface Props {
   rutaSeleccionada: RutaPendiente;
@@ -30,57 +34,81 @@ export const ResumenPublicacionPage = ({
   const [isCalculating, setIsCalculating] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // Estados para almacenar el resultado de Google Maps
   const [ordenGlobalPedidos, setOrdenGlobalPedidos] = useState<PuntoPedido[]>(
     [],
   );
   const [distanciaTotal, setDistanciaTotal] = useState(0);
   const [duracionTotal, setDuracionTotal] = useState(0);
 
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
-    calcularRutas();
+    // En desarrollo, esto evita que se ejecute la segunda vez del StrictMode
+    if (isFirstRender.current) {
+      calcularRutas();
+      isFirstRender.current = false;
+    }
   }, []);
 
   const calcularRutas = async () => {
     try {
       setIsCalculating(true);
 
+      // PASO 3: Obtener orden de clusters (Lógica local en Backend, $0 costo)
       const centroides = clustersAjustados.map((c) => ({
         clusterId: c.clusterId,
         lat: c.centroide.lat,
         lng: c.centroide.lng,
       }));
 
-      // Ahora esto recibe un arreglo de números [2, 0, 1...] gracias al cambio en el Controller
-      const ordenDeClusters = await optimizacionService.proponerOrdenClusters({
-        centroides,
-      });
-
-      if (!Array.isArray(ordenDeClusters)) {
-        throw new Error("El orden de clusters no es un arreglo válido.");
-      }
+      const ordenDeClustersIds =
+        await optimizacionService.proponerOrdenClusters({
+          centroides,
+        });
 
       let pedidosPlanificados: PuntoPedido[] = [];
       let sumDistancia = 0;
       let sumDuracion = 0;
 
-      // Iteramos sobre los IDs ordenados
-      for (const clusterId of ordenDeClusters) {
-        const cluster = clustersAjustados.find(
+      // Variable para encadenar: el inicio del cluster N es el último punto del cluster N-1
+      let ultimoPuntoDeEntrega: Coordenadas | undefined = undefined;
+
+      // Iteramos secuencialmente para aplicar la lógica de postas
+      for (let i = 0; i < ordenDeClustersIds.length; i++) {
+        const clusterId = ordenDeClustersIds[i];
+        const clusterActual = clustersAjustados.find(
           (c) => c.clusterId === clusterId,
         );
-        if (!cluster || cluster.pedidos.length === 0) continue;
 
-        const resultadoOrdenado = await optimizacionService.ordenarCluster(
-          cluster.pedidos,
+        if (!clusterActual || clusterActual.pedidos.length === 0) continue;
+
+        // Determinamos el destino del grupo actual (el centroide del siguiente grupo)
+        // Si no hay siguiente grupo, el destino será la Empresa (undefined en el servicio)
+        const siguienteClusterId = ordenDeClustersIds[i + 1];
+        const siguienteCluster = clustersAjustados.find(
+          (c) => c.clusterId === siguienteClusterId,
         );
+        const puntoFin = siguienteCluster?.centroide;
 
+        // PASO 2: Llamada a Google Maps (1 solicitud por cada 20 pedidos)
+        const resultadoOrdenado = await optimizacionService.ordenarCluster({
+          pedidos: clusterActual.pedidos,
+          inicio: ultimoPuntoDeEntrega, // Viene del cluster anterior (o base)
+          fin: puntoFin, // Va hacia el centroide del siguiente
+        });
+
+        // Agregamos los pedidos ordenados al total
         pedidosPlanificados = [
           ...pedidosPlanificados,
           ...resultadoOrdenado.pedidos,
         ];
 
-        // Sumamos métricas internas de cada cluster
+        // Actualizamos el punto de inicio para el SIGUIENTE cluster
+        // Es el último pedido que Google decidió poner al final de este grupo
+        const ultimoPedido =
+          resultadoOrdenado.pedidos[resultadoOrdenado.pedidos.length - 1];
+        ultimoPuntoDeEntrega = { lat: ultimoPedido.lat, lng: ultimoPedido.lng };
+
         sumDistancia += resultadoOrdenado.distanciaMetros;
         sumDuracion += resultadoOrdenado.duracionSegundos;
       }
@@ -89,7 +117,8 @@ export const ResumenPublicacionPage = ({
       setDistanciaTotal(sumDistancia);
       setDuracionTotal(sumDuracion);
     } catch (error) {
-      // ... (manejo de error)
+      toast.error("Error al calcular la secuencia óptima.");
+      console.error(error);
     } finally {
       setIsCalculating(false);
     }
@@ -98,11 +127,8 @@ export const ResumenPublicacionPage = ({
   const handlePublicar = async () => {
     try {
       setIsPublishing(true);
-
-      // Extraemos solo los IDs en el orden final
       const ordenFinalPedidos = ordenGlobalPedidos.map((p) => p.id);
 
-      // PASO 4: Publicar y guardar en BD
       await optimizacionService.publicarRuta({
         rutaId: rutaSeleccionada.rutaId,
         ordenFinalPedidos,
@@ -110,23 +136,20 @@ export const ResumenPublicacionPage = ({
         duracionTotalSegundos: duracionTotal,
       });
 
-      toast.success(
-        "¡Ruta publicada exitosamente! La app del chofer se ha actualizado.",
-      );
+      toast.success("¡Ruta publicada exitosamente!");
       onFinalizado();
     } catch (error) {
-      toast.error("Ocurrió un error al intentar publicar la ruta.");
+      toast.error("Error al publicar la ruta.");
     } finally {
       setIsPublishing(false);
     }
   };
 
-  // Funciones de formateo visual
   const formatKms = (metros: number) => (metros / 1000).toFixed(1) + " km";
   const formatTiempo = (segundos: number) => {
     const horas = Math.floor(segundos / 3600);
     const min = Math.floor((segundos % 3600) / 60);
-    return `${horas}h ${min}m`;
+    return horas > 0 ? `${horas}h ${min}m` : `${min} min`;
   };
 
   if (isCalculating) {
@@ -134,10 +157,10 @@ export const ResumenPublicacionPage = ({
       <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
         <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
         <h3 className="text-xl font-semibold text-gray-800">
-          Trazando la ruta óptima...
+          Trazando ruta encadenada...
         </h3>
         <p className="text-gray-500 mt-2">
-          Consultando infraestructura vial y tráfico con Google Maps.
+          Optimizando saltos entre grupos de entrega.
         </p>
       </div>
     );
@@ -176,53 +199,30 @@ export const ResumenPublicacionPage = ({
         </button>
       </div>
 
-      {/* Tarjetas de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="bg-blue-100 p-3 rounded-full text-blue-600">
-            <Route size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Distancia Total Estimada
-            </p>
-            <p className="text-2xl font-bold text-gray-900">
-              {formatKms(distanciaTotal)}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="bg-orange-100 p-3 rounded-full text-orange-600">
-            <Clock size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Tiempo de Conducción
-            </p>
-            <p className="text-2xl font-bold text-gray-900">
-              {formatTiempo(duracionTotal)}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-          <div className="bg-purple-100 p-3 rounded-full text-purple-600">
-            <CheckCircle size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">
-              Total de Entregas
-            </p>
-            <p className="text-2xl font-bold text-gray-900">
-              {ordenGlobalPedidos.length}
-            </p>
-          </div>
-        </div>
+        <MetricCard
+          icon={<Route size={24} />}
+          label="Distancia Total"
+          value={formatKms(distanciaTotal)}
+          color="blue"
+        />
+        <MetricCard
+          icon={<Clock size={24} />}
+          label="Tiempo de Conducción"
+          value={formatTiempo(duracionTotal)}
+          color="orange"
+        />
+        <MetricCard
+          icon={<CheckCircle size={24} />}
+          label="Total de Entregas"
+          value={ordenGlobalPedidos.length}
+          color="purple"
+        />
       </div>
 
-      {/* Lista Secuencial */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700">
-          Secuencia de Visita Propuesta
+          Secuencia de Visita
         </div>
         <div className="divide-y divide-gray-100">
           {ordenGlobalPedidos.map((pedido, index) => (
@@ -230,13 +230,13 @@ export const ResumenPublicacionPage = ({
               key={pedido.id}
               className="p-4 flex items-center gap-4 hover:bg-gray-50"
             >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 border border-gray-200">
                 {index + 1}
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-900">{pedido.cliente}</p>
-                <p className="text-sm text-gray-500">
-                  {pedido.lat.toFixed(4)}, {pedido.lng.toFixed(4)}
+                <p className="text-xs text-gray-400 uppercase tracking-wider">
+                  Punto de Entrega
                 </p>
               </div>
             </div>
@@ -246,3 +246,16 @@ export const ResumenPublicacionPage = ({
     </div>
   );
 };
+
+// Sub-componente para limpiar el render principal
+const MetricCard = ({ icon, label, value, color }: any) => (
+  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+    <div className={`bg-${color}-50 p-3 rounded-full text-${color}-600`}>
+      {icon}
+    </div>
+    <div>
+      <p className="text-sm text-gray-500 font-medium">{label}</p>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+    </div>
+  </div>
+);

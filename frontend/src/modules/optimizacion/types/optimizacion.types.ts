@@ -1,5 +1,10 @@
 // /frontend/src/modules/optimizacion/types/optimizacion.types.ts
 
+export interface Coordenadas {
+  lat: number;
+  lng: number;
+}
+
 export interface PuntoPedido {
   id: string;
   cliente: string;
@@ -14,7 +19,7 @@ export interface ClusteringRequest {
 
 export interface ClusterResponse {
   clusterId: number;
-  centroide: { lat: number; lng: number };
+  centroide: Coordenadas;
   pedidos: PuntoPedido[];
 }
 
@@ -22,6 +27,15 @@ export interface DetalleRutaOrdenado {
   pedidos: PuntoPedido[];
   distanciaMetros: number;
   duracionSegundos: number;
+}
+
+/**
+ * Nueva interfaz para la petición de ordenamiento encadenado
+ */
+export interface OrdenarClusterRequest {
+  pedidos: PuntoPedido[];
+  inicio?: Coordenadas;
+  fin?: Coordenadas;
 }
 
 export interface OrdenClustersRequest {

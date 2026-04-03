@@ -12,8 +12,14 @@ import {
 } from "../types/optimizacion.types";
 
 /**
- * Servicio para interactuar con los endpoints de optimización de rutas.
+ * Interfaz para la nueva estructura de petición de ordenamiento por cluster.
  */
+interface OrdenarClusterParams {
+  pedidos: PuntoPedido[];
+  inicio?: { lat: number; lng: number };
+  fin?: { lat: number; lng: number };
+}
+
 export const optimizacionService = {
   /**
    * PASO 1: Obtiene la sugerencia inicial de grupos (K-Means).
@@ -29,20 +35,22 @@ export const optimizacionService = {
   },
 
   /**
-   * PASO 2: Solicita a Google el orden lógico de los pedidos dentro de un cluster.
+   * PASO 2 (Actualizado): Envía los pedidos junto con puntos de inicio/fin opcionales
+   * para permitir el encadenamiento de rutas.
    */
   ordenarCluster: async (
-    pedidos: PuntoPedido[],
+    params: OrdenarClusterParams,
   ): Promise<DetalleRutaOrdenado> => {
     const response = await api.post<DetalleRutaOrdenado>(
       "/optimizacion/ordenar-cluster",
-      pedidos,
+      params, // Ahora enviamos el objeto completo
     );
     return response.data;
   },
 
   /**
    * PASO 3: Obtiene el orden propuesto para visitar los distintos clusters.
+   * Ahora consume una lógica matemática local en el backend ($0 costo).
    */
   proponerOrdenClusters: async (
     data: OrdenClustersRequest,
@@ -68,7 +76,7 @@ export const optimizacionService = {
   },
 
   /**
-   * Obtiene las rutas en estado borrador desde la base de datos.
+   * Obtiene las rutas en estado borrador.
    */
   obtenerRutasPendientes: async (): Promise<RutaPendiente[]> => {
     const response = await api.get<RutaPendiente[]>(

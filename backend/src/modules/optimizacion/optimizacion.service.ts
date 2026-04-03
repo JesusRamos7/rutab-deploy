@@ -11,9 +11,15 @@ import {
 
 @Injectable()
 export class OptimizacionService {
+  // Coordenadas base para cálculos locales
+  private readonly baseEmpresa = {
+    lat: parseFloat(process.env.ORIGEN_LAT || '0'),
+    lng: parseFloat(process.env.ORIGEN_LNG || '0'),
+  };
+
   constructor(
     private prisma: PrismaService,
-    private googleService: GoogleMapsService, // Ahora lo usaremos mediante métodos
+    private googleService: GoogleMapsService,
   ) {}
 
   async generarSugerenciaClusters(vehiculoId: string, fecha: string) {
@@ -31,30 +37,76 @@ export class OptimizacionService {
     return this.ejecutarKMeans(pedidos, Math.ceil(pedidos.length / 20));
   }
 
+  /**
+   * PASO 3 (Optimizado): Ordena los grupos localmente usando el algoritmo de vecino más cercano.
+   * Esto reemplaza la llamada a Google Maps para los centroides ($0 costo).
+   */
+  ordenarClustersLocalmente(
+    centroides: { clusterId: number; lat: number; lng: number }[],
+  ): number[] {
+    const resultado: number[] = [];
+    const pendientes = [...centroides];
+    let puntoActual = { lat: this.baseEmpresa.lat, lng: this.baseEmpresa.lng };
+
+    while (pendientes.length > 0) {
+      let indiceCercano = 0;
+      let distanciaMinima = Infinity;
+
+      for (let i = 0; i < pendientes.length; i++) {
+        // Distancia euclidiana para determinar cercanía entre grupos
+        const d = Math.sqrt(
+          Math.pow(pendientes[i].lat - puntoActual.lat, 2) +
+            Math.pow(pendientes[i].lng - puntoActual.lng, 2),
+        );
+
+        if (d < distanciaMinima) {
+          distanciaMinima = d;
+          indiceCercano = i;
+        }
+      }
+
+      const proximo = pendientes.splice(indiceCercano, 1)[0];
+      resultado.push(proximo.clusterId);
+      // El siguiente punto de referencia es el centroide recién seleccionado
+      puntoActual = { lat: proximo.lat, lng: proximo.lng };
+    }
+
+    return resultado;
+  }
+
+  /**
+   * PASO 2: Envía el grupo a Google con puntos de inicio y fin específicos
+   * para lograr el encadenamiento de rutas.
+   */
+  async optimizarPuntos(
+    puntos: PuntoPedido[],
+    inicio?: { lat: number; lng: number },
+    fin?: { lat: number; lng: number },
+  ): Promise<DetalleRutaOrdenado> {
+    return await this.googleService.obtenerOrdenOptimo(puntos, inicio, fin);
+  }
+
   async publicarRuta(dto: PublicarRutaDto) {
     return await this.prisma.$transaction(async (tx) => {
-      // Obtenemos la ruta para conocer su fecha programada base
       const rutaActual = await tx.rutas.findUnique({
         where: { id: dto.rutaId },
       });
 
-      // Calculamos la fecha estimada de llegada sumando los segundos de Google
       const tiempoEstimado = new Date(rutaActual.fecha_programada);
       tiempoEstimado.setSeconds(
         tiempoEstimado.getSeconds() + dto.duracionTotalSegundos,
       );
 
-      // 1. Actualizar cabecera con metadatos reales
       await tx.rutas.update({
         where: { id: dto.rutaId },
         data: {
           estatus_ruta: 'programada',
-          distancia_total_estimada: dto.distanciaTotalMetros / 1000, // Guardamos en KM
+          distancia_total_estimada: dto.distanciaTotalMetros / 1000,
           tiempo_estimado_entrega: tiempoEstimado,
+          updated_at: new Date(),
         },
       });
 
-      // 2. Actualizar orden de cada pedido
       for (let i = 0; i < dto.ordenFinalPedidos.length; i++) {
         await tx.detalles_ruta.updateMany({
           where: { ruta_id: dto.rutaId, pedido_id: dto.ordenFinalPedidos[i] },
@@ -73,7 +125,6 @@ export class OptimizacionService {
       .map((p) => ({ lat: p.lat, lng: p.lng }));
     let clusters = [];
     for (let i = 0; i < 20; i++) {
-      // 20 iteraciones para convergencia
       clusters = centroides.map((c, idx) => ({
         clusterId: idx,
         centroide: c,
@@ -102,14 +153,10 @@ export class OptimizacionService {
     return clusters;
   }
 
-  /**
-   * Obtiene la lista de rutas pendientes de optimizar.
-   */
   async obtenerRutasPendientes() {
     const rutasBorrador = await this.prisma.rutas.findMany({
       where: { estatus_ruta: 'borrador' },
       include: {
-        // Asumiendo que Prisma generó el nombre de relación 'vehiculos' o 'vehiculo'
         vehiculos: {
           select: { placas: true, modelo: true },
         },
@@ -124,18 +171,10 @@ export class OptimizacionService {
       vehiculoId: ruta.vehiculo_id,
       placas: ruta.vehiculos?.placas || 'Sin Placa',
       modelo: ruta.vehiculos?.modelo || 'Desconocido',
-      // Formateamos la fecha para que el frontend la lea fácilmente (YYYY-MM-DD)
       fechaProgramada: ruta.fecha_programada
         ? ruta.fecha_programada.toISOString().split('T')[0]
         : '',
       pedidosAsignados: ruta._count.detalles_ruta,
     }));
-  }
-
-  /**
-   * Expone el servicio de Google para ordenar cualquier lista de puntos.
-   */
-  async optimizarPuntos(puntos: PuntoPedido[]): Promise<DetalleRutaOrdenado> {
-    return await this.googleService.obtenerOrdenOptimo(puntos);
   }
 }

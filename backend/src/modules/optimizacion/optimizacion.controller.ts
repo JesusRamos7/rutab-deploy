@@ -31,38 +31,35 @@ export class OptimizacionController {
 
   /**
    * PASO 2: Ordenamiento lógico de un grupo (Google Maps)
-   * Nota: En un entorno real, este endpoint se conectaría al GoogleMapsService a través del OptimizacionService.
+   * Ahora acepta coordenadas opcionales de inicio y fin para permitir el encadenamiento.
    */
   @Post('ordenar-cluster')
   @Roles('superAdmin', 'logístico')
-  async ordenarCluster(@Body() pedidos: PuntoPedido[]) {
-    // Implementación del puente hacia GoogleMapsService (omitida en el service simplificado anterior,
-    // pero necesaria si el frontend pide orden por cluster).
-    return await this.optimizacionService['googleService'].obtenerOrdenOptimo(
-      pedidos,
+  async ordenarCluster(
+    @Body()
+    body: {
+      pedidos: PuntoPedido[];
+      inicio?: { lat: number; lng: number };
+      fin?: { lat: number; lng: number };
+    },
+  ) {
+    // Usamos el nuevo método del servicio que soporta origen/destino dinámicos
+    return await this.optimizacionService.optimizarPuntos(
+      body.pedidos,
+      body.inicio,
+      body.fin,
     );
   }
 
   /**
-   * PASO 3: Orden de visita entre grupos (Google Maps)
-   * CORRECCIÓN: Ahora extrae solo los IDs para que el frontend pueda iterar.
+   * PASO 3 (OPTIMIZADO): Orden de visita entre grupos.
+   * Ya no consume Google Maps API. Utiliza matemáticas locales (Vecino más cercano).
    */
   @Post('proponer-orden-clusters')
   @Roles('superAdmin', 'logístico')
   async proponerOrdenClusters(@Body() dto: OrdenClustersRequest) {
-    const resultado = await this.optimizacionService[
-      'googleService'
-    ].obtenerOrdenOptimo(
-      dto.centroides.map((c) => ({
-        id: String(c.clusterId),
-        cliente: 'Centroide',
-        lat: c.lat,
-        lng: c.lng,
-      })),
-    );
-
-    // Retornamos únicamente el arreglo de IDs (convertidos a número)
-    return resultado.pedidos.map((p) => Number(p.id));
+    // Llamada al método local que creamos en el OptimizacionService
+    return this.optimizacionService.ordenarClustersLocalmente(dto.centroides);
   }
 
   /**
@@ -75,7 +72,7 @@ export class OptimizacionController {
   }
 
   /**
-   * Endpoint para cargar la tabla inicial de la vista.
+   * Tabla inicial de rutas en estado borrador.
    */
   @Get('rutas-pendientes')
   @Roles('superAdmin', 'logístico')
