@@ -1,3 +1,5 @@
+// /frontend/src/modules/optimizacion/components/ClusterColumn.tsx
+
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -5,7 +7,7 @@ import {
 } from "@dnd-kit/sortable";
 import { ClusterResponse } from "../types/optimizacion.types";
 import { PedidoCard } from "./PedidoCard";
-import { Truck } from "lucide-react";
+import { Truck, PackageSearch } from "lucide-react";
 
 interface Props {
   cluster: ClusterResponse;
@@ -22,14 +24,16 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
 
   return (
     <div
-      className={`flex flex-col flex-shrink-0 w-72 bg-gray-100/50 rounded-2xl border-2 transition-colors ${
-        isOver ? "border-blue-400 bg-blue-50/50" : "border-transparent"
+      className={`flex flex-col flex-shrink-0 w-72 bg-gray-100/50 rounded-2xl border-2 transition-all duration-300 ${
+        isOver
+          ? "border-blue-400 bg-blue-50/50 shadow-lg scale-[1.01]"
+          : "border-transparent"
       }`}
     >
-      <div className="p-4 flex justify-between items-center">
+      <div className="p-4 flex justify-between items-center bg-white/50 rounded-t-2xl backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <div
-            className="w-3 h-3 rounded-full"
+            className="w-3 h-3 rounded-full animate-pulse"
             style={{ backgroundColor: color }}
           />
           <h3 className="font-bold text-gray-700 text-sm">
@@ -37,10 +41,10 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
           </h3>
         </div>
         <span
-          className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
+          className={`text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm transition-colors ${
             cantidad >= 20
               ? "bg-red-500 text-white"
-              : "bg-gray-200 text-gray-600"
+              : "bg-white text-gray-600 border border-gray-200"
           }`}
         >
           {cantidad}/20
@@ -64,6 +68,21 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
             />
           ))}
         </SortableContext>
+
+        {/* Estado Vacío Ilustrado */}
+        {cantidad === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-xl mt-2 animate-in fade-in zoom-in duration-300">
+            <div className="bg-white p-3 rounded-full shadow-sm mb-3">
+              <PackageSearch size={24} className="text-gray-300" />
+            </div>
+            <p className="text-[11px] font-bold text-gray-400 text-center uppercase tracking-tighter leading-tight">
+              Sin pedidos asignados
+            </p>
+            <p className="text-[9px] text-gray-400 text-center mt-1">
+              Arrastra un servicio aquí para agruparlo.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
