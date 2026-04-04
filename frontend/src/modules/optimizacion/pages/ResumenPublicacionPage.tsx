@@ -9,7 +9,7 @@ import {
   ArrowLeft,
   Truck,
   MapPin,
-  ChevronRight,
+  Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import { optimizacionService } from "../services/optimizacionService";
@@ -35,7 +35,6 @@ export const ResumenPublicacionPage = ({
 }: Props) => {
   const [isCalculating, setIsCalculating] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
-
   const [ordenGlobalPedidos, setOrdenGlobalPedidos] = useState<PuntoPedido[]>(
     [],
   );
@@ -54,7 +53,6 @@ export const ResumenPublicacionPage = ({
   const calcularRutas = async () => {
     try {
       setIsCalculating(true);
-
       const centroides = clustersAjustados.map((c) => ({
         clusterId: c.clusterId,
         lat: c.centroide.lat,
@@ -62,9 +60,7 @@ export const ResumenPublicacionPage = ({
       }));
 
       const ordenDeClustersIds =
-        await optimizacionService.proponerOrdenClusters({
-          centroides,
-        });
+        await optimizacionService.proponerOrdenClusters({ centroides });
 
       let pedidosPlanificados: PuntoPedido[] = [];
       let sumDistancia = 0;
@@ -76,30 +72,24 @@ export const ResumenPublicacionPage = ({
         const clusterActual = clustersAjustados.find(
           (c) => c.clusterId === clusterId,
         );
-
         if (!clusterActual || clusterActual.pedidos.length === 0) continue;
 
-        const siguienteClusterId = ordenDeClustersIds[i + 1];
         const siguienteCluster = clustersAjustados.find(
-          (c) => c.clusterId === siguienteClusterId,
+          (c) => c.clusterId === ordenDeClustersIds[i + 1],
         );
-        const puntoFin = siguienteCluster?.centroide;
-
         const resultadoOrdenado = await optimizacionService.ordenarCluster({
           pedidos: clusterActual.pedidos,
           inicio: ultimoPuntoDeEntrega,
-          fin: puntoFin,
+          fin: siguienteCluster?.centroide,
         });
 
         pedidosPlanificados = [
           ...pedidosPlanificados,
           ...resultadoOrdenado.pedidos,
         ];
-
         const ultimoPedido =
           resultadoOrdenado.pedidos[resultadoOrdenado.pedidos.length - 1];
         ultimoPuntoDeEntrega = { lat: ultimoPedido.lat, lng: ultimoPedido.lng };
-
         sumDistancia += resultadoOrdenado.distanciaMetros;
         sumDuracion += resultadoOrdenado.duracionSegundos;
       }
@@ -123,8 +113,7 @@ export const ResumenPublicacionPage = ({
         distanciaTotalMetros: distanciaTotal,
         duracionTotalSegundos: duracionTotal,
       });
-
-      toast.success("¡Ruta publicada exitosamente!");
+      toast.success("Ruta publicada exitosamente");
       onFinalizado();
     } catch (error) {
       toast.error("Error al publicar la ruta.");
@@ -135,49 +124,51 @@ export const ResumenPublicacionPage = ({
 
   if (isCalculating) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] animate-pulse">
-        <div className="relative mb-6">
-          <Loader2 className="animate-spin text-blue-600" size={64} />
-          <Route className="absolute inset-0 m-auto text-blue-400" size={24} />
-        </div>
-        <h3 className="text-2xl font-black text-gray-900 tracking-tight">
-          Optimizando Secuencia Final
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <Loader2
+          className="animate-spin text-slate-300 mb-4"
+          size={40}
+          strokeWidth={1.5}
+        />
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-[0.2em]">
+          Optimizando Secuencia
         </h3>
-        <p className="text-gray-400 font-medium mt-2">
-          Conectando grupos de entrega para minimizar el kilometraje...
+        <p className="text-slate-400 text-xs mt-2 font-medium">
+          Calculando el trayecto más eficiente entre grupos...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Botón Volver */}
+    <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      {/* Navegación */}
       <button
         onClick={onVolver}
-        className="group flex items-center text-gray-400 hover:text-gray-900 mb-8 transition-all font-bold text-sm"
+        className="group flex items-center text-slate-400 hover:text-slate-900 mb-10 transition-colors text-[10px] font-bold uppercase tracking-widest"
       >
         <ArrowLeft
-          size={18}
+          size={14}
           className="mr-2 group-hover:-translate-x-1 transition-transform"
         />
-        REGRESAR AL AJUSTE
+        Regresar al ajuste
       </button>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-        <div>
-          <div className="flex items-center gap-2 mb-2 text-blue-600 font-black text-xs uppercase tracking-widest">
-            <CheckCircle size={14} /> Revisión Final
+      {/* Header Principal */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Revisión de itinerario
           </div>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tighter">
-            Resumen de la Ruta
+          <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">
+            Resumen de Ruta
           </h2>
-          <div className="flex items-center gap-3 mt-2 bg-gray-100 px-3 py-1.5 rounded-lg w-fit">
-            <Truck size={16} className="text-gray-500" />
-            <span className="font-bold text-gray-700 text-sm">
+          <div className="flex items-center gap-2 py-1 px-3 bg-slate-100 rounded-full w-fit border border-slate-200/50">
+            <Truck size={14} className="text-slate-400" />
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-tight">
               {rutaSeleccionada.placas}{" "}
-              <span className="text-gray-400 mx-1">•</span>{" "}
+              <span className="text-slate-300 mx-1">|</span>{" "}
               {rutaSeleccionada.modelo}
             </span>
           </div>
@@ -186,93 +177,93 @@ export const ResumenPublicacionPage = ({
         <button
           onClick={handlePublicar}
           disabled={isPublishing}
-          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-green-100 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+          className="bg-slate-900 hover:bg-green-600 text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3"
         >
           {isPublishing ? (
-            <Loader2 className="animate-spin" size={20} />
+            <Loader2 className="animate-spin" size={16} />
           ) : (
-            <CheckCircle size={20} />
+            <CheckCircle size={16} />
           )}
-          {isPublishing ? "GUARDANDO..." : "PUBLICAR RUTA"}
+          {isPublishing ? "Publicando..." : "Publicar Ruta"}
         </button>
       </div>
 
-      {/* Métricas con Mapeo de Colores Correcto */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      {/* Métricas Minimalistas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
         <MetricCard
-          icon={<Route size={24} />}
-          label="Distancia Total"
-          value={(distanciaTotal / 1000).toFixed(1) + " KM"}
-          type="blue"
+          icon={<Route size={20} />}
+          label="Distancia"
+          value={(distanciaTotal / 1000).toFixed(1) + " km"}
         />
         <MetricCard
-          icon={<Clock size={24} />}
-          label="Est. Conducción"
+          icon={<Clock size={20} />}
+          label="Tiempo Est."
           value={formatTiempo(duracionTotal)}
-          type="orange"
         />
         <MetricCard
-          icon={<MapPin size={24} />}
-          label="Puntos de Entrega"
+          icon={<MapPin size={20} />}
+          label="Entregas"
           value={ordenGlobalPedidos.length}
-          type="purple"
         />
       </div>
 
-      {/* Timeline de Entregas */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8">
-        <h3 className="text-lg font-black text-gray-900 mb-8 flex items-center gap-2">
-          Secuencia de Visita{" "}
-          <ChevronRight size={18} className="text-gray-300" />
-        </h3>
+      {/* Hoja de Ruta (Timeline) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-10">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-[0.15em]">
+            Secuencia de Visita
+          </h3>
+          <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+            {ordenGlobalPedidos.length} Puntos totales
+          </span>
+        </div>
 
         <div className="relative">
-          {/* Línea central del timeline */}
-          <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-100" />
+          <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-slate-100" />
 
-          <div className="space-y-8">
+          <div className="space-y-10">
             {ordenGlobalPedidos.map((pedido, index) => (
               <div
                 key={pedido.id}
                 className="relative flex items-start gap-6 group"
               >
-                {/* Indicador de Punto */}
+                {/* Punto de Ruta */}
                 <div
-                  className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-4 transition-colors ${
+                  className={`relative z-10 w-[23px] h-[23px] rounded-full flex items-center justify-center text-[10px] font-bold transition-all border ${
                     index === 0
-                      ? "bg-blue-600 border-blue-100 text-white"
+                      ? "bg-slate-900 border-slate-900 text-white"
                       : index === ordenGlobalPedidos.length - 1
-                        ? "bg-green-600 border-green-100 text-white"
-                        : "bg-white border-gray-100 text-gray-400 group-hover:border-blue-200 group-hover:text-blue-500"
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-900 group-hover:text-slate-900"
                   }`}
                 >
                   {index + 1}
                 </div>
 
-                <div className="flex-1 pt-1">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {pedido.cliente}
-                      </p>
-                      <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-0.5">
-                        {index === 0
-                          ? "Punto de Inicio"
-                          : index === ordenGlobalPedidos.length - 1
-                            ? "Punto de Cierre"
-                            : "Entrega Intermedia"}
-                      </p>
-                    </div>
+                <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 transition-colors">
+                      {pedido.cliente}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
+                      {index === 0
+                        ? "Punto de partida"
+                        : index === ordenGlobalPedidos.length - 1
+                          ? "Destino final"
+                          : "Escala intermedia"}
+                    </p>
+                  </div>
 
-                    {/* Código de Rastreo en el Timeline */}
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">
-                        ID RASTREO
-                      </span>
-                      <div className="bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg text-[10px] font-mono font-black text-gray-600 shadow-sm">
-                        {pedido.codigoRastreo}
-                      </div>
-                    </div>
+                  {/* ID de Rastreo Refinado */}
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100 w-fit">
+                    <Hash
+                      size={10}
+                      className="text-slate-300"
+                      strokeWidth={3}
+                    />
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                      {pedido.codigoRastreo}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -284,42 +275,32 @@ export const ResumenPublicacionPage = ({
   );
 };
 
-// Auxiliares de Formato
 const formatTiempo = (segundos: number) => {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
-  return h > 0 ? `${h}H ${m}M` : `${m} MIN`;
+  return h > 0 ? `${h}h ${m}m` : `${m} min`;
 };
 
-// Sub-componente MetricCard Refactorizado para Tailwind
 const MetricCard = ({
   icon,
   label,
   value,
-  type,
 }: {
   icon: any;
   label: string;
   value: any;
-  type: "blue" | "orange" | "purple";
-}) => {
-  const styles = {
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    orange: "bg-orange-50 text-orange-600 border-orange-100",
-    purple: "bg-purple-50 text-purple-600 border-purple-100",
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-5 transition-transform hover:scale-[1.02]">
-      <div className={`p-4 rounded-2xl border ${styles[type]}`}>{icon}</div>
-      <div>
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1.5">
-          {label}
-        </p>
-        <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none">
-          {value}
-        </p>
-      </div>
+}) => (
+  <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-white hover:shadow-sm">
+    <div className="p-2.5 bg-white rounded-xl border border-slate-100 text-slate-400 shadow-sm">
+      {icon}
     </div>
-  );
-};
+    <div className="flex flex-col">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+        {label}
+      </span>
+      <span className="text-lg font-semibold text-slate-900 tracking-tight">
+        {value}
+      </span>
+    </div>
+  </div>
+);

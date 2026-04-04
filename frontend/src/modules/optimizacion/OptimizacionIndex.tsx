@@ -1,3 +1,5 @@
+// /frontend/src/modules/optimizacion/OptimizacionIndex.tsx
+
 import { useState } from "react";
 import {
   SeleccionVehiculoPage,
@@ -35,11 +37,12 @@ export const OptimizacionIndex = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex flex-col">
-      {/* Header Fijo con Progreso */}
-      <Stepper pasoActual={pasoActual} />
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-900">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <Stepper pasoActual={pasoActual} />
+      </nav>
 
-      <main className="flex-1 animate-in fade-in duration-500">
+      <main className="flex-1 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-top-1 duration-500 ease-out">
         {pasoActual === 1 && (
           <SeleccionVehiculoPage
             onClustersGenerados={handleClustersGenerados}
@@ -50,6 +53,7 @@ export const OptimizacionIndex = () => {
           <AjusteClustersPage
             clustersIniciales={clusters}
             onContinuarPaso2={handleContinuarPaso2}
+            onVolver={() => setPasoActual(1)}
           />
         )}
 
