@@ -7,9 +7,11 @@ import { PuntoPedido } from "../types/optimizacion.types";
 
 interface Props {
   pedido: PuntoPedido;
+  color: string; // Color del cluster actual
+  onHover: (id: string | null) => void; // Para el efecto focus
 }
 
-export const PedidoCard = ({ pedido }: Props) => {
+export const PedidoCard = ({ pedido, color, onHover }: Props) => {
   const {
     attributes,
     listeners,
@@ -30,29 +32,35 @@ export const PedidoCard = ({ pedido }: Props) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 bg-white border rounded-lg shadow-sm mb-2 ${
+      onMouseEnter={() => onHover(pedido.id)}
+      onMouseLeave={() => onHover(null)}
+      className={`group flex items-center gap-3 p-3 bg-white border rounded-lg shadow-sm mb-2 transition-all hover:shadow-md ${
         isDragging ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"
       }`}
     >
-      {/* El manejador de arrastre */}
+      {/* Indicador de Color del Cluster */}
+      <div
+        className="w-1.5 h-10 rounded-full shrink-0"
+        style={{ backgroundColor: color }}
+      />
+
+      {/* Manejador de arrastre */}
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        className="cursor-grab active:cursor-grabbing text-gray-300 group-hover:text-gray-500 transition-colors"
       >
-        <GripVertical size={20} />
+        <GripVertical size={18} />
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
+        <p className="text-sm font-bold text-gray-800 truncate">
           {pedido.cliente}
         </p>
-        <div className="flex items-center text-xs text-gray-500 mt-1">
-          <MapPin size={12} className="mr-1" />
-          <span className="truncate">
-            {pedido.lat !== null && pedido.lng !== null
-              ? `${pedido.lat.toFixed(4)}, ${pedido.lng.toFixed(4)}`
-              : "Sin dirección"}
+        <div className="flex items-center text-[10px] text-gray-400 mt-0.5">
+          <MapPin size={10} className="mr-1" />
+          <span className="truncate uppercase tracking-tighter">
+            {pedido.lat.toFixed(4)}, {pedido.lng.toFixed(4)}
           </span>
         </div>
       </div>

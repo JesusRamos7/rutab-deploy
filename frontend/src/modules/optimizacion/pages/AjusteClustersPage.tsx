@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import { Map as MapIcon, Info } from "lucide-react";
+import { Map as MapIcon, Info, LayoutPanelLeft } from "lucide-react";
 
 import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
 import { ClusterColumn } from "../components/ClusterColumn";
@@ -26,6 +26,17 @@ interface Props {
   onContinuarPaso2: (clustersAjustados: ClusterResponse[]) => void;
 }
 
+// Paleta de colores consistente para marcadores y tarjetas
+const CLUSTER_COLORS = [
+  "#3B82F6", // Blue
+  "#EF4444", // Red
+  "#10B981", // Emerald
+  "#F59E0B", // Amber
+  "#8B5CF6", // Violet
+  "#EC4899", // Pink
+  "#06B6D4", // Cyan
+];
+
 export const AjusteClustersPage = ({
   clustersIniciales,
   onContinuarPaso2,
@@ -34,7 +45,9 @@ export const AjusteClustersPage = ({
     useState<ClusterResponse[]>(clustersIniciales);
   const [activePedido, setActivePedido] = useState<PuntoPedido | null>(null);
 
-  // Configuración de sensores para ratón y teclado
+  // Estado para la sincronización visual con el mapa
+  const [hoveredPedidoId, setHoveredPedidoId] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, {
@@ -72,7 +85,6 @@ export const AjusteClustersPage = ({
     if (sourceClusterIndex === destClusterIndex || destClusterIndex === -1)
       return;
 
-    // REGLA DE NEGOCIO: Límite de 20 pedidos por cluster
     if (clusters[destClusterIndex].pedidos.length >= 20) {
       toast.error("Este grupo ya alcanzó el límite máximo de 20 pedidos.");
       return;
@@ -106,66 +118,88 @@ export const AjusteClustersPage = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-      {/* HEADER DE ACCIONES */}
-      <div className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-10">
+    <div className="flex flex-col h-[calc(100vh-112px)] overflow-hidden">
+      {/* HEADER DE ACCIONES REDISEÑADO */}
+      <div className="bg-white border-b px-8 py-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-            <MapIcon size={24} />
+          <div className="bg-gray-900 p-2.5 rounded-xl text-white shadow-lg shadow-gray-200">
+            <LayoutPanelLeft size={20} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800">
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">
               Ajuste de Grupos Geográficos
             </h2>
-            <p className="text-gray-500 text-xs flex items-center gap-1">
-              <Info size={12} />
-              Los cambios en las columnas se reflejan automáticamente en el
-              mapa.
+            <p className="text-gray-400 text-xs flex items-center gap-1.5 font-medium">
+              <Info size={14} className="text-blue-500" />
+              Arrastra pedidos entre columnas para equilibrar las zonas de
+              entrega.
             </p>
           </div>
         </div>
 
         <button
           onClick={() => onContinuarPaso2(clusters)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-bold shadow-xl shadow-blue-100 transition-all active:scale-95 text-sm"
         >
           Confirmar y Calcular Rutas
         </button>
       </div>
 
       {/* ÁREA DE TRABAJO DIVIDIDA */}
-      <div className="flex flex-1 overflow-hidden bg-gray-100">
-        {/* PANEL IZQUIERDO: VISUALIZACIÓN (Solo Desktop) */}
-        <div className="hidden lg:block w-1/2 p-4 h-full">
-          <div className="bg-white h-full rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
-            <VisorMapa clusters={clusters} />
+      <div className="flex flex-1 overflow-hidden bg-white">
+        {/* PANEL IZQUIERDO: VISOR DE MAPA PREMIUM */}
+        <div className="hidden lg:block w-3/5 p-6 h-full">
+          <div className="bg-gray-50 h-full rounded-[2.5rem] shadow-inner border-8 border-gray-50 overflow-hidden relative">
+            <VisorMapa clusters={clusters} hoveredPedidoId={hoveredPedidoId} />
           </div>
         </div>
 
         {/* PANEL DERECHO: GESTIÓN (Drag and Drop) */}
-        <div className="w-full lg:w-1/2 p-4 overflow-hidden flex flex-col">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex gap-4 overflow-x-auto pb-4 h-full items-start">
-              {clusters.map((cluster) => (
-                <ClusterColumn key={cluster.clusterId} cluster={cluster} />
-              ))}
-            </div>
+        <div className="w-full lg:w-2/5 flex flex-col bg-gray-50/50 border-l border-gray-100">
+          <div className="px-6 py-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              Distribución de Carga
+            </span>
+          </div>
 
-            {/* Overlay para mantener el diseño mientras se arrastra */}
-            <DragOverlay dropAnimation={null}>
-              {activePedido ? (
-                <div className="w-72 rotate-3 shadow-2xl">
-                  <PedidoCard pedido={activePedido} />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+          <div className="flex-1 overflow-hidden">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex gap-4 overflow-x-auto px-6 pb-8 h-full items-start scrollbar-thin scrollbar-thumb-gray-200">
+                {clusters.map((cluster, idx) => (
+                  <ClusterColumn
+                    key={cluster.clusterId}
+                    cluster={cluster}
+                    color={CLUSTER_COLORS[idx % CLUSTER_COLORS.length]}
+                    onPedidoHover={setHoveredPedidoId}
+                  />
+                ))}
+              </div>
+
+              <DragOverlay dropAnimation={null}>
+                {activePedido ? (
+                  <div className="w-72 rotate-3 shadow-2xl opacity-90">
+                    <PedidoCard
+                      pedido={activePedido}
+                      color={
+                        CLUSTER_COLORS[
+                          clusters.findIndex((c) =>
+                            c.pedidos.some((p) => p.id === activePedido.id),
+                          ) % CLUSTER_COLORS.length
+                        ]
+                      }
+                      onHover={() => {}}
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
         </div>
       </div>
     </div>

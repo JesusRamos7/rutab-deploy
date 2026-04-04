@@ -1,5 +1,3 @@
-// /frontend/src/modules/optimizacion/OptimizacionIndex.tsx
-
 import { useState } from "react";
 import {
   SeleccionVehiculoPage,
@@ -8,17 +6,14 @@ import {
 import { AjusteClustersPage } from "./pages/AjusteClustersPage";
 import { ResumenPublicacionPage } from "./pages/ResumenPublicacionPage";
 import { ClusterResponse } from "./types/optimizacion.types";
+import { Stepper } from "./components/Stepper";
 
 export const OptimizacionIndex = () => {
-  // Manejo de los 3 pasos: 1 (Selección) -> 2 (Ajuste UI) -> 3 (Cálculo y Publicación)
   const [pasoActual, setPasoActual] = useState<1 | 2 | 3>(1);
-
-  // Estado global del flujo
   const [rutaSeleccionada, setRutaSeleccionada] =
     useState<RutaPendiente | null>(null);
   const [clusters, setClusters] = useState<ClusterResponse[]>([]);
 
-  // Transición 1 -> 2
   const handleClustersGenerados = (
     clustersSugeridos: ClusterResponse[],
     ruta: RutaPendiente,
@@ -28,13 +23,11 @@ export const OptimizacionIndex = () => {
     setPasoActual(2);
   };
 
-  // Transición 2 -> 3
   const handleContinuarPaso2 = (clustersAjustados: ClusterResponse[]) => {
     setClusters(clustersAjustados);
     setPasoActual(3);
   };
 
-  // Resetear flujo completo
   const handleFinalizado = () => {
     setRutaSeleccionada(null);
     setClusters([]);
@@ -42,26 +35,33 @@ export const OptimizacionIndex = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50/50">
-      {pasoActual === 1 && (
-        <SeleccionVehiculoPage onClustersGenerados={handleClustersGenerados} />
-      )}
+    <div className="min-h-screen bg-gray-50/50 flex flex-col">
+      {/* Header Fijo con Progreso */}
+      <Stepper pasoActual={pasoActual} />
 
-      {pasoActual === 2 && rutaSeleccionada && (
-        <AjusteClustersPage
-          clustersIniciales={clusters}
-          onContinuarPaso2={handleContinuarPaso2}
-        />
-      )}
+      <main className="flex-1 animate-in fade-in duration-500">
+        {pasoActual === 1 && (
+          <SeleccionVehiculoPage
+            onClustersGenerados={handleClustersGenerados}
+          />
+        )}
 
-      {pasoActual === 3 && rutaSeleccionada && (
-        <ResumenPublicacionPage
-          rutaSeleccionada={rutaSeleccionada}
-          clustersAjustados={clusters}
-          onVolver={() => setPasoActual(2)}
-          onFinalizado={handleFinalizado}
-        />
-      )}
+        {pasoActual === 2 && rutaSeleccionada && (
+          <AjusteClustersPage
+            clustersIniciales={clusters}
+            onContinuarPaso2={handleContinuarPaso2}
+          />
+        )}
+
+        {pasoActual === 3 && rutaSeleccionada && (
+          <ResumenPublicacionPage
+            rutaSeleccionada={rutaSeleccionada}
+            clustersAjustados={clusters}
+            onVolver={() => setPasoActual(2)}
+            onFinalizado={handleFinalizado}
+          />
+        )}
+      </main>
     </div>
   );
 };
