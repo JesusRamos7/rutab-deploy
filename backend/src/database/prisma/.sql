@@ -89,7 +89,7 @@ CREATE TABLE public.pedidos (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   cliente_id uuid,
   descripcion_carga text,
-  codigo_rastreo text,
+  codigo_rastreo text NOT NULL UNIQUE,
   estado_pedido text DEFAULT 'pendiente',
   created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
