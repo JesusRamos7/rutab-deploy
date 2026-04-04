@@ -24,8 +24,12 @@ export class OptimizacionService {
 
   async generarSugerenciaClusters(vehiculoId: string, fecha: string) {
     const pedidos = await this.prisma.$queryRaw<PuntoPedido[]>`
-      SELECT p.id, c.nombre as cliente, 
-             ST_Y(c.coordenadas::geometry) as lat, ST_X(c.coordenadas::geometry) as lng
+      SELECT 
+        p.id, 
+        c.nombre as cliente,
+        p.codigo_rastreo as "codigoRastreo", 
+        ST_Y(c.coordenadas::geometry) as lat, 
+        ST_X(c.coordenadas::geometry) as lng
       FROM pedidos p
       JOIN clientes c ON p.cliente_id = c.id
       JOIN detalles_ruta dr ON p.id = dr.pedido_id
