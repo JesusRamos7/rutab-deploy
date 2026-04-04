@@ -8,6 +8,7 @@ export interface Coordenadas {
 export interface PuntoPedido {
   id: string;
   cliente: string;
+  codigoRastreo: string;
   lat: number;
   lng: number;
 }

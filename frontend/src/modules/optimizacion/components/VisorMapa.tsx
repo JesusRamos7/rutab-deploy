@@ -115,14 +115,22 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
           position={{ lat: selectedPedido.lat, lng: selectedPedido.lng }}
           onCloseClick={() => setSelectedPedido(null)}
         >
-          <div className="p-2 min-w-[150px]">
-            <p className="text-[10px] font-black uppercase text-blue-600 mb-0.5">
-              Cliente
-            </p>
+          <div className="p-2 min-w-[180px]">
+            <div className="flex justify-between items-start mb-1">
+              <p className="text-[9px] font-black uppercase text-blue-600 tracking-tighter">
+                Detalle del Pedido
+              </p>
+              {/* Badge de Rastreo en el Mapa */}
+              <span className="bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded font-mono">
+                #{selectedPedido.codigoRastreo}
+              </span>
+            </div>
+
             <h4 className="font-bold text-gray-900 text-sm leading-tight mb-2">
               {selectedPedido.cliente}
             </h4>
-            <div className="flex gap-2 border-t pt-2 mt-1">
+
+            <div className="flex gap-2 border-t border-gray-100 pt-2 mt-1">
               <div className="text-[9px] text-gray-400 font-mono">
                 LAT: {selectedPedido.lat.toFixed(5)}
               </div>

@@ -250,7 +250,7 @@ export const ResumenPublicacionPage = ({
                 </div>
 
                 <div className="flex-1 pt-1">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-4">
                     <div>
                       <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                         {pedido.cliente}
@@ -262,6 +262,16 @@ export const ResumenPublicacionPage = ({
                             ? "Punto de Cierre"
                             : "Entrega Intermedia"}
                       </p>
+                    </div>
+
+                    {/* Código de Rastreo en el Timeline */}
+                    <div className="flex flex-col items-end shrink-0">
+                      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">
+                        ID RASTREO
+                      </span>
+                      <div className="bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg text-[10px] font-mono font-black text-gray-600 shadow-sm">
+                        {pedido.codigoRastreo}
+                      </div>
                     </div>
                   </div>
                 </div>

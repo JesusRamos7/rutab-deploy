@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MapPin } from "lucide-react";
+import { GripVertical, MapPin, Hash } from "lucide-react";
 import { PuntoPedido } from "../types/optimizacion.types";
 
 interface Props {
@@ -57,6 +57,15 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
         <p className="text-sm font-bold text-gray-800 truncate">
           {pedido.cliente}
         </p>
+        
+        {/* Etiqueta del Código de Rastreo */}
+        <div className="flex items-center gap-1.5">
+          <div className="bg-gray-100 px-1.5 py-0.5 rounded text-[9px] font-mono font-black text-gray-500 border border-gray-200 flex items-center gap-1">
+            <Hash size={10} />
+            {pedido.codigoRastreo}
+          </div>
+        </div>
+
         <div className="flex items-center text-[10px] text-gray-400 mt-0.5">
           <MapPin size={10} className="mr-1" />
           <span className="truncate uppercase tracking-tighter">
