@@ -8,6 +8,8 @@ import {
   Route,
   ArrowLeft,
   Truck,
+  MapPin,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { optimizacionService } from "../services/optimizacionService";
@@ -43,7 +45,6 @@ export const ResumenPublicacionPage = ({
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    // En desarrollo, esto evita que se ejecute la segunda vez del StrictMode
     if (isFirstRender.current) {
       calcularRutas();
       isFirstRender.current = false;
@@ -54,7 +55,6 @@ export const ResumenPublicacionPage = ({
     try {
       setIsCalculating(true);
 
-      // PASO 3: Obtener orden de clusters (Lógica local en Backend, $0 costo)
       const centroides = clustersAjustados.map((c) => ({
         clusterId: c.clusterId,
         lat: c.centroide.lat,
@@ -69,11 +69,8 @@ export const ResumenPublicacionPage = ({
       let pedidosPlanificados: PuntoPedido[] = [];
       let sumDistancia = 0;
       let sumDuracion = 0;
-
-      // Variable para encadenar: el inicio del cluster N es el último punto del cluster N-1
       let ultimoPuntoDeEntrega: Coordenadas | undefined = undefined;
 
-      // Iteramos secuencialmente para aplicar la lógica de postas
       for (let i = 0; i < ordenDeClustersIds.length; i++) {
         const clusterId = ordenDeClustersIds[i];
         const clusterActual = clustersAjustados.find(
@@ -82,29 +79,23 @@ export const ResumenPublicacionPage = ({
 
         if (!clusterActual || clusterActual.pedidos.length === 0) continue;
 
-        // Determinamos el destino del grupo actual (el centroide del siguiente grupo)
-        // Si no hay siguiente grupo, el destino será la Empresa (undefined en el servicio)
         const siguienteClusterId = ordenDeClustersIds[i + 1];
         const siguienteCluster = clustersAjustados.find(
           (c) => c.clusterId === siguienteClusterId,
         );
         const puntoFin = siguienteCluster?.centroide;
 
-        // PASO 2: Llamada a Google Maps (1 solicitud por cada 20 pedidos)
         const resultadoOrdenado = await optimizacionService.ordenarCluster({
           pedidos: clusterActual.pedidos,
-          inicio: ultimoPuntoDeEntrega, // Viene del cluster anterior (o base)
-          fin: puntoFin, // Va hacia el centroide del siguiente
+          inicio: ultimoPuntoDeEntrega,
+          fin: puntoFin,
         });
 
-        // Agregamos los pedidos ordenados al total
         pedidosPlanificados = [
           ...pedidosPlanificados,
           ...resultadoOrdenado.pedidos,
         ];
 
-        // Actualizamos el punto de inicio para el SIGUIENTE cluster
-        // Es el último pedido que Google decidió poner al final de este grupo
         const ultimoPedido =
           resultadoOrdenado.pedidos[resultadoOrdenado.pedidos.length - 1];
         ultimoPuntoDeEntrega = { lat: ultimoPedido.lat, lng: ultimoPedido.lng };
@@ -118,7 +109,6 @@ export const ResumenPublicacionPage = ({
       setDuracionTotal(sumDuracion);
     } catch (error) {
       toast.error("Error al calcular la secuencia óptima.");
-      console.error(error);
     } finally {
       setIsCalculating(false);
     }
@@ -127,11 +117,9 @@ export const ResumenPublicacionPage = ({
   const handlePublicar = async () => {
     try {
       setIsPublishing(true);
-      const ordenFinalPedidos = ordenGlobalPedidos.map((p) => p.id);
-
       await optimizacionService.publicarRuta({
         rutaId: rutaSeleccionada.rutaId,
-        ordenFinalPedidos,
+        ordenFinalPedidos: ordenGlobalPedidos.map((p) => p.id),
         distanciaTotalMetros: distanciaTotal,
         duracionTotalSegundos: duracionTotal,
       });
@@ -145,117 +133,183 @@ export const ResumenPublicacionPage = ({
     }
   };
 
-  const formatKms = (metros: number) => (metros / 1000).toFixed(1) + " km";
-  const formatTiempo = (segundos: number) => {
-    const horas = Math.floor(segundos / 3600);
-    const min = Math.floor((segundos % 3600) / 60);
-    return horas > 0 ? `${horas}h ${min}m` : `${min} min`;
-  };
-
   if (isCalculating) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
-        <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
-        <h3 className="text-xl font-semibold text-gray-800">
-          Trazando ruta encadenada...
+      <div className="flex flex-col items-center justify-center h-[60vh] animate-pulse">
+        <div className="relative mb-6">
+          <Loader2 className="animate-spin text-blue-600" size={64} />
+          <Route className="absolute inset-0 m-auto text-blue-400" size={24} />
+        </div>
+        <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+          Optimizando Secuencia Final
         </h3>
-        <p className="text-gray-500 mt-2">
-          Optimizando saltos entre grupos de entrega.
+        <p className="text-gray-400 font-medium mt-2">
+          Conectando grupos de entrega para minimizar el kilometraje...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Botón Volver */}
       <button
         onClick={onVolver}
-        className="flex items-center text-gray-500 hover:text-gray-800 mb-6 transition-colors"
+        className="group flex items-center text-gray-400 hover:text-gray-900 mb-8 transition-all font-bold text-sm"
       >
-        <ArrowLeft size={16} className="mr-2" /> Volver a los grupos
+        <ArrowLeft
+          size={18}
+          className="mr-2 group-hover:-translate-x-1 transition-transform"
+        />
+        REGRESAR AL AJUSTE
       </button>
 
-      <div className="flex justify-between items-end mb-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">
+          <div className="flex items-center gap-2 mb-2 text-blue-600 font-black text-xs uppercase tracking-widest">
+            <CheckCircle size={14} /> Revisión Final
+          </div>
+          <h2 className="text-4xl font-black text-gray-900 tracking-tighter">
             Resumen de la Ruta
           </h2>
-          <p className="text-gray-500 mt-1 flex items-center gap-2">
-            <Truck size={16} /> {rutaSeleccionada.placas} -{" "}
-            {rutaSeleccionada.modelo}
-          </p>
+          <div className="flex items-center gap-3 mt-2 bg-gray-100 px-3 py-1.5 rounded-lg w-fit">
+            <Truck size={16} className="text-gray-500" />
+            <span className="font-bold text-gray-700 text-sm">
+              {rutaSeleccionada.placas}{" "}
+              <span className="text-gray-400 mx-1">•</span>{" "}
+              {rutaSeleccionada.modelo}
+            </span>
+          </div>
         </div>
+
         <button
           onClick={handlePublicar}
           disabled={isPublishing}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium shadow-sm flex items-center gap-2 transition-colors disabled:opacity-70"
+          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-green-100 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
         >
           {isPublishing ? (
             <Loader2 className="animate-spin" size={20} />
           ) : (
             <CheckCircle size={20} />
           )}
-          {isPublishing ? "Guardando..." : "Publicar Ruta Definitiva"}
+          {isPublishing ? "GUARDANDO..." : "PUBLICAR RUTA"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Métricas con Mapeo de Colores Correcto */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <MetricCard
           icon={<Route size={24} />}
           label="Distancia Total"
-          value={formatKms(distanciaTotal)}
-          color="blue"
+          value={(distanciaTotal / 1000).toFixed(1) + " KM"}
+          type="blue"
         />
         <MetricCard
           icon={<Clock size={24} />}
-          label="Tiempo de Conducción"
+          label="Est. Conducción"
           value={formatTiempo(duracionTotal)}
-          color="orange"
+          type="orange"
         />
         <MetricCard
-          icon={<CheckCircle size={24} />}
-          label="Total de Entregas"
+          icon={<MapPin size={24} />}
+          label="Puntos de Entrega"
           value={ordenGlobalPedidos.length}
-          color="purple"
+          type="purple"
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700">
-          Secuencia de Visita
-        </div>
-        <div className="divide-y divide-gray-100">
-          {ordenGlobalPedidos.map((pedido, index) => (
-            <div
-              key={pedido.id}
-              className="p-4 flex items-center gap-4 hover:bg-gray-50"
-            >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 border border-gray-200">
-                {index + 1}
+      {/* Timeline de Entregas */}
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8">
+        <h3 className="text-lg font-black text-gray-900 mb-8 flex items-center gap-2">
+          Secuencia de Visita{" "}
+          <ChevronRight size={18} className="text-gray-300" />
+        </h3>
+
+        <div className="relative">
+          {/* Línea central del timeline */}
+          <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-100" />
+
+          <div className="space-y-8">
+            {ordenGlobalPedidos.map((pedido, index) => (
+              <div
+                key={pedido.id}
+                className="relative flex items-start gap-6 group"
+              >
+                {/* Indicador de Punto */}
+                <div
+                  className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-4 transition-colors ${
+                    index === 0
+                      ? "bg-blue-600 border-blue-100 text-white"
+                      : index === ordenGlobalPedidos.length - 1
+                        ? "bg-green-600 border-green-100 text-white"
+                        : "bg-white border-gray-100 text-gray-400 group-hover:border-blue-200 group-hover:text-blue-500"
+                  }`}
+                >
+                  {index + 1}
+                </div>
+
+                <div className="flex-1 pt-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {pedido.cliente}
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-0.5">
+                        {index === 0
+                          ? "Punto de Inicio"
+                          : index === ordenGlobalPedidos.length - 1
+                            ? "Punto de Cierre"
+                            : "Entrega Intermedia"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">{pedido.cliente}</p>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">
-                  Punto de Entrega
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Sub-componente para limpiar el render principal
-const MetricCard = ({ icon, label, value, color }: any) => (
-  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-    <div className={`bg-${color}-50 p-3 rounded-full text-${color}-600`}>
-      {icon}
+// Auxiliares de Formato
+const formatTiempo = (segundos: number) => {
+  const h = Math.floor(segundos / 3600);
+  const m = Math.floor((segundos % 3600) / 60);
+  return h > 0 ? `${h}H ${m}M` : `${m} MIN`;
+};
+
+// Sub-componente MetricCard Refactorizado para Tailwind
+const MetricCard = ({
+  icon,
+  label,
+  value,
+  type,
+}: {
+  icon: any;
+  label: string;
+  value: any;
+  type: "blue" | "orange" | "purple";
+}) => {
+  const styles = {
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    orange: "bg-orange-50 text-orange-600 border-orange-100",
+    purple: "bg-purple-50 text-purple-600 border-purple-100",
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-5 transition-transform hover:scale-[1.02]">
+      <div className={`p-4 rounded-2xl border ${styles[type]}`}>{icon}</div>
+      <div>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1.5">
+          {label}
+        </p>
+        <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none">
+          {value}
+        </p>
+      </div>
     </div>
-    <div>
-      <p className="text-sm text-gray-500 font-medium">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-    </div>
-  </div>
-);
+  );
+};
