@@ -8,22 +8,23 @@ import {
 } from "@react-google-maps/api";
 import { useState, useMemo } from "react";
 import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
+import { Loader2 } from "lucide-react"; // Usamos el de la librería para consistencia
 
 interface Props {
   clusters: ClusterResponse[];
-  hoveredPedidoId: string | null; // Nueva prop para el efecto focus
+  hoveredPedidoId: string | null;
 }
 
 const containerStyle = { width: "100%", height: "100%", borderRadius: "16px" };
 
 const CLUSTER_COLORS = [
-  "#3B82F6", // Azul
-  "#EF4444", // Rojo
-  "#10B981", // Esmeralda
-  "#F59E0B", // Ámbar
-  "#8B5CF6", // Violeta
-  "#EC4899", // Rosa
-  "#06B6D4", // Cian
+  "#3B82F6",
+  "#EF4444",
+  "#10B981",
+  "#F59E0B",
+  "#8B5CF6",
+  "#EC4899",
+  "#06B6D4",
 ];
 
 export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
@@ -36,18 +37,16 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
     null,
   );
 
-  // 1. Mapeo de marcadores con sus colores de cluster
   const markers = useMemo(() => {
     return clusters.flatMap((cluster, clusterIdx) =>
       cluster.pedidos.map((pedido) => ({
         ...pedido,
-        clusterId: cluster.clusterId,
+        clusterNumber: clusterIdx + 1,
         color: CLUSTER_COLORS[clusterIdx % CLUSTER_COLORS.length],
       })),
     );
   }, [clusters]);
 
-  // 2. Cálculo del centro dinámico del mapa
   const center = useMemo(() => {
     if (markers.length === 0) return { lat: 19.4326, lng: -99.1332 };
     const latSum = markers.reduce((acc, p) => acc + p.lat, 0);
@@ -57,9 +56,9 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
 
   if (!isLoaded) {
     return (
-      <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">
+      <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em]">
           Cargando Cartografía...
         </p>
       </div>
@@ -72,7 +71,7 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
       center={center}
       zoom={13}
       options={{
-        styles: silverMapStyle,
+        styles: silverMapStyle, // Restaurado al estilo Silver
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
@@ -89,22 +88,20 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
             key={pedido.id}
             position={{ lat: pedido.lat, lng: pedido.lng }}
             onClick={() => setSelectedPedido(pedido)}
-            // Si está hovered, el marcador se dibuja por encima de todos (zIndex alto)
             zIndex={isHovered ? 1000 : 10}
             label={{
-              text: (pedido.clusterId + 1).toString(),
+              text: pedido.clusterNumber.toString(),
               color: "white",
-              fontSize: isHovered ? "12px" : "10px",
+              fontSize: "11px",
               fontWeight: "bold",
             }}
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
               fillColor: pedido.color,
               fillOpacity: 1,
-              strokeWeight: isHovered ? 4 : 2,
-              strokeColor: isHovered ? "#000000" : "#FFFFFF",
-              // Aumentamos la escala si el usuario tiene el mouse sobre la tarjeta
-              scale: isHovered ? 14 : 10,
+              strokeWeight: isHovered ? 3 : 2,
+              strokeColor: isHovered ? "#000000" : "#ffffff",
+              scale: isHovered ? 13 : 9,
             }}
           />
         );
@@ -115,27 +112,37 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
           position={{ lat: selectedPedido.lat, lng: selectedPedido.lng }}
           onCloseClick={() => setSelectedPedido(null)}
         >
-          <div className="p-2 min-w-[180px]">
-            <div className="flex justify-between items-start mb-1">
-              <p className="text-[9px] font-black uppercase text-blue-600 tracking-tighter">
-                Detalle del Pedido
-              </p>
-              {/* Badge de Rastreo en el Mapa */}
-              <span className="bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded font-mono">
+          <div className="p-3 min-w-[200px] bg-white rounded-lg font-sans">
+            <div className="flex items-center justify-between mb-2 border-b border-slate-100 pb-2">
+              <span className="text-blue-600 text-[9px] font-black uppercase tracking-wider">
+                Pedido Activo
+              </span>
+              <span className="text-slate-400 font-mono text-[9px]">
                 #{selectedPedido.codigoRastreo}
               </span>
             </div>
 
-            <h4 className="font-bold text-gray-900 text-sm leading-tight mb-2">
+            <h4 className="font-bold text-slate-900 text-sm mb-2 leading-tight">
               {selectedPedido.cliente}
             </h4>
 
-            <div className="flex gap-2 border-t border-gray-100 pt-2 mt-1">
-              <div className="text-[9px] text-gray-400 font-mono">
-                LAT: {selectedPedido.lat.toFixed(5)}
+            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+              <div className="space-y-0.5">
+                <p className="text-[8px] font-bold text-slate-400 uppercase">
+                  Lat
+                </p>
+                <p className="text-[10px] font-mono text-slate-700">
+                  {selectedPedido.lat.toFixed(5)}
+                </p>
               </div>
-              <div className="text-[9px] text-gray-400 font-mono">
-                LNG: {selectedPedido.lng.toFixed(5)}
+              <div className="w-px h-5 bg-slate-200" />
+              <div className="space-y-0.5">
+                <p className="text-[8px] font-bold text-slate-400 uppercase">
+                  Lng
+                </p>
+                <p className="text-[10px] font-mono text-slate-700">
+                  {selectedPedido.lng.toFixed(5)}
+                </p>
               </div>
             </div>
           </div>
@@ -145,6 +152,7 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
   );
 };
 
+// Estilo Silver Original
 const silverMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },

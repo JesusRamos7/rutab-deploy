@@ -1,6 +1,7 @@
 // /frontend/src/modules/optimizacion/OptimizacionIndex.tsx
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   SeleccionVehiculoPage,
   RutaPendiente,
@@ -9,12 +10,14 @@ import { AjusteClustersPage } from "./pages/AjusteClustersPage";
 import { ResumenPublicacionPage } from "./pages/ResumenPublicacionPage";
 import { ClusterResponse } from "./types/optimizacion.types";
 import { Stepper } from "./components/Stepper";
+import { optimizacionService } from "./services/optimizacionService";
 
 export const OptimizacionIndex = () => {
   const [pasoActual, setPasoActual] = useState<1 | 2 | 3>(1);
   const [rutaSeleccionada, setRutaSeleccionada] =
     useState<RutaPendiente | null>(null);
   const [clusters, setClusters] = useState<ClusterResponse[]>([]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleClustersGenerados = (
     clustersSugeridos: ClusterResponse[],
@@ -23,6 +26,30 @@ export const OptimizacionIndex = () => {
     setClusters(clustersSugeridos);
     setRutaSeleccionada(ruta);
     setPasoActual(2);
+  };
+
+  const handleRegenerarClusters = async () => {
+    if (!rutaSeleccionada) return;
+
+    try {
+      setIsRegenerating(true);
+      const clustersSugeridos = await optimizacionService.sugerirClusters({
+        vehiculoId: rutaSeleccionada.vehiculoId,
+        fechaProgramada: rutaSeleccionada.fechaProgramada,
+      });
+
+      if (clustersSugeridos.length === 0) {
+        toast.warning("No se encontraron pedidos para regenerar los grupos.");
+        return;
+      }
+
+      setClusters(clustersSugeridos);
+      toast.success("Sugerencia de grupos actualizada.");
+    } catch (error) {
+      toast.error("Error al intentar recalcular los grupos.");
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   const handleContinuarPaso2 = (clustersAjustados: ClusterResponse[]) => {
@@ -54,6 +81,8 @@ export const OptimizacionIndex = () => {
             clustersIniciales={clusters}
             onContinuarPaso2={handleContinuarPaso2}
             onVolver={() => setPasoActual(1)}
+            onRegenerar={handleRegenerarClusters} // <-- Nueva prop para el algoritmo
+            isRegenerating={isRegenerating} // <-- Estado de carga para el botón
           />
         )}
 

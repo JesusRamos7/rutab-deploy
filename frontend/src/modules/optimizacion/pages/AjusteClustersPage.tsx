@@ -1,6 +1,6 @@
 // /frontend/src/modules/optimizacion/pages/AjusteClustersPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Añadido useEffect
 import {
   DndContext,
   DragOverlay,
@@ -13,7 +13,13 @@ import {
   DragStartEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { LayoutPanelLeft, Info, ArrowLeft } from "lucide-react";
+import {
+  LayoutPanelLeft,
+  Info,
+  ArrowLeft,
+  RotateCcw,
+  Loader2,
+} from "lucide-react"; // Añadidos iconos
 
 import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
 import { ClusterColumn } from "../components/ClusterColumn";
@@ -24,6 +30,8 @@ interface Props {
   clustersIniciales: ClusterResponse[];
   onContinuarPaso2: (clustersAjustados: ClusterResponse[]) => void;
   onVolver: () => void;
+  onRegenerar: () => void; // Nueva prop
+  isRegenerating: boolean; // Nueva prop
 }
 
 const CLUSTER_COLORS = [
@@ -40,11 +48,18 @@ export const AjusteClustersPage = ({
   clustersIniciales,
   onContinuarPaso2,
   onVolver,
+  onRegenerar,
+  isRegenerating,
 }: Props) => {
   const [clusters, setClusters] =
     useState<ClusterResponse[]>(clustersIniciales);
   const [activePedido, setActivePedido] = useState<PuntoPedido | null>(null);
   const [hoveredPedidoId, setHoveredPedidoId] = useState<string | null>(null);
+
+  // Sincronizar el estado local si los clusters iniciales cambian (al regenerar)
+  useEffect(() => {
+    setClusters(clustersIniciales);
+  }, [clustersIniciales]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -99,7 +114,6 @@ export const AjusteClustersPage = ({
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] overflow-hidden bg-white">
-      
       <div className="px-8 py-5 flex justify-between items-center border-b border-slate-100">
         <div className="flex items-center gap-4">
           <div className="bg-slate-100 p-2 rounded-xl text-slate-500">
@@ -109,7 +123,7 @@ export const AjusteClustersPage = ({
             <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
               Ajuste de Grupos
             </h2>
-            <p className="text-slate-400 text-xs flex items-center gap-1.5">
+            <p className="text-slate-400 text-xs flex items-center gap-1.5 font-medium">
               <Info size={12} className="text-blue-500/70" />
               Organice los pedidos para equilibrar las rutas.
             </p>
@@ -117,13 +131,26 @@ export const AjusteClustersPage = ({
         </div>
 
         <div className="flex items-center gap-3">
-          
           <button
             onClick={onVolver}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all"
           >
             <ArrowLeft size={14} strokeWidth={3} />
             Regresar
+          </button>
+
+          {/* Botón de Regenerar Sugerencia */}
+          <button
+            onClick={onRegenerar}
+            disabled={isRegenerating}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all disabled:opacity-50"
+          >
+            {isRegenerating ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <RotateCcw size={14} strokeWidth={3} />
+            )}
+            Regenerar
           </button>
 
           <button
@@ -135,7 +162,6 @@ export const AjusteClustersPage = ({
         </div>
       </div>
 
-      
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden lg:block w-[55%] p-4 h-full">
           <div className="bg-slate-50 h-full rounded-2xl border border-slate-100 overflow-hidden relative shadow-sm">
@@ -144,7 +170,7 @@ export const AjusteClustersPage = ({
         </div>
 
         <div className="w-full lg:w-[45%] flex flex-col bg-slate-50/30 border-l border-slate-50">
-          <div className="px-6 py-4 flex items-center justify-between">
+          <div className="px-6 py-4">
             <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
               Distribución de Carga
             </span>
