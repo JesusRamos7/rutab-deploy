@@ -1,6 +1,14 @@
 // /backend/src/modules/optimizacion/optimizacion.controller.ts
 
-import { Controller, Post, Body, UseGuards, Patch, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Patch,
+  Get,
+  Query,
+} from '@nestjs/common';
 import { OptimizacionService } from './optimizacion.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -76,7 +84,14 @@ export class OptimizacionController {
    */
   @Get('rutas-pendientes')
   @Roles('superAdmin', 'logístico')
-  async obtenerRutasPendientes() {
-    return await this.optimizacionService.obtenerRutasPendientes();
+  async obtenerRutasPendientes(
+    @Query('busqueda') busqueda?: string,
+    @Query('fecha') fecha?: string,
+  ) {
+    // Pasamos los parámetros opcionales directamente al servicio
+    return await this.optimizacionService.obtenerRutasPendientes(
+      busqueda,
+      fecha,
+    );
   }
 }

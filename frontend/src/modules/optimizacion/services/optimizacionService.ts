@@ -78,9 +78,15 @@ export const optimizacionService = {
   /**
    * Obtiene las rutas en estado borrador.
    */
-  obtenerRutasPendientes: async (): Promise<RutaPendiente[]> => {
+  obtenerRutasPendientes: async (
+    busqueda?: string,
+    fecha?: string,
+  ): Promise<RutaPendiente[]> => {
     const response = await api.get<RutaPendiente[]>(
       "/optimizacion/rutas-pendientes",
+      {
+        params: { busqueda, fecha }, // Axios se encarga de construir la URL: ?busqueda=...&fecha=...
+      },
     );
     return response.data;
   },

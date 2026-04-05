@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import {
   Truck,
-  Calendar,
+  Calendar as CalendarIcon,
   Map,
   ChevronRight,
   Loader2,
   Search,
   PackageOpen,
+  Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import { optimizacionService } from "../services/optimizacionService";
@@ -36,17 +37,24 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
 
-  useEffect(() => {
-    cargarRutas();
-  }, []);
+  const [busqueda, setBusqueda] = useState("");
+  const [fecha, setFecha] = useState("");
 
-  const cargarRutas = async () => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      cargarRutas(busqueda, fecha);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [busqueda, fecha]);
+
+  const cargarRutas = async (q?: string, f?: string) => {
     try {
       setIsLoading(true);
-      const data = await optimizacionService.obtenerRutasPendientes();
+      const data = await optimizacionService.obtenerRutasPendientes(q, f);
       setRutasPendientes(data);
     } catch (error) {
-      toast.error("Error al cargar las rutas pendientes.");
+      toast.error("Error al sincronizar las rutas.");
     } finally {
       setIsLoading(false);
     }
@@ -75,33 +83,49 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-700">
-      {/* Header Minimalista */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-blue-600 mb-1">
             <Map size={20} strokeWidth={2.5} />
             <span className="text-xs font-bold uppercase tracking-widest">
-              Logística
+              Operaciones
             </span>
           </div>
           <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
-            Planificación de Rutas
+            Selección de Rutas
           </h1>
           <p className="text-slate-500 text-sm">
-            Gestione los borradores y optimice las secuencias de entrega.
+            Filtre por placa del vehiculo, UUID de ruta o fecha programada.
           </p>
         </div>
 
-        <div className="relative group">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"
-            size={16}
-          />
-          <input
-            type="text"
-            placeholder="Filtrar por placa..."
-            className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white focus:border-blue-500/50 transition-all w-full md:w-56"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          <div className="relative group w-full sm:w-64">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"
+              size={16}
+            />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Placa o UUID de ruta..."
+              className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white focus:border-blue-500/50 transition-all w-full"
+            />
+          </div>
+
+          <div className="relative group w-full sm:w-44">
+            <CalendarIcon
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors pointer-events-none"
+              size={16}
+            />
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white focus:border-blue-500/50 transition-all w-full text-slate-600 appearance-none uppercase"
+            />
+          </div>
         </div>
       </div>
 
@@ -118,25 +142,34 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
               className="text-slate-300 mb-3"
               strokeWidth={1.5}
             />
-            <h3 className="text-sm font-semibold text-slate-900">
-              Bandeja de entrada vacía
+            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">
+              Sin coincidencias
             </h3>
             <p className="text-slate-400 text-xs mt-1">
-              No hay rutas pendientes de optimización.
+              Intente ajustar los filtros de búsqueda.
             </p>
           </div>
         ) : (
           rutasPendientes.map((ruta) => (
             <div
               key={ruta.rutaId}
-              className="group bg-white border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-blue-500/30 hover:shadow-sm hover:shadow-blue-500/5 transition-all duration-300"
+              className="group bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-blue-500/30 hover:shadow-sm transition-all duration-300"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shrink-0 mt-1">
                   <Truck size={24} strokeWidth={1.5} />
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">
+
+                <div className="min-w-0">
+                  {/* UUID de la Ruta - Ahora como encabezado sutil */}
+                  <div className="flex items-center gap-1.5 mb-2 bg-slate-50 w-fit px-2 py-0.5 rounded-md border border-slate-100">
+                    <Hash size={10} className="text-blue-500/50" />
+                    <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-tighter">
+                      UUID: {ruta.rutaId}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-semibold text-slate-900 truncate">
                     {ruta.placas}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
@@ -145,20 +178,20 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 md:gap-12">
+              <div className="flex flex-wrap items-center gap-6 md:gap-10">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Programación
                   </p>
                   <div className="flex items-center gap-1.5 text-slate-700 text-sm font-medium">
-                    <Calendar size={14} className="text-slate-400" />
+                    <CalendarIcon size={14} className="text-slate-400" />
                     {ruta.fechaProgramada}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Carga
+                    Carga Actual
                   </p>
                   <div className="text-slate-900 text-sm font-semibold">
                     {ruta.pedidosAsignados}{" "}
@@ -171,10 +204,10 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                 <button
                   onClick={() => handlePlanificar(ruta)}
                   disabled={procesandoId === ruta.rutaId}
-                  className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                  className={`min-w-[140px] flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
                     procesandoId === ruta.rutaId
                       ? "bg-slate-100 text-slate-400"
-                      : "bg-slate-900 text-white hover:bg-blue-600 active:scale-95 shadow-sm"
+                      : "bg-slate-900 text-white hover:bg-blue-600 active:scale-95 shadow-sm shadow-slate-200"
                   }`}
                 >
                   {procesandoId === ruta.rutaId ? (

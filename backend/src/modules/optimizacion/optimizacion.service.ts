@@ -157,9 +157,38 @@ export class OptimizacionService {
     return clusters;
   }
 
-  async obtenerRutasPendientes() {
+  async obtenerRutasPendientes(busqueda?: string, fecha?: string) {
+    const where: any = {
+      estatus_ruta: 'borrador',
+    };
+
+    if (fecha) {
+      where.fecha_programada = new Date(fecha);
+    }
+
+    if (busqueda) {
+      // Expresión regular para validar si el string es un UUID válido
+      const esUuid =
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          busqueda,
+        );
+
+      where.OR = [
+        {
+          vehiculos: {
+            placas: { contains: busqueda, mode: 'insensitive' },
+          },
+        },
+      ];
+
+      // Solo agregamos la búsqueda por ID si el formato es correcto para evitar errores de BD
+      if (esUuid) {
+        where.OR.push({ id: busqueda });
+      }
+    }
+
     const rutasBorrador = await this.prisma.rutas.findMany({
-      where: { estatus_ruta: 'borrador' },
+      where,
       include: {
         vehiculos: {
           select: { placas: true, modelo: true },
@@ -167,6 +196,9 @@ export class OptimizacionService {
         _count: {
           select: { detalles_ruta: true },
         },
+      },
+      orderBy: {
+        fecha_programada: 'asc',
       },
     });
 
