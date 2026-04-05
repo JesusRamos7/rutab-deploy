@@ -12,7 +12,7 @@ import {
 } from "../types/optimizacion.types";
 
 /**
- * Interfaz para la nueva estructura de petición de ordenamiento por cluster.
+ * Parámetros requeridos para solicitar el ordenamiento de paradas dentro de un grupo.
  */
 interface OrdenarClusterParams {
   pedidos: PuntoPedido[];
@@ -20,9 +20,13 @@ interface OrdenarClusterParams {
   fin?: { lat: number; lng: number };
 }
 
+/**
+ * Servicio encargado de la comunicación con el backend para los procesos de
+ * geolocalización y optimización de rutas logísticas.
+ */
 export const optimizacionService = {
   /**
-   * PASO 1: Obtiene la sugerencia inicial de grupos (K-Means).
+   * Fase 1: Solicita al servidor una agrupación inicial de pedidos basada en proximidad.
    */
   sugerirClusters: async (
     data: ClusteringRequest,
@@ -35,22 +39,22 @@ export const optimizacionService = {
   },
 
   /**
-   * PASO 2 (Actualizado): Envía los pedidos junto con puntos de inicio/fin opcionales
-   * para permitir el encadenamiento de rutas.
+   * Fase 2: Envía un subgrupo de pedidos para calcular la secuencia de entrega más eficiente.
+   * Soporta puntos de inicio y fin específicos para permitir el encadenamiento entre grupos.
    */
   ordenarCluster: async (
     params: OrdenarClusterParams,
   ): Promise<DetalleRutaOrdenado> => {
     const response = await api.post<DetalleRutaOrdenado>(
       "/optimizacion/ordenar-cluster",
-      params, // Ahora enviamos el objeto completo
+      params,
     );
     return response.data;
   },
 
   /**
-   * PASO 3: Obtiene el orden propuesto para visitar los distintos clusters.
-   * Ahora consume una lógica matemática local en el backend ($0 costo).
+   * Fase 3: Determina el orden lógico para visitar los diferentes grupos (clusters) generados.
+   * Utiliza una lógica de optimización de proximidad procesada en el backend.
    */
   proponerOrdenClusters: async (
     data: OrdenClustersRequest,
@@ -63,7 +67,7 @@ export const optimizacionService = {
   },
 
   /**
-   * PASO 4: Publica la ruta definitiva y guarda los cambios en la base de datos.
+   * Fase 4: Registra de forma definitiva la ruta optimizada en la base de datos.
    */
   publicarRuta: async (
     data: PublicarRutaDto,
@@ -76,7 +80,7 @@ export const optimizacionService = {
   },
 
   /**
-   * Obtiene las rutas en estado borrador.
+   * Recupera el listado de rutas en estado borrador, permitiendo filtros por texto o fecha.
    */
   obtenerRutasPendientes: async (
     busqueda?: string,
@@ -85,7 +89,7 @@ export const optimizacionService = {
     const response = await api.get<RutaPendiente[]>(
       "/optimizacion/rutas-pendientes",
       {
-        params: { busqueda, fecha }, // Axios se encarga de construir la URL: ?busqueda=...&fecha=...
+        params: { busqueda, fecha },
       },
     );
     return response.data;

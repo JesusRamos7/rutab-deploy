@@ -12,13 +12,26 @@ import { ClusterResponse } from "./types/optimizacion.types";
 import { Stepper } from "./components/Stepper";
 import { optimizacionService } from "./services/optimizacionService";
 
+/**
+ * Componente principal (Orquestador) del módulo de Optimización.
+ * Gestiona el flujo de trabajo en tres etapas: Selección, Ajuste y Resumen.
+ */
 export const OptimizacionIndex = () => {
+  // Estado para controlar la navegación entre los pasos del proceso
   const [pasoActual, setPasoActual] = useState<1 | 2 | 3>(1);
+
+  // Información de la ruta y los grupos de pedidos (clusters) en memoria
   const [rutaSeleccionada, setRutaSeleccionada] =
     useState<RutaPendiente | null>(null);
   const [clusters, setClusters] = useState<ClusterResponse[]>([]);
+
+  // Estado de carga para operaciones asíncronas de recalculo
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+  /**
+   * Inicializa el proceso tras seleccionar una ruta en el Paso 1.
+   * Recibe la sugerencia inicial generada por el servidor.
+   */
   const handleClustersGenerados = (
     clustersSugeridos: ClusterResponse[],
     ruta: RutaPendiente,
@@ -28,6 +41,10 @@ export const OptimizacionIndex = () => {
     setPasoActual(2);
   };
 
+  /**
+   * Ejecuta nuevamente el algoritmo de agrupamiento (Clustering) desde el Paso 2.
+   * Permite obtener una nueva distribución geográfica sin cambiar de ruta.
+   */
   const handleRegenerarClusters = async () => {
     if (!rutaSeleccionada) return;
 
@@ -52,11 +69,17 @@ export const OptimizacionIndex = () => {
     }
   };
 
+  /**
+   * Valida y guarda los ajustes manuales realizados en los grupos para pasar al resumen.
+   */
   const handleContinuarPaso2 = (clustersAjustados: ClusterResponse[]) => {
     setClusters(clustersAjustados);
     setPasoActual(3);
   };
 
+  /**
+   * Limpia el estado local y reinicia el flujo tras publicar con éxito.
+   */
   const handleFinalizado = () => {
     setRutaSeleccionada(null);
     setClusters([]);
@@ -65,10 +88,12 @@ export const OptimizacionIndex = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-900">
+      {/* Indicador de progreso persistente */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <Stepper pasoActual={pasoActual} />
       </nav>
 
+      {/* Renderizado condicional basado en la etapa actual del proceso */}
       <main className="flex-1 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-top-1 duration-500 ease-out">
         {pasoActual === 1 && (
           <SeleccionVehiculoPage
@@ -81,8 +106,8 @@ export const OptimizacionIndex = () => {
             clustersIniciales={clusters}
             onContinuarPaso2={handleContinuarPaso2}
             onVolver={() => setPasoActual(1)}
-            onRegenerar={handleRegenerarClusters} // <-- Nueva prop para el algoritmo
-            isRegenerating={isRegenerating} // <-- Estado de carga para el botón
+            onRegenerar={handleRegenerarClusters}
+            isRegenerating={isRegenerating}
           />
         )}
 

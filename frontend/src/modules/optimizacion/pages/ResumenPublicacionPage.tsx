@@ -27,6 +27,11 @@ interface Props {
   onFinalizado: () => void;
 }
 
+/**
+ * Componente final del flujo de optimización.
+ * Calcula la secuencia global definitiva, consolida métricas de tiempo/distancia
+ * y permite la publicación oficial del itinerario.
+ */
 export const ResumenPublicacionPage = ({
   rutaSeleccionada,
   clustersAjustados,
@@ -41,6 +46,7 @@ export const ResumenPublicacionPage = ({
   const [distanciaTotal, setDistanciaTotal] = useState(0);
   const [duracionTotal, setDuracionTotal] = useState(0);
 
+  // Evita ejecuciones duplicadas en entornos de desarrollo (Strict Mode)
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -50,9 +56,16 @@ export const ResumenPublicacionPage = ({
     }
   }, []);
 
+  /**
+   * Orquestador de la secuencia final.
+   * Primero ordena los grupos entre sí y luego optimiza las paradas internas
+   * de cada grupo asegurando el encadenamiento de puntos (salida/llegada).
+   */
   const calcularRutas = async () => {
     try {
       setIsCalculating(true);
+
+      // Determina el orden de visita óptimo entre los centroides de los grupos
       const centroides = clustersAjustados.map((c) => ({
         clusterId: c.clusterId,
         lat: c.centroide.lat,
@@ -67,16 +80,20 @@ export const ResumenPublicacionPage = ({
       let sumDuracion = 0;
       let ultimoPuntoDeEntrega: Coordenadas | undefined = undefined;
 
+      // Itera sobre el orden de grupos para optimizar trayectos punto a punto
       for (let i = 0; i < ordenDeClustersIds.length; i++) {
         const clusterId = ordenDeClustersIds[i];
         const clusterActual = clustersAjustados.find(
           (c) => c.clusterId === clusterId,
         );
+
         if (!clusterActual || clusterActual.pedidos.length === 0) continue;
 
         const siguienteCluster = clustersAjustados.find(
           (c) => c.clusterId === ordenDeClustersIds[i + 1],
         );
+
+        // Optimiza la secuencia interna del grupo actual conectándolo con el siguiente
         const resultadoOrdenado = await optimizacionService.ordenarCluster({
           pedidos: clusterActual.pedidos,
           inicio: ultimoPuntoDeEntrega,
@@ -87,9 +104,12 @@ export const ResumenPublicacionPage = ({
           ...pedidosPlanificados,
           ...resultadoOrdenado.pedidos,
         ];
+
+        // Actualiza el último punto para que el siguiente grupo inicie desde ahí
         const ultimoPedido =
           resultadoOrdenado.pedidos[resultadoOrdenado.pedidos.length - 1];
         ultimoPuntoDeEntrega = { lat: ultimoPedido.lat, lng: ultimoPedido.lng };
+
         sumDistancia += resultadoOrdenado.distanciaMetros;
         sumDuracion += resultadoOrdenado.duracionSegundos;
       }
@@ -104,6 +124,9 @@ export const ResumenPublicacionPage = ({
     }
   };
 
+  /**
+   * Persiste la configuración final de la ruta en la base de datos.
+   */
   const handlePublicar = async () => {
     try {
       setIsPublishing(true);
@@ -142,7 +165,7 @@ export const ResumenPublicacionPage = ({
 
   return (
     <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      {/* Navegación */}
+      {/* Botón de retorno al paso de edición */}
       <button
         onClick={onVolver}
         className="group flex items-center text-slate-400 hover:text-slate-900 mb-10 transition-colors text-[10px] font-bold uppercase tracking-widest"
@@ -154,7 +177,7 @@ export const ResumenPublicacionPage = ({
         Regresar al ajuste
       </button>
 
-      {/* Header Principal */}
+      {/* Identificación de la ruta y acción principal */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12">
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
@@ -188,7 +211,7 @@ export const ResumenPublicacionPage = ({
         </button>
       </div>
 
-      {/* Métricas Minimalistas */}
+      {/* Panel de Indicadores Clave (KPIs) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
         <MetricCard
           icon={<Route size={20} />}
@@ -207,7 +230,7 @@ export const ResumenPublicacionPage = ({
         />
       </div>
 
-      {/* Hoja de Ruta (Timeline) */}
+      {/* Línea de tiempo detallada de la secuencia de entrega */}
       <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
         <div className="flex items-center justify-between mb-10">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-[0.15em]">
@@ -219,6 +242,7 @@ export const ResumenPublicacionPage = ({
         </div>
 
         <div className="relative">
+          {/* Eje visual del itinerario */}
           <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-slate-100" />
 
           <div className="space-y-10">
@@ -227,7 +251,7 @@ export const ResumenPublicacionPage = ({
                 key={pedido.id}
                 className="relative flex items-start gap-6 group"
               >
-                {/* Punto de Ruta */}
+                {/* Indicador de posición con énfasis en origen y destino */}
                 <div
                   className={`relative z-10 w-[23px] h-[23px] rounded-full flex items-center justify-center text-[10px] font-bold transition-all border ${
                     index === 0
@@ -254,7 +278,6 @@ export const ResumenPublicacionPage = ({
                     </p>
                   </div>
 
-                  {/* ID de Rastreo Refinado */}
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg border border-slate-100 w-fit">
                     <Hash
                       size={10}
@@ -275,12 +298,18 @@ export const ResumenPublicacionPage = ({
   );
 };
 
+/**
+ * Convierte segundos a formato legible de horas y minutos.
+ */
 const formatTiempo = (segundos: number) => {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m} min`;
 };
 
+/**
+ * Tarjeta de visualización para métricas del itinerario.
+ */
 const MetricCard = ({
   icon,
   label,

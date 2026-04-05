@@ -10,17 +10,26 @@ import { PedidoCard } from "./PedidoCard";
 import { PackageSearch } from "lucide-react";
 
 interface Props {
+  /** Información del grupo, incluyendo el centroide y la lista de pedidos asignados */
   cluster: ClusterResponse;
+  /** Color distintivo para identificar el grupo en la interfaz y el mapa */
   color: string;
+  /** Callback para sincronizar el resaltado del marcador en el mapa al pasar el cursor */
   onPedidoHover: (id: string | null) => void;
 }
 
+/**
+ * Representa una columna de destino para el arrastre de pedidos.
+ * Gestiona la visualización de la carga actual y el límite de capacidad por grupo.
+ */
 export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
+  // Configura el área como receptora de elementos arrastrables (Drop Zone)
   const { setNodeRef, isOver }: any = useDroppable({
     id: cluster.clusterId.toString(),
   });
 
   const cantidad = cluster.pedidos.length;
+  // Regla de negocio: Límite operativo de 20 pedidos por secuencia de entrega
   const esLimite = cantidad >= 20;
 
   return (
@@ -31,6 +40,7 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
           : "border-transparent"
       }`}
     >
+      {/* Cabecera de la columna con indicador de color y contador de capacidad */}
       <div className="px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div
@@ -53,6 +63,7 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
         </span>
       </div>
 
+      {/* Contenedor de la lista ordenable y zona de interacción DND */}
       <div
         ref={setNodeRef}
         className="px-2 pb-3 flex-1 overflow-y-auto max-h-[60vh] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
@@ -73,6 +84,7 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
           </div>
         </SortableContext>
 
+        {/* Estado visual informativo cuando el grupo no tiene pedidos asignados */}
         {cantidad === 0 && (
           <div className="flex flex-col items-center justify-center py-10 px-4 border border-dashed border-slate-200 rounded-xl mt-1 animate-in fade-in duration-500">
             <PackageSearch

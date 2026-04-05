@@ -8,10 +8,16 @@ import { PuntoPedido } from "../types/optimizacion.types";
 interface Props {
   pedido: PuntoPedido;
   color: string;
+  /** Sincroniza el resaltado del marcador en el mapa al interactuar con la tarjeta */
   onHover: (id: string | null) => void;
 }
 
+/**
+ * Representa un pedido individual dentro de una columna de cluster.
+ * Implementa la lógica de ordenamiento (Sortable) y arrastre (Drag and Drop).
+ */
 export const PedidoCard = ({ pedido, color, onHover }: Props) => {
+  // Configuración de dnd-kit para convertir este componente en un elemento arrastrable
   const {
     attributes,
     listeners,
@@ -21,6 +27,10 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
     isDragging,
   } = useSortable({ id: pedido.id, data: pedido });
 
+  /**
+   * Estilos dinámicos para el estado de arrastre.
+   * Ajusta la opacidad y posición para mejorar la experiencia visual del usuario.
+   */
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
@@ -32,6 +42,7 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
     <div
       ref={setNodeRef}
       style={style}
+      // Handlers para vincular la tarjeta con el marcador correspondiente en el visor del mapa
       onMouseEnter={() => onHover(pedido.id)}
       onMouseLeave={() => onHover(null)}
       className={`group flex items-start gap-3 p-3 bg-white border rounded-xl transition-all duration-200 ${
@@ -40,11 +51,13 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
           : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
       }`}
     >
+      {/* Indicador lateral del color asignado al grupo (cluster) */}
       <div
         className="w-1 h-8 rounded-full shrink-0 mt-0.5"
         style={{ backgroundColor: color }}
       />
 
+      {/* Control visual de arrastre (Handle). Solo esta área activa el movimiento. */}
       <button
         {...attributes}
         {...listeners}
@@ -53,6 +66,7 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
         <GripVertical size={16} />
       </button>
 
+      {/* Información principal del pedido y metadatos de geolocalización */}
       <div className="flex-1 min-w-0">
         <div className="flex flex-col">
           <p className="text-sm font-semibold text-slate-700 truncate leading-tight">
@@ -60,6 +74,7 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
           </p>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            {/* Identificador único de seguimiento para el operador logístico */}
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-slate-400">
               <Hash size={10} strokeWidth={2.5} />
               <span className="text-[9px] font-mono font-bold tracking-tight uppercase">
@@ -68,6 +83,7 @@ export const PedidoCard = ({ pedido, color, onHover }: Props) => {
             </div>
           </div>
 
+          {/* Coordenadas geográficas para referencia técnica rápida */}
           <div className="flex items-center text-[10px] text-slate-400 mt-1.5">
             <MapPin size={10} className="mr-1 opacity-70" />
             <span className="truncate tracking-wide font-medium">

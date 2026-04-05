@@ -8,15 +8,17 @@ import {
 } from "@react-google-maps/api";
 import { useState, useMemo } from "react";
 import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
-import { Loader2 } from "lucide-react"; // Usamos el de la librería para consistencia
+import { Loader2 } from "lucide-react";
 
 interface Props {
   clusters: ClusterResponse[];
   hoveredPedidoId: string | null;
 }
 
+/** Estilos base para el contenedor del mapa */
 const containerStyle = { width: "100%", height: "100%", borderRadius: "16px" };
 
+/** Paleta de colores para diferenciar visualmente cada grupo de entrega */
 const CLUSTER_COLORS = [
   "#3B82F6",
   "#EF4444",
@@ -27,7 +29,12 @@ const CLUSTER_COLORS = [
   "#06B6D4",
 ];
 
+/**
+ * Componente de visualización geográfica.
+ * Renderiza los pedidos agrupados por clusters en un mapa interactivo de Google.
+ */
 export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
+  /** Carga la librería de Google Maps utilizando la API Key del entorno */
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -37,6 +44,9 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
     null,
   );
 
+  /** * Transforma la estructura de clusters en una lista plana de marcadores.
+   * Asocia a cada pedido su color de grupo y número de secuencia.
+   */
   const markers = useMemo(() => {
     return clusters.flatMap((cluster, clusterIdx) =>
       cluster.pedidos.map((pedido) => ({
@@ -47,6 +57,9 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
     );
   }, [clusters]);
 
+  /** * Calcula el promedio de coordenadas para centrar la cámara del mapa
+   * automáticamente según la distribución de los pedidos.
+   */
   const center = useMemo(() => {
     if (markers.length === 0) return { lat: 19.4326, lng: -99.1332 };
     const latSum = markers.reduce((acc, p) => acc + p.lat, 0);
@@ -54,6 +67,7 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
     return { lat: latSum / markers.length, lng: lngSum / markers.length };
   }, [markers]);
 
+  /** Estado visual previo a la carga completa del motor de mapas */
   if (!isLoaded) {
     return (
       <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center gap-4">
@@ -71,7 +85,7 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
       center={center}
       zoom={13}
       options={{
-        styles: silverMapStyle, // Restaurado al estilo Silver
+        styles: silverMapStyle,
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
@@ -88,6 +102,7 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
             key={pedido.id}
             position={{ lat: pedido.lat, lng: pedido.lng }}
             onClick={() => setSelectedPedido(pedido)}
+            /** Prioriza la visualización del marcador si el usuario tiene el cursor sobre su tarjeta */
             zIndex={isHovered ? 1000 : 10}
             label={{
               text: pedido.clusterNumber.toString(),
@@ -101,12 +116,14 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
               fillOpacity: 1,
               strokeWeight: isHovered ? 3 : 2,
               strokeColor: isHovered ? "#000000" : "#ffffff",
+              /** Aumenta el tamaño del marcador durante el hover para feedback visual */
               scale: isHovered ? 13 : 9,
             }}
           />
         );
       })}
 
+      {/** Ventana informativa con detalles del pedido al hacer clic en un marcador */}
       {selectedPedido && (
         <InfoWindowF
           position={{ lat: selectedPedido.lat, lng: selectedPedido.lng }}
@@ -152,7 +169,9 @@ export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
   );
 };
 
-// Estilo Silver Original
+/** * Configuración visual del mapa.
+ * Simplifica la interfaz eliminando iconos de puntos de interés y usando tonos neutros.
+ */
 const silverMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },

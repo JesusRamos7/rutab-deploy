@@ -16,6 +16,9 @@ import { optimizacionService } from "../services/optimizacionService";
 import { ClusterResponse } from "../types/optimizacion.types";
 import { SkeletonRuta } from "../components/SkeletonRuta";
 
+/**
+ * Representa la información básica de una ruta en estado borrador.
+ */
 export interface RutaPendiente {
   rutaId: string;
   vehiculoId: string;
@@ -26,20 +29,29 @@ export interface RutaPendiente {
 }
 
 interface Props {
+  /** Notifica al componente padre cuando se han generado los grupos geográficos iniciales */
   onClustersGenerados: (
     clusters: ClusterResponse[],
     rutaSeleccionada: RutaPendiente,
   ) => void;
 }
 
+/**
+ * Página inicial del módulo que permite buscar y seleccionar una ruta para optimizar.
+ */
 export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
   const [rutasPendientes, setRutasPendientes] = useState<RutaPendiente[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
 
+  // Estados para el control de filtros de búsqueda y fecha
   const [busqueda, setBusqueda] = useState("");
   const [fecha, setFecha] = useState("");
 
+  /**
+   * Ejecuta un debounce de 500ms antes de realizar la búsqueda en el servidor
+   * para reducir la carga de peticiones mientras el usuario escribe.
+   */
   useEffect(() => {
     const handler = setTimeout(() => {
       cargarRutas(busqueda, fecha);
@@ -48,6 +60,9 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
     return () => clearTimeout(handler);
   }, [busqueda, fecha]);
 
+  /**
+   * Obtiene del servidor las rutas con estatus "borrador" aplicando los filtros activos.
+   */
   const cargarRutas = async (q?: string, f?: string) => {
     try {
       setIsLoading(true);
@@ -60,6 +75,9 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
     }
   };
 
+  /**
+   * Inicia el proceso de agrupamiento (Clustering) para la ruta seleccionada.
+   */
   const handlePlanificar = async (ruta: RutaPendiente) => {
     try {
       setProcesandoId(ruta.rutaId);
@@ -83,6 +101,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-700">
+      {/* Encabezado con herramientas de filtrado */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-blue-600 mb-1">
@@ -100,6 +119,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          {/* Entrada de búsqueda por texto */}
           <div className="relative group w-full sm:w-64">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"
@@ -114,6 +134,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
             />
           </div>
 
+          {/* Selector de fecha programada */}
           <div className="relative group w-full sm:w-44">
             <CalendarIcon
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors pointer-events-none"
@@ -129,6 +150,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
         </div>
       </div>
 
+      {/* Listado dinámico de rutas pendientes */}
       <div className="grid gap-3">
         {isLoading ? (
           <>
@@ -161,7 +183,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                 </div>
 
                 <div className="min-w-0">
-                  {/* UUID de la Ruta - Ahora como encabezado sutil */}
+                  {/* Identificador único de la ruta */}
                   <div className="flex items-center gap-1.5 mb-2 bg-slate-50 w-fit px-2 py-0.5 rounded-md border border-slate-100">
                     <Hash size={10} className="text-blue-500/50" />
                     <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-tighter">
@@ -178,6 +200,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                 </div>
               </div>
 
+              {/* Información de programación y carga */}
               <div className="flex flex-wrap items-center gap-6 md:gap-10">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -201,6 +224,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
                   </div>
                 </div>
 
+                {/* Botón de acción para iniciar optimización */}
                 <button
                   onClick={() => handlePlanificar(ruta)}
                   disabled={procesandoId === ruta.rutaId}
