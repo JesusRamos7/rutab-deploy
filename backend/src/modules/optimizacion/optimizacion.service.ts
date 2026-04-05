@@ -11,7 +11,7 @@ import {
 
 @Injectable()
 export class OptimizacionService {
-  // Coordenadas base para cálculos locales
+  /** Coordenadas geográficas del centro de despacho definidas en variables de entorno */
   private readonly baseEmpresa = {
     lat: parseFloat(process.env.ORIGEN_LAT || '0'),
     lng: parseFloat(process.env.ORIGEN_LNG || '0'),
@@ -22,6 +22,10 @@ export class OptimizacionService {
     private googleService: GoogleMapsService,
   ) {}
 
+  /**
+   * Recupera pedidos de una ruta específica y los agrupa geográficamente.
+   * Utiliza PostGIS para extraer coordenadas directamente desde la base de datos.
+   */
   async generarSugerenciaClusters(vehiculoId: string, fecha: string) {
     const pedidos = await this.prisma.$queryRaw<PuntoPedido[]>`
       SELECT 
@@ -38,12 +42,14 @@ export class OptimizacionService {
     `;
 
     if (pedidos.length === 0) return [];
+
+    /** Calcula la cantidad de grupos necesarios asumiendo un máximo de 20 paradas por ruta */
     return this.ejecutarKMeans(pedidos, Math.ceil(pedidos.length / 20));
   }
 
   /**
-   * PASO 3 (Optimizado): Ordena los grupos localmente usando el algoritmo de vecino más cercano.
-   * Esto reemplaza la llamada a Google Maps para los centroides ($0 costo).
+   * Ordena los grupos de pedidos utilizando el algoritmo de "Vecino más cercano".
+   * Calcula la secuencia lógica de visita entre centroides sin costo de API externa.
    */
   ordenarClustersLocalmente(
     centroides: { clusterId: number; lat: number; lng: number }[],
@@ -57,7 +63,7 @@ export class OptimizacionService {
       let distanciaMinima = Infinity;
 
       for (let i = 0; i < pendientes.length; i++) {
-        // Distancia euclidiana para determinar cercanía entre grupos
+        /** Cálculo de distancia euclidiana simple para determinar proximidad */
         const d = Math.sqrt(
           Math.pow(pendientes[i].lat - puntoActual.lat, 2) +
             Math.pow(pendientes[i].lng - puntoActual.lng, 2),
@@ -71,7 +77,6 @@ export class OptimizacionService {
 
       const proximo = pendientes.splice(indiceCercano, 1)[0];
       resultado.push(proximo.clusterId);
-      // El siguiente punto de referencia es el centroide recién seleccionado
       puntoActual = { lat: proximo.lat, lng: proximo.lng };
     }
 
@@ -79,8 +84,8 @@ export class OptimizacionService {
   }
 
   /**
-   * PASO 2: Envía el grupo a Google con puntos de inicio y fin específicos
-   * para lograr el encadenamiento de rutas.
+   * Delega la optimización fina de waypoints al servicio de Google Maps.
+   * Permite definir puntos de transición para encadenar múltiples grupos en una sola jornada.
    */
   async optimizarPuntos(
     puntos: PuntoPedido[],
@@ -90,6 +95,10 @@ export class OptimizacionService {
     return await this.googleService.obtenerOrdenOptimo(puntos, inicio, fin);
   }
 
+  /**
+   * Persiste la configuración final de la ruta optimizada.
+   * Actualiza estatus, métricas totales y la secuencia exacta de cada entrega en una transacción.
+   */
   async publicarRuta(dto: PublicarRutaDto) {
     return await this.prisma.$transaction(async (tx) => {
       const rutaActual = await tx.rutas.findUnique({
@@ -101,6 +110,7 @@ export class OptimizacionService {
         tiempoEstimado.getSeconds() + dto.duracionTotalSegundos,
       );
 
+      /** Actualiza el encabezado de la ruta con los resultados de la optimización */
       await tx.rutas.update({
         where: { id: dto.rutaId },
         data: {
@@ -111,6 +121,7 @@ export class OptimizacionService {
         },
       });
 
+      /** Registra el orden de visita secuencial para cada pedido vinculado */
       for (let i = 0; i < dto.ordenFinalPedidos.length; i++) {
         await tx.detalles_ruta.updateMany({
           where: { ruta_id: dto.rutaId, pedido_id: dto.ordenFinalPedidos[i] },
@@ -122,18 +133,24 @@ export class OptimizacionService {
     });
   }
 
+  /**
+   * Implementación del algoritmo K-Means para agrupar pedidos por densidad geográfica.
+   * Ejecuta 20 iteraciones para estabilizar los centroides y equilibrar los grupos.
+   */
   private ejecutarKMeans(puntos: PuntoPedido[], k: number) {
     let centroides = puntos
       .sort(() => 0.5 - Math.random())
       .slice(0, k)
       .map((p) => ({ lat: p.lat, lng: p.lng }));
     let clusters = [];
+
     for (let i = 0; i < 20; i++) {
       clusters = centroides.map((c, idx) => ({
         clusterId: idx,
         centroide: c,
         pedidos: [],
       }));
+
       puntos.forEach((p) => {
         let dMin = Infinity,
           idx = 0;
@@ -146,6 +163,8 @@ export class OptimizacionService {
         });
         clusters[idx].pedidos.push(p);
       });
+
+      /** Reposiciona el centroide al promedio geográfico de sus pedidos asignados */
       centroides = clusters.map((c) => {
         if (c.pedidos.length === 0) return c.centroide;
         return {
@@ -157,6 +176,10 @@ export class OptimizacionService {
     return clusters;
   }
 
+  /**
+   * Obtiene rutas en estado borrador permitiendo búsqueda por placa o ID exacto.
+   * Incluye filtros opcionales de fecha y valida el formato UUID para evitar errores de BD.
+   */
   async obtenerRutasPendientes(busqueda?: string, fecha?: string) {
     const where: any = {
       estatus_ruta: 'borrador',
@@ -167,7 +190,7 @@ export class OptimizacionService {
     }
 
     if (busqueda) {
-      // Expresión regular para validar si el string es un UUID válido
+      /** Validación estricta de UUID para prevenir fallos al consultar la columna ID */
       const esUuid =
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
           busqueda,
@@ -181,7 +204,6 @@ export class OptimizacionService {
         },
       ];
 
-      // Solo agregamos la búsqueda por ID si el formato es correcto para evitar errores de BD
       if (esUuid) {
         where.OR.push({ id: busqueda });
       }

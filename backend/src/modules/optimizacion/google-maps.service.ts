@@ -4,19 +4,26 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import axios from 'axios';
 import { PuntoPedido, DetalleRutaOrdenado } from './dto/optimizacion.dto';
 
+/**
+ * Servicio encargado de la integración con la API de Google Maps para el
+ * cálculo de rutas y ordenamiento logístico eficiente.
+ */
 @Injectable()
 export class GoogleMapsService {
   private readonly apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  /** Coordenadas del centro logístico principal obtenidas desde variables de entorno */
   private readonly baseEmpresa = {
     lat: parseFloat(process.env.ORIGEN_LAT || '0'),
     lng: parseFloat(process.env.ORIGEN_LNG || '0'),
   };
 
   /**
-   * Obtiene el orden óptimo de un grupo de pedidos.
-   * @param pedidos Lista de pedidos a entregar.
-   * @param puntoInicio Coordenadas de salida (opcional, por defecto la base).
-   * @param puntoFin Coordenadas de llegada (opcional, por defecto la base).
+   * Utiliza el motor de Google Directions para resolver el orden de entrega más eficiente
+   * (Problema del Viajante) entre un conjunto de puntos.
+   * * @param pedidos Listado de puntos de entrega a procesar.
+   * @param puntoInicio Punto de partida personalizado (opcional).
+   * @param puntoFin Punto de llegada personalizado (opcional).
    */
   async obtenerOrdenOptimo(
     pedidos: PuntoPedido[],
@@ -26,7 +33,7 @@ export class GoogleMapsService {
     if (pedidos.length === 0)
       return { pedidos: [], distanciaMetros: 0, duracionSegundos: 0 };
 
-    // Definimos origen y destino dinámicos
+    /** Determina si se inicia y finaliza en la base o en puntos específicos */
     const origen = puntoInicio
       ? `${puntoInicio.lat},${puntoInicio.lng}`
       : `${this.baseEmpresa.lat},${this.baseEmpresa.lng}`;
@@ -35,6 +42,7 @@ export class GoogleMapsService {
       ? `${puntoFin.lat},${puntoFin.lng}`
       : `${this.baseEmpresa.lat},${this.baseEmpresa.lng}`;
 
+    /** Formatea los pedidos como waypoints para la API de Google */
     const waypoints = pedidos.map((p) => `${p.lat},${p.lng}`).join('|');
 
     try {
@@ -44,6 +52,7 @@ export class GoogleMapsService {
           params: {
             origin: origen,
             destination: destino,
+            /** optimize:true activa el algoritmo de optimización de ruta de Google */
             waypoints: `optimize:true|${waypoints}`,
             key: this.apiKey,
           },
@@ -56,6 +65,7 @@ export class GoogleMapsService {
       const route = data.routes[0];
       const ordenIndices = route.waypoint_order;
 
+      /** Suma la métrica de cada tramo (leg) para obtener el total del recorrido */
       const distanciaTotal = route.legs.reduce(
         (acc, leg) => acc + leg.distance.value,
         0,
@@ -66,7 +76,7 @@ export class GoogleMapsService {
       );
 
       return {
-        // Mapeamos los pedidos según el orden de waypoints devuelto por Google
+        /** Reordena el array original de pedidos basándose en la secuencia óptima devuelta */
         pedidos: ordenIndices.map((index) => pedidos[index]),
         distanciaMetros: distanciaTotal,
         duracionSegundos: duracionTotal,

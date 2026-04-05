@@ -20,13 +20,18 @@ import {
   PublicarRutaDto,
 } from './dto/optimizacion.dto';
 
+/**
+ * Controlador que gestiona el flujo de optimización de rutas logísticas.
+ * Restringe el acceso mediante JWT y roles específicos de administración y logística.
+ */
 @Controller('optimizacion')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OptimizacionController {
   constructor(private readonly optimizacionService: OptimizacionService) {}
 
   /**
-   * PASO 1: Agrupación inicial (K-Means)
+   * Fase 1: Ejecuta el agrupamiento inicial de pedidos basado en su ubicación geográfica.
+   * Divide la carga total en subgrupos manejables para el vehículo.
    */
   @Post('sugerir-clusters')
   @Roles('superAdmin', 'logístico')
@@ -38,8 +43,8 @@ export class OptimizacionController {
   }
 
   /**
-   * PASO 2: Ordenamiento lógico de un grupo (Google Maps)
-   * Ahora acepta coordenadas opcionales de inicio y fin para permitir el encadenamiento.
+   * Fase 2: Calcula la secuencia óptima de entrega para un grupo específico.
+   * Utiliza la API de Google para resolver el orden de paradas más eficiente.
    */
   @Post('ordenar-cluster')
   @Roles('superAdmin', 'logístico')
@@ -51,7 +56,6 @@ export class OptimizacionController {
       fin?: { lat: number; lng: number };
     },
   ) {
-    // Usamos el nuevo método del servicio que soporta origen/destino dinámicos
     return await this.optimizacionService.optimizarPuntos(
       body.pedidos,
       body.inicio,
@@ -60,18 +64,18 @@ export class OptimizacionController {
   }
 
   /**
-   * PASO 3 (OPTIMIZADO): Orden de visita entre grupos.
-   * Ya no consume Google Maps API. Utiliza matemáticas locales (Vecino más cercano).
+   * Fase 3: Determina el orden lógico de visita entre los diferentes grupos creados.
+   * Procesa la información localmente para evitar costos adicionales de servicios externos.
    */
   @Post('proponer-orden-clusters')
   @Roles('superAdmin', 'logístico')
   async proponerOrdenClusters(@Body() dto: OrdenClustersRequest) {
-    // Llamada al método local que creamos en el OptimizacionService
     return this.optimizacionService.ordenarClustersLocalmente(dto.centroides);
   }
 
   /**
-   * PASO 4: Guardar todo en base de datos
+   * Fase 4: Finaliza el proceso persistiendo el orden y las métricas en la base de datos.
+   * Cambia el estado de la ruta a "programada".
    */
   @Patch('publicar')
   @Roles('superAdmin', 'logístico')
@@ -80,7 +84,8 @@ export class OptimizacionController {
   }
 
   /**
-   * Tabla inicial de rutas en estado borrador.
+   * Recupera el listado de rutas que aún no han sido procesadas.
+   * Permite filtrar los resultados por texto (placa/ID) o por una fecha específica.
    */
   @Get('rutas-pendientes')
   @Roles('superAdmin', 'logístico')
@@ -88,7 +93,6 @@ export class OptimizacionController {
     @Query('busqueda') busqueda?: string,
     @Query('fecha') fecha?: string,
   ) {
-    // Pasamos los parámetros opcionales directamente al servicio
     return await this.optimizacionService.obtenerRutasPendientes(
       busqueda,
       fecha,
