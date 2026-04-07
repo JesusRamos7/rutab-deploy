@@ -1,4 +1,4 @@
-// /backend/src/modules/optimizacion/dto/optimizacion.dto.ts
+// /backend/src/modules/optimization/dto/optimization.dto.ts
 
 import {
   IsUUID,

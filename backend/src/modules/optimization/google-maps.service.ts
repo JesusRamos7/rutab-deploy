@@ -1,8 +1,8 @@
-// /backend/src/modules/optimizacion/google-maps.service.ts
+// /backend/src/modules/optimization/google-maps.service.ts
 
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import axios from 'axios';
-import { PuntoPedido, DetalleRutaOrdenado } from './dto/optimizacion.dto';
+import { PuntoPedido, DetalleRutaOrdenado } from './dto/optimization.dto';
 
 /**
  * Servicio encargado de la integración con la API de Google Maps para el

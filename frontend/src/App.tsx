@@ -39,8 +39,8 @@ const ModuloInicio = lazy(() =>
   import("./modules/index").then((m) => ({ default: m.ModuloInicio })),
 );
 const ModuloOptimizacion = lazy(() =>
-  import("./modules/optimizacion/OptimizacionIndex").then((m) => ({
-    default: m.OptimizacionIndex,
+  import("./modules/optimization/OptimizationIndex").then((m) => ({
+    default: m.OptimizationIndex,
   })),
 );
 const ModuloAuditoria = lazy(() =>

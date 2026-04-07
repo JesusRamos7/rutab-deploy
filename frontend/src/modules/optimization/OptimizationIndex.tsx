@@ -1,22 +1,22 @@
-// /frontend/src/modules/optimizacion/OptimizacionIndex.tsx
+// /frontend/src/modules/optimization/OptimizationIndex.tsx
 
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  SeleccionVehiculoPage,
+  VehicleSelectionPage,
   RutaPendiente,
-} from "./pages/SeleccionVehiculoPage";
-import { AjusteClustersPage } from "./pages/AjusteClustersPage";
-import { ResumenPublicacionPage } from "./pages/ResumenPublicacionPage";
-import { ClusterResponse } from "./types/optimizacion.types";
+} from "./pages/VehicleSelectionPage";
+import { AdjustClustersPage } from "./pages/AdjustClustersPage";
+import { RouteSummaryPage } from "./pages/RouteSummary";
+import { ClusterResponse } from "./types/optimization.types";
 import { Stepper } from "./components/Stepper";
-import { optimizacionService } from "./services/optimizacionService";
+import { optimizationService } from "./services/optimizationService";
 
 /**
  * Componente principal (Orquestador) del módulo de Optimización.
  * Gestiona el flujo de trabajo en tres etapas: Selección, Ajuste y Resumen.
  */
-export const OptimizacionIndex = () => {
+export const OptimizationIndex = () => {
   // Estado para controlar la navegación entre los pasos del proceso
   const [pasoActual, setPasoActual] = useState<1 | 2 | 3>(1);
 
@@ -50,7 +50,7 @@ export const OptimizacionIndex = () => {
 
     try {
       setIsRegenerating(true);
-      const clustersSugeridos = await optimizacionService.sugerirClusters({
+      const clustersSugeridos = await optimizationService.sugerirClusters({
         vehiculoId: rutaSeleccionada.vehiculoId,
         fechaProgramada: rutaSeleccionada.fechaProgramada,
       });
@@ -96,13 +96,13 @@ export const OptimizacionIndex = () => {
       {/* Renderizado condicional basado en la etapa actual del proceso */}
       <main className="flex-1 w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-top-1 duration-500 ease-out">
         {pasoActual === 1 && (
-          <SeleccionVehiculoPage
+          <VehicleSelectionPage
             onClustersGenerados={handleClustersGenerados}
           />
         )}
 
         {pasoActual === 2 && rutaSeleccionada && (
-          <AjusteClustersPage
+          <AdjustClustersPage
             clustersIniciales={clusters}
             onContinuarPaso2={handleContinuarPaso2}
             onVolver={() => setPasoActual(1)}
@@ -112,7 +112,7 @@ export const OptimizacionIndex = () => {
         )}
 
         {pasoActual === 3 && rutaSeleccionada && (
-          <ResumenPublicacionPage
+          <RouteSummaryPage
             rutaSeleccionada={rutaSeleccionada}
             clustersAjustados={clusters}
             onVolver={() => setPasoActual(2)}

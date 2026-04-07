@@ -1,4 +1,4 @@
-// /frontend/src/modules/optimizacion/pages/AjusteClustersPage.tsx
+// /frontend/src/modules/optimization/pages/AdjustClustersPage.tsx
 
 import { useState, useEffect } from "react";
 import {
@@ -21,10 +21,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
+import { ClusterResponse, PuntoPedido } from "../types/optimization.types";
 import { ClusterColumn } from "../components/ClusterColumn";
-import { PedidoCard } from "../components/PedidoCard";
-import { VisorMapa } from "../components/VisorMapa";
+import { OrderCard } from "../components/OrderCard";
+import { MapViewer } from "../components/MapViewer";
 
 interface Props {
   /** Sugerencia inicial de grupos proveniente del algoritmo */
@@ -53,7 +53,7 @@ const CLUSTER_COLORS = [
  * Página de ajuste manual de grupos.
  * Permite redistribuir pedidos entre rutas mediante Drag and Drop y visualización en tiempo real.
  */
-export const AjusteClustersPage = ({
+export const AdjustClustersPage = ({
   clustersIniciales,
   onContinuarPaso2,
   onVolver,
@@ -186,7 +186,7 @@ export const AjusteClustersPage = ({
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden lg:block w-[55%] p-4 h-full">
           <div className="bg-slate-50 h-full rounded-2xl border border-slate-100 overflow-hidden relative shadow-sm">
-            <VisorMapa clusters={clusters} hoveredPedidoId={hoveredPedidoId} />
+            <MapViewer clusters={clusters} hoveredPedidoId={hoveredPedidoId} />
           </div>
         </div>
 
@@ -221,7 +221,7 @@ export const AjusteClustersPage = ({
               <DragOverlay dropAnimation={null}>
                 {activePedido ? (
                   <div className="w-72 opacity-90">
-                    <PedidoCard
+                    <OrderCard
                       pedido={activePedido}
                       color={
                         CLUSTER_COLORS[

@@ -1,11 +1,11 @@
-// /frontend/src/modules/optimizacion/components/SkeletonRuta.tsx
+// /frontend/src/modules/optimization/components/SkeletonRoute.tsx
 
 /**
  * Componente de carga (Placeholder).
  * Proporciona una estructura visual animada mientras se sincronizan los datos de las rutas,
  * mejorando la percepción de velocidad y evitando saltos bruscos en la interfaz.
  */
-export const SkeletonRuta = () => {
+export const SkeletonRoute = () => {
   return (
     <div className="w-full bg-white border border-gray-100 rounded-2xl p-5 mb-4 animate-pulse">
       <div className="flex items-center justify-between">

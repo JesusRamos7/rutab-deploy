@@ -1,4 +1,4 @@
-// /frontend/src/modules/optimizacion/pages/ResumenPublicacionPage.tsx
+// /frontend/src/modules/optimization/pages/RouteSummaryPage.tsx
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -12,13 +12,13 @@ import {
   Hash,
 } from "lucide-react";
 import { toast } from "sonner";
-import { optimizacionService } from "../services/optimizacionService";
+import { optimizationService } from "../services/optimizationService";
 import {
   ClusterResponse,
   PuntoPedido,
   Coordenadas,
-} from "../types/optimizacion.types";
-import { RutaPendiente } from "./SeleccionVehiculoPage";
+} from "../types/optimization.types";
+import { RutaPendiente } from "./VehicleSelectionPage";
 
 interface Props {
   rutaSeleccionada: RutaPendiente;
@@ -32,7 +32,7 @@ interface Props {
  * Calcula la secuencia global definitiva, consolida métricas de tiempo/distancia
  * y permite la publicación oficial del itinerario.
  */
-export const ResumenPublicacionPage = ({
+export const RouteSummaryPage = ({
   rutaSeleccionada,
   clustersAjustados,
   onVolver,
@@ -73,7 +73,7 @@ export const ResumenPublicacionPage = ({
       }));
 
       const ordenDeClustersIds =
-        await optimizacionService.proponerOrdenClusters({ centroides });
+        await optimizationService.proponerOrdenClusters({ centroides });
 
       let pedidosPlanificados: PuntoPedido[] = [];
       let sumDistancia = 0;
@@ -94,7 +94,7 @@ export const ResumenPublicacionPage = ({
         );
 
         // Optimiza la secuencia interna del grupo actual conectándolo con el siguiente
-        const resultadoOrdenado = await optimizacionService.ordenarCluster({
+        const resultadoOrdenado = await optimizationService.ordenarCluster({
           pedidos: clusterActual.pedidos,
           inicio: ultimoPuntoDeEntrega,
           fin: siguienteCluster?.centroide,
@@ -130,7 +130,7 @@ export const ResumenPublicacionPage = ({
   const handlePublicar = async () => {
     try {
       setIsPublishing(true);
-      await optimizacionService.publicarRuta({
+      await optimizationService.publicarRuta({
         rutaId: rutaSeleccionada.rutaId,
         ordenFinalPedidos: ordenGlobalPedidos.map((p) => p.id),
         distanciaTotalMetros: distanciaTotal,

@@ -1,9 +1,9 @@
-// /frontend/src/modules/optimizacion/components/PedidoCard.tsx
+// /frontend/src/modules/optimization/components/OrderCard.tsx
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MapPin, Hash } from "lucide-react";
-import { PuntoPedido } from "../types/optimizacion.types";
+import { PuntoPedido } from "../types/optimization.types";
 
 interface Props {
   pedido: PuntoPedido;
@@ -16,7 +16,7 @@ interface Props {
  * Representa un pedido individual dentro de una columna de cluster.
  * Implementa la lógica de ordenamiento (Sortable) y arrastre (Drag and Drop).
  */
-export const PedidoCard = ({ pedido, color, onHover }: Props) => {
+export const OrderCard = ({ pedido, color, onHover }: Props) => {
   // Configuración de dnd-kit para convertir este componente en un elemento arrastrable
   const {
     attributes,

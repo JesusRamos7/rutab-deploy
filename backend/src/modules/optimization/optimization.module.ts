@@ -1,8 +1,8 @@
-// /backend/src/modules/optimizacion/optimizacion.module.ts
+// /backend/src/modules/optimization/optimization.module.ts
 
 import { Module } from '@nestjs/common';
-import { OptimizacionController } from './optimizacion.controller';
-import { OptimizacionService } from './optimizacion.service';
+import { OptimizacionController } from './optimization.controller';
+import { OptimizacionService } from './optimization.service';
 import { GoogleMapsService } from './google-maps.service';
 import { PrismaModule } from '../../database/prisma/prisma.module';
 

@@ -1,4 +1,4 @@
-// /frontend/src/modules/optimizacion/pages/SeleccionVehiculoPage.tsx
+// /frontend/src/modules/optimization/pages/VehicleSelectionPage.tsx
 
 import { useState, useEffect } from "react";
 import {
@@ -12,9 +12,9 @@ import {
   Hash,
 } from "lucide-react";
 import { toast } from "sonner";
-import { optimizacionService } from "../services/optimizacionService";
-import { ClusterResponse } from "../types/optimizacion.types";
-import { SkeletonRuta } from "../components/SkeletonRuta";
+import { optimizationService } from "../services/optimizationService";
+import { ClusterResponse } from "../types/optimization.types";
+import { SkeletonRoute } from "../components/SkeletonRoute";
 
 /**
  * Representa la información básica de una ruta en estado borrador.
@@ -39,7 +39,7 @@ interface Props {
 /**
  * Página inicial del módulo que permite buscar y seleccionar una ruta para optimizar.
  */
-export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
+export const VehicleSelectionPage = ({ onClustersGenerados }: Props) => {
   const [rutasPendientes, setRutasPendientes] = useState<RutaPendiente[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [procesandoId, setProcesandoId] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
   const cargarRutas = async (q?: string, f?: string) => {
     try {
       setIsLoading(true);
-      const data = await optimizacionService.obtenerRutasPendientes(q, f);
+      const data = await optimizationService.obtenerRutasPendientes(q, f);
       setRutasPendientes(data);
     } catch (error) {
       toast.error("Error al sincronizar las rutas.");
@@ -81,7 +81,7 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
   const handlePlanificar = async (ruta: RutaPendiente) => {
     try {
       setProcesandoId(ruta.rutaId);
-      const clustersSugeridos = await optimizacionService.sugerirClusters({
+      const clustersSugeridos = await optimizationService.sugerirClusters({
         vehiculoId: ruta.vehiculoId,
         fechaProgramada: ruta.fechaProgramada,
       });
@@ -154,8 +154,8 @@ export const SeleccionVehiculoPage = ({ onClustersGenerados }: Props) => {
       <div className="grid gap-3">
         {isLoading ? (
           <>
-            <SkeletonRuta />
-            <SkeletonRuta />
+            <SkeletonRoute />
+            <SkeletonRoute />
           </>
         ) : rutasPendientes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">

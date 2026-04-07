@@ -1,4 +1,4 @@
-// frontend/src/modules/optimizacion/components/Stepper.tsx
+// frontend/src/modules/optimization/components/Stepper.tsx
 
 import { Check } from "lucide-react";
 

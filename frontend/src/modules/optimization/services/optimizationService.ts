@@ -1,7 +1,7 @@
-// /frontend/src/modules/optimizacion/services/optimizacionService.ts
+// /frontend/src/modules/optimization/services/optimizationService.ts
 
 import { api } from "../../../config/api";
-import { RutaPendiente } from "../pages/SeleccionVehiculoPage";
+import { RutaPendiente } from "../pages/VehicleSelectionPage";
 import {
   ClusteringRequest,
   ClusterResponse,
@@ -9,7 +9,7 @@ import {
   DetalleRutaOrdenado,
   OrdenClustersRequest,
   PublicarRutaDto,
-} from "../types/optimizacion.types";
+} from "../types/optimization.types";
 
 /**
  * Parámetros requeridos para solicitar el ordenamiento de paradas dentro de un grupo.
@@ -24,7 +24,7 @@ interface OrdenarClusterParams {
  * Servicio encargado de la comunicación con el backend para los procesos de
  * geolocalización y optimización de rutas logísticas.
  */
-export const optimizacionService = {
+export const optimizationService = {
   /**
    * Fase 1: Solicita al servidor una agrupación inicial de pedidos basada en proximidad.
    */
@@ -32,7 +32,7 @@ export const optimizacionService = {
     data: ClusteringRequest,
   ): Promise<ClusterResponse[]> => {
     const response = await api.post<ClusterResponse[]>(
-      "/optimizacion/sugerir-clusters",
+      "/optimization/suggest-clusters",
       data,
     );
     return response.data;
@@ -46,7 +46,7 @@ export const optimizacionService = {
     params: OrdenarClusterParams,
   ): Promise<DetalleRutaOrdenado> => {
     const response = await api.post<DetalleRutaOrdenado>(
-      "/optimizacion/ordenar-cluster",
+      "/optimization/sort-cluster",
       params,
     );
     return response.data;
@@ -60,7 +60,7 @@ export const optimizacionService = {
     data: OrdenClustersRequest,
   ): Promise<number[]> => {
     const response = await api.post<number[]>(
-      "/optimizacion/proponer-orden-clusters",
+      "/optimization/propose-clusters-order",
       data,
     );
     return response.data;
@@ -73,7 +73,7 @@ export const optimizacionService = {
     data: PublicarRutaDto,
   ): Promise<{ success: boolean; message?: string }> => {
     const response = await api.patch<{ success: boolean; message?: string }>(
-      "/optimizacion/publicar",
+      "/optimization/publish",
       data,
     );
     return response.data;
@@ -87,7 +87,7 @@ export const optimizacionService = {
     fecha?: string,
   ): Promise<RutaPendiente[]> => {
     const response = await api.get<RutaPendiente[]>(
-      "/optimizacion/rutas-pendientes",
+      "/optimization/pending-routes",
       {
         params: { busqueda, fecha },
       },

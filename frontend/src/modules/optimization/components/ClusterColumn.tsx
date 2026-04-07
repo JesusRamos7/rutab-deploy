@@ -1,12 +1,12 @@
-// /frontend/src/modules/optimizacion/components/ClusterColumn.tsx
+// /frontend/src/modules/optimization/components/ClusterColumn.tsx
 
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ClusterResponse } from "../types/optimizacion.types";
-import { PedidoCard } from "./PedidoCard";
+import { ClusterResponse } from "../types/optimization.types";
+import { OrderCard } from "./OrderCard";
 import { PackageSearch } from "lucide-react";
 
 interface Props {
@@ -74,7 +74,7 @@ export const ClusterColumn = ({ cluster, color, onPedidoHover }: Props) => {
         >
           <div className="space-y-2">
             {cluster.pedidos.map((pedido) => (
-              <PedidoCard
+              <OrderCard
                 key={pedido.id}
                 pedido={pedido}
                 color={color}

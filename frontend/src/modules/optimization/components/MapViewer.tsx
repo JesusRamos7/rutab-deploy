@@ -1,4 +1,4 @@
-// /frontend/src/modules/optimizacion/components/VisorMapa.tsx
+// /frontend/src/modules/optimization/components/MapViewer.tsx
 
 import {
   GoogleMap,
@@ -7,7 +7,7 @@ import {
   InfoWindowF,
 } from "@react-google-maps/api";
 import { useState, useMemo } from "react";
-import { ClusterResponse, PuntoPedido } from "../types/optimizacion.types";
+import { ClusterResponse, PuntoPedido } from "../types/optimization.types";
 import { Loader2 } from "lucide-react";
 
 interface Props {
@@ -33,7 +33,7 @@ const CLUSTER_COLORS = [
  * Componente de visualización geográfica.
  * Renderiza los pedidos agrupados por clusters en un mapa interactivo de Google.
  */
-export const VisorMapa = ({ clusters, hoveredPedidoId }: Props) => {
+export const MapViewer = ({ clusters, hoveredPedidoId }: Props) => {
   /** Carga la librería de Google Maps utilizando la API Key del entorno */
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",

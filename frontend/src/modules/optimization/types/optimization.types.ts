@@ -1,4 +1,4 @@
-// /frontend/src/modules/optimizacion/types/optimizacion.types.ts
+// /frontend/src/modules/optimization/types/optimization.types.ts
 
 /**
  * Estructura básica para la representación de puntos geográficos.

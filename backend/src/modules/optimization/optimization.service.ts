@@ -1,4 +1,4 @@
-// /backend/src/modules/optimizacion/optimizacion.service.ts
+// /backend/src/modules/optimization/optimization.service.ts
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
@@ -7,7 +7,7 @@ import {
   PuntoPedido,
   PublicarRutaDto,
   DetalleRutaOrdenado,
-} from './dto/optimizacion.dto';
+} from './dto/optimization.dto';
 
 @Injectable()
 export class OptimizacionService {

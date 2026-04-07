@@ -1,4 +1,4 @@
-// /backend/src/modules/optimizacion/interfaces/google-maps.interface.ts
+// /backend/src/modules/optimization/interfaces/google-maps.interface.ts
 
 /**
  * Estructura de respuesta parcial de la API de Google Directions.
