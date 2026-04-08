@@ -12,16 +12,21 @@ export class RoutesService {
   constructor(private prisma: PrismaService) {}
 
   async getActiveRoute(choferId: string) {
-    // 1. Buscamos la ruta que esté programada o ya en proceso
+    // Obtenemos la fecha actual en formato YYYY-MM-DD para filtrar
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    // 1. Buscamos la ruta filtrando OBLIGATORIAMENTE por chofer_id
     const ruta = await this.prisma.rutas.findFirst({
       where: {
-        chofer_id: choferId,
-        estatus_ruta: { in: ['programada', 'en_proceso'] }, // Aceptamos ambos estados
+        chofer_id: choferId, // <--- FILTRO CRÍTICO: Solo lo que le pertenece
+        estatus_ruta: { in: ['programada', 'en_proceso'] },
+        fecha_programada: hoy,
       },
       select: {
         id: true,
         fecha_programada: true,
-        estatus_ruta: true, // Importante para que el frontend sepa si mostrar el botón
+        estatus_ruta: true,
         vehiculos: {
           select: { placas: true, marca: true, modelo: true },
         },
@@ -29,9 +34,11 @@ export class RoutesService {
     });
 
     if (!ruta) {
-      throw new NotFoundException('No tienes una ruta activa asignada.');
+      throw new NotFoundException('No tienes ninguna ruta asignada para hoy.');
     }
 
+    // 2. Al usar el ID de la ruta obtenida arriba, garantizamos que los pedidos
+    // también sean los correctos.
     const pedidos = await this.prisma.$queryRaw<any[]>`
       SELECT 
         dr.id as "detalleId",
@@ -58,20 +65,21 @@ export class RoutesService {
   }
 
   async startRoute(rutaId: string, choferId: string) {
-    // Verificamos que la ruta exista, pertenezca al chofer y esté programada
+    // Verificamos que la ruta a iniciar pertenezca al chofer que envía la petición
     const ruta = await this.prisma.rutas.findFirst({
       where: {
         id: rutaId,
-        chofer_id: choferId,
+        chofer_id: choferId, // <--- SEGURIDAD: Evita que un chofer inicie la ruta de otro
         estatus_ruta: 'programada',
       },
     });
 
     if (!ruta) {
-      throw new BadRequestException('La ruta no existe o ya ha sido iniciada.');
+      throw new BadRequestException(
+        'La ruta no existe, ya inició o no tienes permiso.',
+      );
     }
 
-    // Actualizamos el estado
     return this.prisma.rutas.update({
       where: { id: rutaId },
       data: {
