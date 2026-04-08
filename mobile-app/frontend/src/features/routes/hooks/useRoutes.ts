@@ -16,11 +16,32 @@ export const useRoutes = () => {
     ]);
   };
 
-  // Función para cambiar el estado de la ruta en el servidor
-  const startRoute = async (rutaId: string, onSuccess: () => void) => {
+  // --- NUEVA LÓGICA DE CONFIRMACIÓN (UX Mejorada) ---
+  // Función que se expone a la vista. Muestra un Alert antes de proceder.
+  const handleStartRouteConfirmation = (rutaId: string, onSuccess: () => void) => {
+    Alert.alert(
+      '¿Comenzar Jornada?', // Título del mensaje (coincide con la imagen)
+      'Se activará el rastreo GPS en segundo plano', // Mensaje descriptivo
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Sí, comenzar',
+          style: 'default',
+          onPress: () => executeStartRoute(rutaId, onSuccess), // Solo llamamos al API si aceptan
+        },
+      ]
+    );
+  };
+
+  // Función privada/interna que hace la llamada real al servidor (antes startRoute)
+  const executeStartRoute = async (rutaId: string, onSuccess: () => void) => {
     try {
       setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
+      // Mostramos éxito después de que el API responde
       Alert.alert('¡Éxito!', 'La ruta ha comenzado. El seguimiento GPS está activo.');
       onSuccess(); // Refrescar los datos de la ruta
     } catch (error: any) {
@@ -33,7 +54,7 @@ export const useRoutes = () => {
 
   return {
     handleLogout,
-    startRoute,
+    handleStartRouteConfirmation, // <--- Exponemos esta nueva función
     isStarting,
   };
 };

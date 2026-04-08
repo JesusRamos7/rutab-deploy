@@ -1,6 +1,6 @@
 // /mobile-app/frontend/src/features/routes/screens/RoutesScreen.tsx
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,14 +16,57 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+// Imports para Animaciones
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  Easing,
+  interpolate,
+} from 'react-native-reanimated';
+
 import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 import { useFetchRoutes } from '../hooks/useFetchRoutes';
-import { useRoutes } from '../hooks/useRoutes'; // Importamos el hook de acciones
+import { useRoutes } from '../hooks/useRoutes';
 
 export const RoutesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
   const { routeData, loading, error, refresh } = useFetchRoutes();
-  const { startRoute, isStarting } = useRoutes(); // Extraemos la lógica de inicio
+  const { handleStartRouteConfirmation, isStarting } = useRoutes();
+
+  // --- LÓGICA DE ANIMACIONES ---
+  const errorOpacity = useSharedValue(0);
+  const iconScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (error) {
+      // Aparece el error con suavidad y sube 20px
+      errorOpacity.value = withTiming(1, { duration: 600 });
+      // El icono pulsa constantemente
+      iconScale.value = withRepeat(
+        withTiming(1.15, { duration: 800, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      );
+    } else {
+      errorOpacity.value = 0;
+      iconScale.value = 1;
+    }
+  }, [error]);
+
+  const animatedErrorStyle = useAnimatedStyle(() => {
+    return {
+      opacity: errorOpacity.value,
+      transform: [{ translateY: interpolate(errorOpacity.value, [0, 1], [20, 0]) }],
+    };
+  });
+
+  const animatedIconStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: iconScale.value }],
+    };
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -33,7 +76,8 @@ export const RoutesScreen = () => {
 
   const handleComenzarRuta = () => {
     if (routeData?.id) {
-      startRoute(routeData.id, refresh);
+      // Disparamos la confirmación mejorada del hook useRoutes
+      handleStartRouteConfirmation(routeData.id, refresh);
     }
   };
 
@@ -44,6 +88,7 @@ export const RoutesScreen = () => {
     });
   };
 
+  // --- ESTADO CARGANDO ---
   if (loading && !routeData) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -53,21 +98,28 @@ export const RoutesScreen = () => {
     );
   }
 
+  // --- VISTA DE ERROR CON ANIMACIONES ---
   if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-10">
-        <MaterialCommunityIcons name="alert-circle-outline" size={60} color="#9CA3AF" />
-        <Text className="mt-4 text-center text-lg text-gray-500">{error}</Text>
-        <TouchableOpacity onPress={refresh} className="mt-6 rounded-xl bg-primary px-8 py-3">
-          <Text className="font-bold text-white">Reintentar</Text>
-        </TouchableOpacity>
+        <Animated.View style={[animatedErrorStyle, { alignItems: 'center' }]}>
+          <Animated.View style={animatedIconStyle}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={80} color="#9CA3AF" />
+          </Animated.View>
+          <Text className="mt-6 text-center text-xl font-bold text-gray-700">Algo salió mal</Text>
+          <Text className="mt-2 text-center text-gray-500">{error}</Text>
+          <TouchableOpacity
+            onPress={refresh}
+            className="mt-8 rounded-2xl bg-primary px-10 py-4 shadow-lg shadow-primary/30 active:scale-95">
+            <Text className="text-lg font-bold text-white">Reintentar Búsqueda</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     );
   }
 
-  // Pantalla de "Ruta Completada"
+  // --- VISTA RUTA COMPLETADA ---
   if (routeData && routeData.pedidos?.length === 0 && routeData.estatus_ruta === 'en_proceso') {
-    // Nota: Aquí es donde más adelante dispararemos el cierre final del trayecto
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 items-center justify-center px-10">
@@ -107,12 +159,11 @@ export const RoutesScreen = () => {
             {routeData?.pedidos?.length || 0} Entregas Pendientes
           </Text>
 
-          {/* BOTÓN DE COMENZAR RUTA: Solo visible si está programada */}
           {!isInProgress && (
             <TouchableOpacity
               onPress={handleComenzarRuta}
               disabled={isStarting}
-              className="mt-6 flex-row items-center justify-center rounded-2xl bg-white py-4 shadow-xl">
+              className="mt-6 flex-row items-center justify-center rounded-2xl bg-white py-4 shadow-xl active:opacity-90">
               {isStarting ? (
                 <ActivityIndicator color="#123a5d" />
               ) : (
@@ -126,7 +177,6 @@ export const RoutesScreen = () => {
         </View>
 
         <View className="-mt-6 px-6">
-          {/* Overlay informativo si la ruta NO ha comenzado */}
           {!isInProgress && (
             <View className="mb-4 items-center rounded-2xl border border-amber-100 bg-amber-50 p-4">
               <Text className="text-center text-xs font-medium text-amber-700">
@@ -137,7 +187,6 @@ export const RoutesScreen = () => {
 
           {routeData?.pedidos.map((pedido: any, index: number) => {
             const isFirst = index === 0;
-            // Solo es interactivo si la ruta está en progreso Y es el primer pedido
             const canInteract = isInProgress && isFirst;
 
             return (
@@ -148,7 +197,6 @@ export const RoutesScreen = () => {
                     ? 'border-primary/20 bg-white shadow-primary/10'
                     : 'border-gray-100 bg-gray-50 opacity-60'
                 }`}>
-                {/* Cabecera del Card */}
                 <View className="mb-3 flex-row items-start justify-between">
                   <View
                     className={`rounded-full px-3 py-1 ${canInteract ? 'bg-primary' : 'bg-gray-400'}`}>
@@ -161,7 +209,6 @@ export const RoutesScreen = () => {
                   </Text>
                 </View>
 
-                {/* Info del Cliente */}
                 <View className="mb-4 flex-row items-center">
                   <View
                     className={`h-12 w-12 items-center justify-center rounded-2xl ${canInteract ? 'bg-primary/10' : 'bg-gray-200'}`}>
@@ -179,12 +226,11 @@ export const RoutesScreen = () => {
                   </View>
                 </View>
 
-                {/* Acciones: Solo si se puede interactuar */}
                 {canInteract && (
                   <View className="mt-2 flex-row space-x-3">
                     <TouchableOpacity
                       onPress={() => handleAbrirMaps(pedido.latitude, pedido.longitude)}
-                      className="flex-1 flex-row items-center justify-center rounded-2xl bg-primary py-4 shadow-lg shadow-primary/20">
+                      className="flex-1 flex-row items-center justify-center rounded-2xl bg-primary py-4 shadow-lg shadow-primary/20 active:opacity-90">
                       <MaterialCommunityIcons name="google-maps" size={20} color="white" />
                       <Text className="ml-2 font-bold text-white">Navegar</Text>
                     </TouchableOpacity>
@@ -196,13 +242,12 @@ export const RoutesScreen = () => {
                           cliente: pedido.cliente,
                         })
                       }
-                      className="items-center justify-center rounded-2xl bg-dark px-5">
+                      className="items-center justify-center rounded-2xl bg-dark px-5 active:opacity-90">
                       <MaterialCommunityIcons name="camera-plus" size={24} color="white" />
                     </TouchableOpacity>
                   </View>
                 )}
 
-                {/* Mensaje de bloqueo si no ha comenzado o no es el turno */}
                 {!canInteract && (
                   <View className="mt-2 flex-row items-center border-t border-gray-100 pt-3">
                     <MaterialCommunityIcons
