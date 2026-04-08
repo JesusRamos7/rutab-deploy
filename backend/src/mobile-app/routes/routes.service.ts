@@ -6,10 +6,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 @Injectable()
 export class RoutesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async getActiveRoute(choferId: string) {
     // Obtenemos la fecha actual en formato YYYY-MM-DD para filtrar
@@ -87,5 +92,46 @@ export class RoutesService {
         updated_at: new Date(),
       },
     });
+  }
+
+  async updateLocation(dto: UpdateLocationDto, choferId: string) {
+    // 1. Validamos que la ruta pertenezca al chofer y esté en proceso
+    const ruta = await this.prisma.rutas.findFirst({
+      where: {
+        id: dto.rutaId,
+        chofer_id: choferId,
+        estatus_ruta: 'en_proceso',
+      },
+    });
+
+    if (!ruta) {
+      throw new BadRequestException(
+        'La ruta no es válida o no está en proceso.',
+      );
+    }
+
+    // 2. Persistencia en REDIS (Historial para el trayecto final)
+    await this.redis.pushLocation(dto.rutaId, dto);
+
+    // 3. Persistencia en POSTGRESQL (Ubicación actual para el monitor en vivo)
+    // Usamos $executeRaw para manejar el tipo GEOGRAPHY de PostGIS
+    await this.prisma.$executeRaw`
+      INSERT INTO ubicacion_actual (ruta_id, ultima_coordenada, velocidad_kmh, nivel_bateria, fecha_actualizacion)
+      VALUES (
+        ${dto.rutaId}::uuid, 
+        ST_SetSRID(ST_MakePoint(${dto.longitude}, ${dto.latitude}), 4326)::geography, 
+        ${dto.velocidad || 0}, 
+        ${dto.bateria || 0}, 
+        NOW()
+      )
+      ON CONFLICT (ruta_id) 
+      DO UPDATE SET 
+        ultima_coordenada = EXCLUDED.ultima_coordenada,
+        velocidad_kmh = EXCLUDED.velocidad_kmh,
+        nivel_bateria = EXCLUDED.nivel_bateria,
+        fecha_actualizacion = NOW();
+    `;
+
+    return { success: true };
   }
 }

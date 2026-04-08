@@ -7,9 +7,12 @@ import {
   Param,
   Req,
   BadRequestException,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 @Controller('mobile-app/routes')
 export class RoutesController {
@@ -35,5 +38,12 @@ export class RoutesController {
   async startRoute(@Param('id') id: string, @Req() req: any) {
     const choferId = req.user?.userId;
     return this.routesService.startRoute(id, choferId);
+  }
+
+  @Post('tracking')
+  @Roles('chofer')
+  async updateLocation(@Body() dto: UpdateLocationDto, @Req() req: any) {
+    const choferId = req.user?.userId;
+    return this.routesService.updateLocation(dto, choferId);
   }
 }
