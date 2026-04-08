@@ -1,34 +1,39 @@
-// /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
+// mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
+
+import { useState } from 'react';
 import { Alert } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
-// Importamos los tipos y rutas globales Routes RoutesStackParamList
-import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 
 export const useRoutes = () => {
-  const { usuario, logout } = useAuth();
-  const navigation = useNavigation<NavigationProp<RoutesStackParamList>>();
+  const { logout } = useAuth();
+  const [isStarting, setIsStarting] = useState(false);
 
-  // Tu lógica original de Logout
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Estás seguro de que deseas salir?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sí, salir',
-        style: 'destructive',
-        onPress: async () => await logout(),
-      },
+      { text: 'Sí, salir', style: 'destructive', onPress: async () => await logout() },
     ]);
   };
 
-  // Nueva lógica de navegación para el módulo
-  const handleVerDetalle = (id: string) => {
-    navigation.navigate(RoutesRoutes.DETAIL, { id });
+  // Función para cambiar el estado de la ruta en el servidor
+  const startRoute = async (rutaId: string, onSuccess: () => void) => {
+    try {
+      setIsStarting(true);
+      await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
+      Alert.alert('¡Éxito!', 'La ruta ha comenzado. El seguimiento GPS está activo.');
+      onSuccess(); // Refrescar los datos de la ruta
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'No se pudo iniciar la ruta';
+      Alert.alert('Error', msg);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return {
-    usuario,
     handleLogout,
-    handleVerDetalle, // Ahora el hook resuelve todo
+    startRoute,
+    isStarting,
   };
 };
