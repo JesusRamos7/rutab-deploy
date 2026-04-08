@@ -1,6 +1,10 @@
-// /backend/src/mobile-app/routes/routes.service.ts
+// backend/src/mobile-app/routes/routes.service.ts
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 
 @Injectable()
@@ -8,15 +12,16 @@ export class RoutesService {
   constructor(private prisma: PrismaService) {}
 
   async getActiveRoute(choferId: string) {
-    // 1. Buscamos la ruta activa asignada al chofer
+    // 1. Buscamos la ruta que esté programada o ya en proceso
     const ruta = await this.prisma.rutas.findFirst({
       where: {
         chofer_id: choferId,
-        estatus_ruta: 'programada', // O el estado que definas como activo
+        estatus_ruta: { in: ['programada', 'en_proceso'] }, // Aceptamos ambos estados
       },
       select: {
         id: true,
         fecha_programada: true,
+        estatus_ruta: true, // Importante para que el frontend sepa si mostrar el botón
         vehiculos: {
           select: { placas: true, marca: true, modelo: true },
         },
@@ -27,8 +32,6 @@ export class RoutesService {
       throw new NotFoundException('No tienes una ruta activa asignada.');
     }
 
-    // 2. Usamos queryRaw para traer los pedidos con sus coordenadas PostGIS
-    // Prisma no soporta Geography nativamente, así que extraemos Lat/Lng manualmente
     const pedidos = await this.prisma.$queryRaw<any[]>`
       SELECT 
         dr.id as "detalleId",
@@ -44,7 +47,7 @@ export class RoutesService {
       JOIN pedidos p ON dr.pedido_id = p.id
       JOIN clientes c ON p.cliente_id = c.id
       WHERE dr.ruta_id = ${ruta.id}::uuid
-        AND p.estado_pedido = 'pendiente' -- <--- FILTRO CRÍTICO
+        AND p.estado_pedido = 'pendiente'
       ORDER BY dr.orden_entrega ASC
     `;
 
@@ -52,5 +55,29 @@ export class RoutesService {
       ...ruta,
       pedidos,
     };
+  }
+
+  async startRoute(rutaId: string, choferId: string) {
+    // Verificamos que la ruta exista, pertenezca al chofer y esté programada
+    const ruta = await this.prisma.rutas.findFirst({
+      where: {
+        id: rutaId,
+        chofer_id: choferId,
+        estatus_ruta: 'programada',
+      },
+    });
+
+    if (!ruta) {
+      throw new BadRequestException('La ruta no existe o ya ha sido iniciada.');
+    }
+
+    // Actualizamos el estado
+    return this.prisma.rutas.update({
+      where: { id: rutaId },
+      data: {
+        estatus_ruta: 'en_proceso',
+        updated_at: new Date(),
+      },
+    });
   }
 }
