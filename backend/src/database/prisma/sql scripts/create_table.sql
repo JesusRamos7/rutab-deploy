@@ -126,18 +126,31 @@ CREATE TABLE public.evidencias (
 );
 
 -- =========================
--- HISTORIAL RASTREO
+-- UBICACIÓN ACTUAL
 -- =========================
-CREATE TABLE public.historial_rastreo (
-  id INTEGER GENERATED ALWAYS AS IDENTITY,
-  ruta_id uuid,
-  coordenadas GEOGRAPHY(Point, 4326),
-  fecha_hora timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT historial_rastreo_pkey PRIMARY KEY (id),
-  CONSTRAINT historial_rastreo_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id)
+CREATE TABLE public.ubicacion_actual (
+    ruta_id UUID PRIMARY KEY,
+    ultima_coordenada GEOGRAPHY(Point, 4326) NOT NULL,
+    fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    velocidad_kmh FLOAT, -- Opcional: útil para saber si está atorado en tráfico
+    nivel_bateria INTEGER, -- Opcional: útil para soporte técnico si la app se apaga
+    CONSTRAINT fk_ruta_actual FOREIGN KEY (ruta_id) REFERENCES public.rutas(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_ubicacion_actual_geog ON public.ubicacion_actual USING GIST (ultima_coordenada);
 
-CREATE INDEX ON historial_rastreo USING GIST (coordenadas);
+-- =========================
+-- TRAYECTOS FINALIZADOS
+-- =========================
+CREATE TABLE public.trayectos_finalizados (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ruta_id UUID UNIQUE NOT NULL,
+    geometria_ruta GEOGRAPHY(LineString, 4326) NOT NULL,
+    distancia_total_km FLOAT, -- Calculada al cerrar la ruta
+    fecha_inicio TIMESTAMP WITH TIME ZONE,
+    fecha_fin TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ruta_finalizada FOREIGN KEY (ruta_id) REFERENCES public.rutas(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_trayectos_geog ON public.trayectos_finalizados USING GIST (geometria_ruta);
 
 -- =========================
 -- INCIDENCIAS

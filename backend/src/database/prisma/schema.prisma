@@ -65,16 +65,6 @@ model evidencias {
   pedidos             pedidos?                  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model historial_rastreo {
-  id          Int                       @id @default(autoincrement())
-  ruta_id     String?                   @db.Uuid
-  coordenadas Unsupported("geography")?
-  fecha_hora  DateTime?                 @default(now()) @db.Timestamptz(6)
-  rutas       rutas?                    @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([coordenadas], type: Gist)
-}
-
 model incidencias {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ruta_id     String?  @db.Uuid
@@ -100,22 +90,23 @@ model pedidos {
 }
 
 model rutas {
-  id                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vehiculo_id              String?             @db.Uuid
-  chofer_id                String?             @db.Uuid
-  creado_por               String?             @db.Uuid
-  fecha_programada         DateTime?           @db.Date
-  distancia_total_estimada Decimal?            @db.Decimal
-  tiempo_estimado_entrega  DateTime?           @db.Timestamptz(6)
-  estatus_ruta             String?             @default("borrador")
-  created_at               DateTime            @default(now()) @db.Timestamp(6)
-  updated_at               DateTime            @default(now()) @db.Timestamp(6)
+  id                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehiculo_id              String?                @db.Uuid
+  chofer_id                String?                @db.Uuid
+  creado_por               String?                @db.Uuid
+  fecha_programada         DateTime?              @db.Date
+  distancia_total_estimada Decimal?               @db.Decimal
+  tiempo_estimado_entrega  DateTime?              @db.Timestamptz(6)
+  estatus_ruta             String?                @default("borrador")
+  created_at               DateTime               @default(now()) @db.Timestamp(6)
+  updated_at               DateTime               @default(now()) @db.Timestamp(6)
   detalles_ruta            detalles_ruta[]
-  historial_rastreo        historial_rastreo[]
   incidencias              incidencias[]
-  choferes                 choferes?           @relation(fields: [chofer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  administradores          administradores?    @relation(fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  vehiculos                vehiculos?          @relation(fields: [vehiculo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  choferes                 choferes?              @relation(fields: [chofer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  administradores          administradores?       @relation(fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehiculos                vehiculos?             @relation(fields: [vehiculo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  trayectos_finalizados    trayectos_finalizados?
+  ubicacion_actual         ubicacion_actual?
 }
 
 model vehiculos {
@@ -136,4 +127,27 @@ model spatial_ref_sys {
   auth_srid Int?
   srtext    String? @db.VarChar(2048)
   proj4text String? @db.VarChar(2048)
+}
+
+model trayectos_finalizados {
+  id                 Int                      @id @default(autoincrement())
+  ruta_id            String                   @unique @db.Uuid
+  geometria_ruta     Unsupported("geography")
+  distancia_total_km Float?
+  fecha_inicio       DateTime?                @db.Timestamptz(6)
+  fecha_fin          DateTime?                @default(now()) @db.Timestamptz(6)
+  rutas              rutas                    @relation(fields: [ruta_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ruta_finalizada")
+
+  @@index([geometria_ruta], map: "idx_trayectos_geog", type: Gist)
+}
+
+model ubicacion_actual {
+  ruta_id             String                   @id @db.Uuid
+  ultima_coordenada   Unsupported("geography")
+  fecha_actualizacion DateTime?                @default(now()) @db.Timestamptz(6)
+  velocidad_kmh       Float?
+  nivel_bateria       Int?
+  rutas               rutas                    @relation(fields: [ruta_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ruta_actual")
+
+  @@index([ultima_coordenada], map: "idx_ubicacion_actual_geog", type: Gist)
 }
