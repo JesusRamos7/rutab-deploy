@@ -1,4 +1,4 @@
-// src/features/routes/screens/RoutesDetailScreen.tsx
+// /mobile-app/frontend/src/features/routes/screens/RoutesDetailScreen.tsx
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';

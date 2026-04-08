@@ -1,4 +1,4 @@
-// src/features/routes/hooks/useRoutes.ts
+// /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
 import { Alert } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useAuth } from '../../../core/context/AuthContext';
