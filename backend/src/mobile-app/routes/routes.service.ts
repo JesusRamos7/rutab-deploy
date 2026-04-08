@@ -1,4 +1,4 @@
-// src/mobile-app/routes/routes.service.ts
+// /backend/src/mobile-app/routes/routes.service.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';

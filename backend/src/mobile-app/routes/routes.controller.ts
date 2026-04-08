@@ -1,4 +1,4 @@
-// src/mobile-app/routes/routes.controller.ts
+// /backend/src/mobile-app/routes/routes.controller.ts
 
 import { Controller, Get, Req } from '@nestjs/common';
 import { RoutesService } from './routes.service';
