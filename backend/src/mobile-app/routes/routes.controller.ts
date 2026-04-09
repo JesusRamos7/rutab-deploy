@@ -46,4 +46,11 @@ export class RoutesController {
     const choferId = req.user?.userId;
     return this.routesService.updateLocation(dto, choferId);
   }
+
+  @Patch(':id/finish')
+  @Roles('chofer')
+  async finishRoute(@Param('id') id: string, @Req() req: any) {
+    const choferId = req.user?.userId;
+    return this.routesService.finishRoute(id, choferId);
+  }
 }

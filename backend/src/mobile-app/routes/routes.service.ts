@@ -17,14 +17,12 @@ export class RoutesService {
   ) {}
 
   async getActiveRoute(choferId: string) {
-    // Obtenemos la fecha actual en formato YYYY-MM-DD para filtrar
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    // 1. Buscamos la ruta filtrando OBLIGATORIAMENTE por chofer_id
     const ruta = await this.prisma.rutas.findFirst({
       where: {
-        chofer_id: choferId, // <--- FILTRO CRÍTICO: Solo lo que le pertenece
+        chofer_id: choferId,
         estatus_ruta: { in: ['programada', 'en_proceso'] },
         fecha_programada: hoy,
       },
@@ -35,6 +33,7 @@ export class RoutesService {
         vehiculos: {
           select: { placas: true, marca: true, modelo: true },
         },
+        created_at: true,
       },
     });
 
@@ -42,8 +41,6 @@ export class RoutesService {
       throw new NotFoundException('No tienes ninguna ruta asignada para hoy.');
     }
 
-    // 2. Al usar el ID de la ruta obtenida arriba, garantizamos que los pedidos
-    // también sean los correctos.
     const pedidos = await this.prisma.$queryRaw<any[]>`
       SELECT 
         dr.id as "detalleId",
@@ -70,11 +67,10 @@ export class RoutesService {
   }
 
   async startRoute(rutaId: string, choferId: string) {
-    // Verificamos que la ruta a iniciar pertenezca al chofer que envía la petición
     const ruta = await this.prisma.rutas.findFirst({
       where: {
         id: rutaId,
-        chofer_id: choferId, // <--- SEGURIDAD: Evita que un chofer inicie la ruta de otro
+        chofer_id: choferId,
         estatus_ruta: 'programada',
       },
     });
@@ -95,7 +91,6 @@ export class RoutesService {
   }
 
   async updateLocation(dto: UpdateLocationDto, choferId: string) {
-    // 1. Validamos que la ruta pertenezca al chofer y esté en proceso
     const ruta = await this.prisma.rutas.findFirst({
       where: {
         id: dto.rutaId,
@@ -110,11 +105,8 @@ export class RoutesService {
       );
     }
 
-    // 2. Persistencia en REDIS (Historial para el trayecto final)
     await this.redis.pushLocation(dto.rutaId, dto);
 
-    // 3. Persistencia en POSTGRESQL (Ubicación actual para el monitor en vivo)
-    // Usamos $executeRaw para manejar el tipo GEOGRAPHY de PostGIS
     await this.prisma.$executeRaw`
       INSERT INTO ubicacion_actual (ruta_id, ultima_coordenada, velocidad_kmh, nivel_bateria, fecha_actualizacion)
       VALUES (
@@ -133,5 +125,74 @@ export class RoutesService {
     `;
 
     return { success: true };
+  }
+
+  async finishRoute(rutaId: string, choferId: string) {
+    const ruta = await this.prisma.rutas.findFirst({
+      where: { id: rutaId, chofer_id: choferId, estatus_ruta: 'en_proceso' },
+    });
+
+    if (!ruta)
+      throw new BadRequestException('Ruta no encontrada o no está en proceso.');
+
+    const rawPoints = await this.redis.getRoutePoints(rutaId);
+
+    if (!rawPoints || rawPoints.length < 2) {
+      await this.prisma.rutas.update({
+        where: { id: rutaId },
+        data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+      });
+      return { message: 'Ruta finalizada sin trayectoria (pocos puntos).' };
+    }
+
+    // --- CORRECCIÓN AQUÍ ---
+    // Upstash ya devuelve objetos si detecta JSON. Validamos el tipo antes de parsear.
+    const points = rawPoints
+      .map((p: any) => {
+        if (typeof p === 'string') {
+          try {
+            return JSON.parse(p);
+          } catch {
+            return null;
+          }
+        }
+        return p;
+      })
+      .filter((p) => p !== null && p.lng !== undefined && p.lat !== undefined);
+
+    if (points.length < 2) {
+      throw new BadRequestException(
+        'Datos de trayectoria insuficientes tras procesamiento.',
+      );
+    }
+
+    const wktPoints = points.map((p) => `${p.lng} ${p.lat}`).join(', ');
+    const lineStringWKT = `LINESTRING(${wktPoints})`;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`
+        INSERT INTO trayectos_finalizados (ruta_id, geometria_ruta, distancia_total_km, fecha_inicio)
+        VALUES (
+          '${rutaId}'::uuid,
+          ST_GeogFromText('${lineStringWKT}'),
+          ST_Length(ST_GeogFromText('${lineStringWKT}')) / 1000,
+          '${ruta.created_at.toISOString()}'
+        )
+      `);
+
+      await tx.rutas.update({
+        where: { id: rutaId },
+        data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+      });
+
+      await tx.ubicacion_actual.deleteMany({ where: { ruta_id: rutaId } });
+    });
+
+    await this.redis.clearRouteData(rutaId);
+
+    return {
+      success: true,
+      message: 'Ruta finalizada y trayectoria procesada.',
+    };
   }
 }
