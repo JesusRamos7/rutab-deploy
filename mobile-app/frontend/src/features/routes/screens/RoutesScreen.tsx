@@ -33,7 +33,7 @@ import { useRoutes } from '../hooks/useRoutes';
 export const RoutesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
   const { routeData, loading, error, refresh } = useFetchRoutes();
-  const { handleStartRouteConfirmation, isStarting } = useRoutes();
+  const { handleStartRouteConfirmation, handleFinishRoute, isStarting } = useRoutes();
 
   // --- LÓGICA DE ANIMACIONES ---
   const errorOpacity = useSharedValue(0);
@@ -41,16 +41,14 @@ export const RoutesScreen = () => {
 
   useEffect(() => {
     if (error) {
-      // Aparece el error con suavidad y sube 20px
       errorOpacity.value = withTiming(1, { duration: 600 });
-      // El icono pulsa constantemente
       iconScale.value = withRepeat(
         withTiming(1.15, { duration: 800, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
         -1,
         true
       );
     } else {
-      errorOpacity.value = 0;
+      errorOpacity.value = withTiming(0, { duration: 300 });
       iconScale.value = 1;
     }
   }, [error]);
@@ -76,7 +74,6 @@ export const RoutesScreen = () => {
 
   const handleComenzarRuta = () => {
     if (routeData?.id) {
-      // Disparamos la confirmación mejorada del hook useRoutes
       handleStartRouteConfirmation(routeData.id, refresh);
     }
   };
@@ -88,17 +85,18 @@ export const RoutesScreen = () => {
     });
   };
 
-  // --- ESTADO CARGANDO ---
-  if (loading && !routeData) {
+  // --- PRIORIDAD 1: CARGANDO (Elimina el parpadeo al reintentar) ---
+  // Si loading es true, no mostramos nada más, independientemente de si hay routeData o no.
+  if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color="#123a5d" />
-        <Text className="mt-4 font-medium text-gray-500">Cargando tu ruta...</Text>
+        <Text className="mt-4 font-medium text-gray-500">Actualizando información...</Text>
       </View>
     );
   }
 
-  // --- VISTA DE ERROR CON ANIMACIONES ---
+  // --- PRIORIDAD 2: ERROR ---
   if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-10">
@@ -118,22 +116,38 @@ export const RoutesScreen = () => {
     );
   }
 
-  // --- VISTA RUTA COMPLETADA ---
+  // --- PRIORIDAD 3: RUTA COMPLETADA (ACCIONES DE CIERRE) ---
   if (routeData && routeData.pedidos?.length === 0 && routeData.estatus_ruta === 'en_proceso') {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 items-center justify-center px-10">
-          <View className="mb-6 rounded-full bg-green-100 p-6">
-            <MaterialCommunityIcons name="check-all" size={50} color="#15803d" />
+          <View className="shadow-inner mb-6 rounded-full bg-green-100 p-8">
+            <MaterialCommunityIcons name="flag-checkered" size={60} color="#15803d" />
           </View>
-          <Text className="text-center text-xl font-bold text-dark">¡Ruta completada!</Text>
-          <Text className="mt-2 text-center text-gray-500">
-            Has entregado todos los pedidos. No olvides finalizar el trayecto oficialmente.
+          <Text className="text-center text-2xl font-black text-dark">¡Entregas Finalizadas!</Text>
+          <Text className="mt-4 text-center text-base leading-6 text-gray-500">
+            Has completado todos los pedidos de tu lista. Debes finalizar la jornada para procesar
+            tu trayecto y desactivar el GPS.
           </Text>
+
           <TouchableOpacity
-            onPress={refresh}
-            className="mt-8 rounded-2xl bg-primary px-10 py-4 shadow-lg shadow-primary/30">
-            <Text className="text-lg font-bold text-white">Actualizar</Text>
+            onPress={() => routeData.id && handleFinishRoute(routeData.id, refresh)}
+            disabled={isStarting}
+            className="mt-12 w-full flex-row items-center justify-center rounded-3xl bg-dark py-5 shadow-xl shadow-black/20 active:scale-95">
+            {isStarting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="stop-circle" size={24} color="white" />
+                <Text className="ml-2 text-lg font-bold uppercase tracking-tighter text-white">
+                  Finalizar Jornada Oficialmente
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={refresh} className="mt-6 p-2">
+            <Text className="font-bold text-gray-400">Actualizar datos</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -142,6 +156,7 @@ export const RoutesScreen = () => {
 
   const isInProgress = routeData?.estatus_ruta === 'en_proceso';
 
+  // --- PRIORIDAD 4: LISTA DE PEDIDOS ---
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <ScrollView
