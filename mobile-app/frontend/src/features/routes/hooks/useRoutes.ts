@@ -25,10 +25,7 @@ export const useRoutes = () => {
       '¿Comenzar Jornada?',
       'Se activará el rastreo GPS en segundo plano y se notificará el inicio del trayecto.',
       [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
+        { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Sí, comenzar',
           style: 'default',
@@ -49,23 +46,47 @@ export const useRoutes = () => {
       await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
 
       // 2. Intentamos iniciar el servicio de ubicación en segundo plano
-      // Pasamos el rutaId para que el TaskManager sepa a qué ruta asociar los puntos
       try {
         await LocationService.startTracking(rutaId);
       } catch (locationError: any) {
-        // Si el tracking falla (normalmente por permisos), avisamos al usuario
-        // pero la ruta ya se marcó como iniciada en el servidor.
         Alert.alert(
           'Aviso de Ubicación',
           'La ruta inició, pero el GPS no pudo activarse. Por favor, verifica los permisos de ubicación "Siempre" en los ajustes de tu teléfono.'
         );
       }
 
-      // 3. Éxito final
       Alert.alert('¡Éxito!', 'La ruta ha comenzado correctamente.');
-      onSuccess(); // Refrescar los datos de la ruta para actualizar la UI (RoutesScreen)
+      onSuccess();
     } catch (error: any) {
       const msg = error.response?.data?.message || 'No se pudo iniciar la ruta';
+      Alert.alert('Error', msg);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  /**
+   * NUEVO: Finaliza formalmente la ruta.
+   * Procesa el trayecto en el servidor y detiene el GPS en el móvil.
+   */
+  const handleFinishRoute = async (rutaId: string, onSuccess: () => void) => {
+    try {
+      setIsStarting(true); // Reutilizamos el estado de carga para el botón
+
+      // 1. Backend: Compila puntos de Redis, genera el LineString y cierra la ruta en DB
+      await apiClient.patch(`/mobile-app/routes/${rutaId}/finish`);
+
+      // 2. Mobile: Detenemos el TaskManager y limpiamos el almacenamiento local de ubicación
+      await LocationService.stopTracking();
+
+      Alert.alert(
+        '¡Ruta Finalizada!',
+        'Tu trayecto ha sido guardado con éxito y el GPS se ha desactivado.'
+      );
+
+      onSuccess(); // Refresca para mostrar la pantalla de "Sin rutas" o "Ruta completada"
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'No se pudo finalizar la ruta';
       Alert.alert('Error', msg);
     } finally {
       setIsStarting(false);
@@ -75,6 +96,7 @@ export const useRoutes = () => {
   return {
     handleLogout,
     handleStartRouteConfirmation,
+    handleFinishRoute, // <--- Nueva función expuesta
     isStarting,
   };
 };
