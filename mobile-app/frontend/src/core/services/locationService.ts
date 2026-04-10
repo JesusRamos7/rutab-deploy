@@ -47,9 +47,9 @@ TaskManager.defineTask(LOCATION_TRACKING_TASK, async ({ data, error }: any) => {
       const lastLoc = JSON.parse(lastLocationStr);
       const distance = getDistance(latitude, longitude, lastLoc.lat, lastLoc.lng);
 
-      // Si se movió menos de 15 metros Y la velocidad es casi nula, ignoramos el envío
+      // Si se movió menos de 1 metros Y la velocidad es casi nula, ignoramos el envío
       // pero actualizamos el timestamp local para evitar estancamiento
-      if (distance < 15 && (speed || 0) < 0.5) {
+      if (distance < 1 && (speed || 0) < 0.5) {
         return;
       }
     }
@@ -134,7 +134,7 @@ export const LocationService = {
       await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
         accuracy: Location.Accuracy.Balanced,
         timeInterval: 60000,
-        distanceInterval: 15, // Filtro nativo de Android/iOS (mínimo 15 metros)
+        distanceInterval: 1, // Filtro nativo de Android/iOS (mínimo 15 metros)
         foregroundService: {
           notificationTitle: 'Ruta en Progreso',
           notificationBody: 'Tu ubicación se está compartiendo con la central.',

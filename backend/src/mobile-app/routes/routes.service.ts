@@ -139,7 +139,7 @@ export class RoutesService {
       const distance = R * c;
 
       // Si se movió menos de 20 metros, no ensucies el historial de Redis
-      if (distance < 20) {
+      if (distance < 2) {
         shouldPushToHistory = false;
       }
     }
