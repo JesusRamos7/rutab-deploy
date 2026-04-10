@@ -24,13 +24,20 @@ export enum RoutesRoutes {
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
 export type RoutesStackParamList = {
   [RoutesRoutes.HOME]: undefined;
-  [RoutesRoutes.DELIVERY_EVIDENCE]: { pedidoId: string; cliente: string };
-  // Definimos que para reportar necesitamos el ID del pedido, el nombre del cliente
-  // y el ID de la ruta activa para la base de datos.
+  [RoutesRoutes.DELIVERY_EVIDENCE]: {
+    pedidoId: string;
+    cliente: string;
+    clientLat: number; // <--- Nuevo
+    clientLng: number; // <--- Nuevo
+  };
+
+  // Y aquí para cuando saltemos a la pantalla de reporte
   [RoutesRoutes.REPORT_INCIDENT]: {
     pedidoId: string;
     cliente: string;
     rutaId: string;
+    clientLat: number; // <--- Nuevo
+    clientLng: number; // <--- Nuevo
   };
 };
 

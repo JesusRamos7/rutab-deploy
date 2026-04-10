@@ -101,38 +101,50 @@ export class EvidenceService {
   }
 
   async saveIncident(dto: CreateIncidentDto) {
-    const { pedidoId, rutaId, tipo, descripcion } = dto;
+    const { pedidoId, rutaId, tipo, descripcion, latitude, longitude } = dto;
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        // 1. Crear el registro en la tabla de incidencias
-        const incidencia = await tx.incidencias.create({
-          data: {
-            pedido_id: pedidoId,
-            ruta_id: rutaId,
-            tipo,
-            descripcion,
-            // foto_url: null (Podemos implementarlo luego si decides capturar foto)
-          },
-        });
+        // 1. Insertar la incidencia con su ubicación real
+        // Nota: Usamos ST_GeomFromText para crear el punto geográfico
+        await tx.$executeRaw`
+        INSERT INTO incidencias (
+          ruta_id, 
+          pedido_id, 
+          tipo, 
+          descripcion, 
+          coordenadas_incidente,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${rutaId}::uuid, 
+          ${pedidoId}::uuid, 
+          ${tipo}, 
+          ${descripcion}, 
+          ST_GeomFromText(${`POINT(${longitude} ${latitude})`}, 4326),
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+      `;
 
-        // 2. Actualizar el estado del pedido a 'fallido'
+        // 2. Marcar el pedido como 'fallido'
         await tx.pedidos.update({
           where: { id: pedidoId },
-          data: { estado_pedido: 'fallido' },
+          data: {
+            estado_pedido: 'fallido',
+            updated_at: new Date(),
+          },
         });
 
         return {
           success: true,
-          message:
-            'Incidente registrado. El pedido ha sido marcado como fallido.',
-          data: incidencia,
+          message: 'Incidente registrado y ubicación guardada.',
         };
       });
     } catch (error) {
-      console.error('Error al registrar incidencia:', error);
+      console.error('Error crítico en saveIncident:', error);
       throw new InternalServerErrorException(
-        'No se pudo registrar el incidente. Intente de nuevo.',
+        'No se pudo registrar el incidente en el servidor.',
       );
     }
   }

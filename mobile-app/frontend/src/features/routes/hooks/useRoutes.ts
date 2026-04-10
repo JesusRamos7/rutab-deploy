@@ -32,6 +32,8 @@ export const useRoutes = () => {
       navigation.navigate(RoutesRoutes.DELIVERY_EVIDENCE, {
         pedidoId: pedido.pedidoId,
         cliente: pedido.cliente,
+        clientLat: pedido.latitude,
+        clientLng: pedido.longitude,
       });
     } else {
       Alert.alert(

@@ -13,8 +13,11 @@ import {
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+
 import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 import { apiClient } from '../../../core/api/apiClient';
+import { getDistance } from '../../../core/services/locationService';
 
 const TIPOS_INCIDENTE = [
   'Cliente ausente',
@@ -28,11 +31,14 @@ const TIPOS_INCIDENTE = [
 export const ReportIncidentScreen = () => {
   const route = useRoute<RouteProp<RoutesStackParamList, RoutesRoutes.REPORT_INCIDENT>>();
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
-  const { pedidoId, cliente, rutaId } = route.params;
+
+  const { pedidoId, cliente, rutaId, clientLat, clientLng } = route.params;
 
   const [tipoSeleccionado, setTipoSeleccionado] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  const PROXIMITY_THRESHOLD = 150; // Tu estándar de 150 metros
 
   const handleSendIncident = async () => {
     if (!tipoSeleccionado || !descripcion) {
@@ -42,20 +48,51 @@ export const ReportIncidentScreen = () => {
 
     try {
       setIsSending(true);
+
+      // 1. Obtener ubicación actual (Chofer)
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Error de GPS',
+          'Se requiere acceso a la ubicación para validar y registrar el incidente.'
+        );
+        setIsSending(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = location.coords;
+
+      // 2. Validar cercanía contra coordenadas del cliente
+      const distance = getDistance(latitude, longitude, clientLat, clientLng);
+
+      if (distance > PROXIMITY_THRESHOLD) {
+        Alert.alert(
+          'Fuera de Rango',
+          `Estás a ${Math.round(distance)}m del destino. Por seguridad, debes estar a menos de ${PROXIMITY_THRESHOLD}m para reportar un incidente.`
+        );
+        setIsSending(false);
+        return;
+      }
+
+      // 3. Enviar al backend
       await apiClient.post('/mobile-app/evidence/incident', {
         pedidoId,
         rutaId,
         tipo: tipoSeleccionado,
         descripcion,
+        latitude, // Ubicación donde el chofer está reportando
+        longitude,
       });
 
-      Alert.alert(
-        'Reporte enviado',
-        'El incidente ha sido registrado y el pedido marcado como fallido.',
-        [{ text: 'Aceptar', onPress: () => navigation.navigate(RoutesRoutes.HOME) }]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo registrar el incidente. Intenta de nuevo.');
+      Alert.alert('¡Éxito!', 'El incidente ha sido registrado y el pedido marcado como fallido.', [
+        { text: 'Aceptar', onPress: () => navigation.navigate(RoutesRoutes.HOME) },
+      ]);
+    } catch (error: any) {
+      console.error('Error al enviar incidente:', error);
+      Alert.alert('Error', 'No se pudo procesar el reporte. Intenta de nuevo.');
     } finally {
       setIsSending(false);
     }
@@ -68,6 +105,7 @@ export const ReportIncidentScreen = () => {
           Registrar Incidente
         </Text>
         <Text className="mt-1 text-2xl font-bold text-white">{cliente}</Text>
+        <Text className="text-sm text-white/80">Folio: {pedidoId}</Text>
       </View>
 
       <View className="-mt-4 px-6">
@@ -91,13 +129,13 @@ export const ReportIncidentScreen = () => {
             ))}
           </View>
 
-          <Text className="mb-4 mt-6 text-lg font-bold text-dark">Descripción de lo ocurrido</Text>
+          <Text className="mb-4 mt-6 text-lg font-bold text-dark">Descripción</Text>
           <TextInput
             multiline
             numberOfLines={4}
             value={descripcion}
             onChangeText={setDescripcion}
-            placeholder="Escribe aquí los detalles..."
+            placeholder="Explica brevemente qué sucedió..."
             className="h-32 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-dark"
             textAlignVertical="top"
           />
@@ -106,11 +144,13 @@ export const ReportIncidentScreen = () => {
         <TouchableOpacity
           onPress={handleSendIncident}
           disabled={isSending}
-          className={`mb-10 items-center rounded-2xl py-5 shadow-lg ${isSending ? 'bg-gray-300' : 'bg-dark'}`}>
+          className={`mb-10 items-center rounded-2xl py-5 shadow-lg ${
+            isSending ? 'bg-gray-300' : 'bg-dark'
+          }`}>
           {isSending ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-lg font-bold text-white">Enviar Reporte</Text>
+            <Text className="text-lg font-bold text-white">Confirmar y Enviar</Text>
           )}
         </TouchableOpacity>
       </View>

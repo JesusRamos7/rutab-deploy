@@ -34,7 +34,7 @@ export const DeliveryEvidenceScreen = () => {
   // Detecta si la pantalla está activa para gestionar el montaje/desmontaje del WebView
   const isFocused = useIsFocused();
 
-  const { pedidoId, cliente } = route.params;
+  const { pedidoId, cliente, clientLat, clientLng } = route.params;
 
   // Estados de captura
   const [image, setImage] = useState<string | null>(null);
@@ -161,7 +161,9 @@ export const DeliveryEvidenceScreen = () => {
             navigation.navigate(RoutesRoutes.REPORT_INCIDENT, {
               pedidoId,
               cliente,
-              rutaId: routeData?.id, // Pasamos el ID de la ruta activa
+              rutaId: routeData?.id,
+              clientLat, // Las pasamos hacia adelante
+              clientLng,
             })
           }
           className="mb-6 flex-row items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4">
