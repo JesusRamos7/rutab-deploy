@@ -33,7 +33,15 @@ import { useRoutes } from '../hooks/useRoutes';
 export const RoutesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
   const { routeData, loading, error, refresh } = useFetchRoutes();
-  const { handleStartRouteConfirmation, handleFinishRoute, isStarting } = useRoutes();
+  const {
+    handleStartRouteConfirmation,
+    handleFinishRoute,
+    validateProximity,
+    checkProximitySilently,
+    isCheckingLocation,
+    validatedPedidoId,
+    isStarting,
+  } = useRoutes();
 
   // --- LÓGICA DE ANIMACIONES ---
   const errorOpacity = useSharedValue(0);
@@ -72,6 +80,16 @@ export const RoutesScreen = () => {
     }, [refresh])
   );
 
+  // EFECTO DE AUTO-COMPROBACIÓN AL GANAR FOCO
+  useFocusEffect(
+    useCallback(() => {
+      // Si hay una ruta en proceso y hay pedidos, comprobamos el primero automáticamente
+      if (routeData?.estatus_ruta === 'en_proceso' && routeData?.pedidos?.length > 0) {
+        checkProximitySilently(routeData.pedidos[0]);
+      }
+    }, [routeData, checkProximitySilently])
+  );
+
   const handleComenzarRuta = () => {
     if (routeData?.id) {
       handleStartRouteConfirmation(routeData.id, refresh);
@@ -83,6 +101,24 @@ export const RoutesScreen = () => {
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
     });
+  };
+
+  const handlePressEntrega = async (pedido: any) => {
+    // ELIMINAMOS EL SHORTCUT: Siempre validamos al presionar, no importa el estado previo.
+    const isNear = await validateProximity(pedido.pedidoId, pedido.latitude, pedido.longitude);
+
+    if (isNear) {
+      navigation.navigate(RoutesRoutes.DELIVERY_EVIDENCE, {
+        pedidoId: pedido.pedidoId,
+        cliente: pedido.cliente,
+      });
+    } else {
+      // Si se alejó, el hook ya puso el botón en gris, y aquí lanzamos la advertencia.
+      Alert.alert(
+        'Acceso Restringido',
+        'Te has alejado del punto de entrega. Por seguridad, debes estar en el domicilio del cliente para continuar.'
+      );
+    }
   };
 
   // --- PRIORIDAD 1: CARGANDO (Elimina el parpadeo al reintentar) ---
@@ -204,6 +240,9 @@ export const RoutesScreen = () => {
             const isFirst = index === 0;
             const canInteract = isInProgress && isFirst;
 
+            // EL BOTÓN ES NEGRO SOLO SI YA SE VALIDÓ
+            const isAlreadyValidated = validatedPedidoId === pedido.pedidoId;
+
             return (
               <View
                 key={pedido.pedidoId}
@@ -250,16 +289,58 @@ export const RoutesScreen = () => {
                       <Text className="ml-2 font-bold text-white">Navegar</Text>
                     </TouchableOpacity>
 
+                    {/* BOTÓN DE CÁMARA */}
                     <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate(RoutesRoutes.DELIVERY_EVIDENCE, {
-                          pedidoId: pedido.pedidoId,
-                          cliente: pedido.cliente,
-                        })
-                      }
-                      className="items-center justify-center rounded-2xl bg-dark px-5 active:opacity-90">
-                      <MaterialCommunityIcons name="camera-plus" size={24} color="white" />
+                      onPress={() => handlePressEntrega(pedido)}
+                      disabled={isCheckingLocation}
+                      // DINAMISMO DE COLOR: Gris si no se ha validado, Negro (bg-dark) si sí.
+                      className={`min-w-[75px] items-center justify-center rounded-2xl px-6 ${
+                        isAlreadyValidated ? 'bg-dark' : 'bg-gray-400'
+                      }`}>
+                      {isCheckingLocation ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={isAlreadyValidated ? 'camera-plus' : 'map-marker-check'}
+                          size={24}
+                          color="white"
+                        />
+                      )}
                     </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Texto dinámico según el estado */}
+                {canInteract && (
+                  <View
+                    className={`mt-4 flex-row items-center justify-center rounded-2xl border px-4 py-3 ${
+                      isAlreadyValidated
+                        ? 'border-green-100 bg-green-50'
+                        : 'border-blue-100 bg-blue-50'
+                    }`}>
+                    <MaterialCommunityIcons
+                      name={isAlreadyValidated ? 'check-decagram' : 'information-outline'}
+                      size={16}
+                      color={isAlreadyValidated ? '#16a34a' : '#123a5d'}
+                    />
+
+                    <Text
+                      className={`ml-2 text-[11px] font-bold uppercase tracking-tight ${
+                        isAlreadyValidated ? 'text-green-700' : 'text-primary'
+                      }`}>
+                      {isAlreadyValidated ? (
+                        <>
+                          Ubicación confirmada. Presiona el icono de{' '}
+                          <MaterialCommunityIcons name="camera-plus" size={12} /> para entregar
+                        </>
+                      ) : (
+                        <>
+                          Presiona el icono de{' '}
+                          <MaterialCommunityIcons name="map-marker-check" size={12} /> para validar
+                          tu llegada
+                        </>
+                      )}
+                    </Text>
                   </View>
                 )}
 

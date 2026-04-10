@@ -12,7 +12,7 @@ const LAST_LOCATION_KEY = '@last_sent_location';
 /**
  * Calcula la distancia en metros entre dos coordenadas (Fórmula Haversine)
  */
-const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+export const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371e3; // Radio de la tierra en metros
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;

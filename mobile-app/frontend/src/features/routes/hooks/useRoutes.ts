@@ -1,14 +1,100 @@
-// /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
-
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import * as Location from 'expo-location';
 import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
-import { LocationService } from '../../../core/services/locationService';
+import { LocationService, getDistance } from '../../../core/services/locationService';
 
 export const useRoutes = () => {
   const { logout } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+
+  // Estado para saber qué pedido ya pasó la prueba de la geocerca
+  const [validatedPedidoId, setValidatedPedidoId] = useState<string | null>(null);
+
+  const PROXIMITY_THRESHOLD = 150;
+
+  /**
+   * Validación ultra rápida de proximidad
+   */
+  const validateProximity = async (
+    pedidoId: string,
+    clientLat: number,
+    clientLng: number
+  ): Promise<boolean> => {
+    try {
+      setIsCheckingLocation(true);
+
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso Denegado', 'Se requiere GPS para habilitar la entrega.');
+        return false;
+      }
+
+      // Usamos getLastKnownPositionAsync para que sea instantáneo y no sufra el lag de 20s
+      let location = await Location.getLastKnownPositionAsync();
+
+      if (!location) {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      }
+
+      const distance = getDistance(
+        location.coords.latitude,
+        location.coords.longitude,
+        clientLat,
+        clientLng
+      );
+
+      const isNear = distance <= PROXIMITY_THRESHOLD;
+
+      // --- LÓGICA DE RE-VALIDACIÓN ---
+      if (isNear) {
+        setValidatedPedidoId(pedidoId); // Desbloquea (Botón Negro)
+      } else {
+        setValidatedPedidoId(null); // Bloquea de nuevo si se alejó (Botón Gris)
+      }
+
+      return isNear;
+    } catch (error) {
+      console.error('Error GPS:', error);
+      return false;
+    } finally {
+      setIsCheckingLocation(false);
+    }
+  };
+
+  /**
+   * Función para verificar proximidad de forma silenciosa (para el OnFocus)
+   */
+  const checkProximitySilently = async (pedido: any) => {
+    if (!pedido) return;
+
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      const location = await Location.getLastKnownPositionAsync();
+      if (!location) return;
+
+      const distance = getDistance(
+        location.coords.latitude,
+        location.coords.longitude,
+        pedido.latitude,
+        pedido.longitude
+      );
+
+      if (distance <= PROXIMITY_THRESHOLD) {
+        setValidatedPedidoId(pedido.pedidoId);
+      } else {
+        setValidatedPedidoId(null);
+      }
+    } catch (e) {
+      // Silencioso, no queremos alertas aquí
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Estás seguro de que deseas salir?', [
@@ -17,9 +103,6 @@ export const useRoutes = () => {
     ]);
   };
 
-  /**
-   * Muestra un Alert de confirmación antes de proceder a iniciar la jornada.
-   */
   const handleStartRouteConfirmation = (rutaId: string, onSuccess: () => void) => {
     Alert.alert(
       '¿Comenzar Jornada?',
@@ -35,59 +118,32 @@ export const useRoutes = () => {
     );
   };
 
-  /**
-   * Proceso interno: Llama al API y activa el tracking de GPS.
-   */
   const executeStartRoute = async (rutaId: string, onSuccess: () => void) => {
     try {
       setIsStarting(true);
-
-      // 1. Notificamos al servidor el cambio de estado de la ruta
       await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
-
-      // 2. Intentamos iniciar el servicio de ubicación en segundo plano
       try {
         await LocationService.startTracking(rutaId);
       } catch (locationError: any) {
-        Alert.alert(
-          'Aviso de Ubicación',
-          'La ruta inició, pero el GPS no pudo activarse. Por favor, verifica los permisos de ubicación "Siempre" en los ajustes de tu teléfono.'
-        );
+        Alert.alert('Aviso de Ubicación', 'La ruta inició, pero el GPS no pudo activarse.');
       }
-
-      Alert.alert('¡Éxito!', 'La ruta ha comenzado correctamente.');
       onSuccess();
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'No se pudo iniciar la ruta';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', error.response?.data?.message || 'No se pudo iniciar la ruta');
     } finally {
       setIsStarting(false);
     }
   };
 
-  /**
-   * NUEVO: Finaliza formalmente la ruta.
-   * Procesa el trayecto en el servidor y detiene el GPS en el móvil.
-   */
   const handleFinishRoute = async (rutaId: string, onSuccess: () => void) => {
     try {
-      setIsStarting(true); // Reutilizamos el estado de carga para el botón
-
-      // 1. Backend: Compila puntos de Redis, genera el LineString y cierra la ruta en DB
+      setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/finish`);
-
-      // 2. Mobile: Detenemos el TaskManager y limpiamos el almacenamiento local de ubicación
       await LocationService.stopTracking();
-
-      Alert.alert(
-        '¡Ruta Finalizada!',
-        'Tu trayecto ha sido guardado con éxito y el GPS se ha desactivado.'
-      );
-
-      onSuccess(); // Refresca para mostrar la pantalla de "Sin rutas" o "Ruta completada"
+      Alert.alert('¡Ruta Finalizada!', 'Trayecto guardado con éxito.');
+      onSuccess();
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'No se pudo finalizar la ruta';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', error.response?.data?.message || 'No se pudo finalizar la ruta');
     } finally {
       setIsStarting(false);
     }
@@ -96,7 +152,11 @@ export const useRoutes = () => {
   return {
     handleLogout,
     handleStartRouteConfirmation,
-    handleFinishRoute, // <--- Nueva función expuesta
+    handleFinishRoute,
+    validateProximity, // <--- Expuesta para el botón
+    checkProximitySilently,
+    validatedPedidoId,
+    isCheckingLocation, // <--- Para mostrar un spinner en el botón
     isStarting,
   };
 };
