@@ -11,7 +11,6 @@ import { commonHeaderOptions } from '../../../navigation/styles/navigation-style
 
 // Pantallas
 import { RoutesScreen } from '../screens/RoutesScreen';
-import { RoutesDetailScreen } from '../screens/RoutesDetailScreen';
 import { DeliveryEvidenceScreen } from '../screens/DeliveryEvidenceScreen';
 
 const Stack = createNativeStackNavigator<RoutesStackParamList>();
@@ -38,12 +37,6 @@ export const RoutesNavigator = () => {
             </TouchableOpacity>
           ),
         })}
-      />
-
-      <Stack.Screen
-        name={RoutesRoutes.DETAIL}
-        component={RoutesDetailScreen}
-        options={{ title: 'Detalle de Ruta' }}
       />
 
       <Stack.Screen

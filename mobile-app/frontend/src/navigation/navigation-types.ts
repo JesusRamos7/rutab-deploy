@@ -1,4 +1,4 @@
-// src/navigation/navigation-types.ts
+// /mobile-app/frontend/src/navigation/navigation-types.ts
 
 // 1. Enum para nombres de rutas (Evita errores de escritura)
 export enum RootRoutes {
@@ -17,14 +17,12 @@ export enum MainRoutes {
 
 export enum RoutesRoutes {
   HOME = "RoutesHome",
-  DETAIL = "RoutesDetail",
   DELIVERY_EVIDENCE = "DeliveryEvidence",
 }
 
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
 export type RoutesStackParamList = {
   [RoutesRoutes.HOME]: undefined;
-  [RoutesRoutes.DETAIL]: { id: string }; 
   [RoutesRoutes.DELIVERY_EVIDENCE]: { pedidoId: string; cliente: string };
 };
 
