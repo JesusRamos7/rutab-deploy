@@ -1,19 +1,45 @@
+// /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
+
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native'; // <-- Añadimos Linking
 import * as Location from 'expo-location';
 import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
 import { LocationService, getDistance } from '../../../core/services/locationService';
+import { RoutesRoutes } from '../../../navigation/navigation-types'; // <-- Importa tus constantes de ruta
 
 export const useRoutes = () => {
   const { logout } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
-
-  // Estado para saber qué pedido ya pasó la prueba de la geocerca
   const [validatedPedidoId, setValidatedPedidoId] = useState<string | null>(null);
 
   const PROXIMITY_THRESHOLD = 150;
+
+  // --- LÓGICA DE MAPAS MOVIDA AQUÍ ---
+  const handleAbrirMaps = (lat: number, lng: number) => {
+    const url = `http://maps.google.com/?q=${lat},${lng}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
+    });
+  };
+
+  // --- LÓGICA DE ENTREGA MOVIDA AQUÍ ---
+  const handlePressEntrega = async (pedido: any, navigation: any) => {
+    const isNear = await validateProximity(pedido.pedidoId, pedido.latitude, pedido.longitude);
+
+    if (isNear) {
+      navigation.navigate(RoutesRoutes.DELIVERY_EVIDENCE, {
+        pedidoId: pedido.pedidoId,
+        cliente: pedido.cliente,
+      });
+    } else {
+      Alert.alert(
+        'Acceso Restringido',
+        'Te has alejado del punto de entrega. Por seguridad, debes estar en el domicilio del cliente para continuar.'
+      );
+    }
+  };
 
   /**
    * Validación ultra rápida de proximidad
@@ -153,10 +179,11 @@ export const useRoutes = () => {
     handleLogout,
     handleStartRouteConfirmation,
     handleFinishRoute,
-    validateProximity, // <--- Expuesta para el botón
+    handleAbrirMaps,
+    handlePressEntrega,
     checkProximitySilently,
     validatedPedidoId,
-    isCheckingLocation, // <--- Para mostrar un spinner en el botón
+    isCheckingLocation,
     isStarting,
   };
 };
