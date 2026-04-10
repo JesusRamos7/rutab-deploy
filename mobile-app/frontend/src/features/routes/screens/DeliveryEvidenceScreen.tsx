@@ -20,6 +20,7 @@ import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas
 
 import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
 import { apiClient } from '../../../core/api/apiClient';
+import { useFetchRoutes } from '../hooks/useFetchRoutes';
 
 /**
  * Pantalla para la captura de evidencias de entrega (Foto y Firma).
@@ -42,6 +43,9 @@ export const DeliveryEvidenceScreen = () => {
   const [isSending, setIsSending] = useState(false);
 
   const signatureRef = useRef<SignatureViewRef>(null);
+
+  // Obtenemos los datos de la ruta activa para extraer el ID
+  const { routeData } = useFetchRoutes();
 
   // Reinicia los campos al cambiar de pedido o navegar fuera
   useEffect(() => {
@@ -151,6 +155,23 @@ export const DeliveryEvidenceScreen = () => {
       </View>
 
       <View className="-mt-4 px-6">
+        {/* NUEVO: Botón de Reportar Incidencia */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate(RoutesRoutes.REPORT_INCIDENT, {
+              pedidoId,
+              cliente,
+              rutaId: routeData?.id, // Pasamos el ID de la ruta activa
+            })
+          }
+          className="mb-6 flex-row items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4">
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons name="alert-circle-outline" size={24} color="#dc2626" />
+            <Text className="ml-3 font-bold text-red-700">¿Problemas con la entrega?</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#dc2626" />
+        </TouchableOpacity>
+
         {/* Sección: Captura de Fotografía */}
         <View className="mb-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-black/5">
           <Text className="mb-4 text-lg font-bold text-dark">Foto del paquete</Text>

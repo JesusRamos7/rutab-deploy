@@ -68,11 +68,13 @@ model evidencias {
 model incidencias {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ruta_id     String?  @db.Uuid
+  pedido_id   String?  @db.Uuid
   tipo        String?
   descripcion String?
   foto_url    String?
   created_at  DateTime @default(now()) @db.Timestamp(6)
   updated_at  DateTime @default(now()) @db.Timestamp(6)
+  pedidos     pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rutas       rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -86,6 +88,7 @@ model pedidos {
   updated_at        DateTime        @default(now()) @db.Timestamp(6)
   detalles_ruta     detalles_ruta[]
   evidencias        evidencias[]
+  incidencias       incidencias[]
   clientes          clientes?       @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 

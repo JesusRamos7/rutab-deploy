@@ -4,6 +4,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { createClient } from '@supabase/supabase-js';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
+import { CreateIncidentDto } from './dto/create-incident.dto';
 
 @Injectable()
 export class EvidenceService {
@@ -95,6 +96,43 @@ export class EvidenceService {
       console.error('Error crítico en saveEvidence:', error);
       throw new InternalServerErrorException(
         'No se pudo procesar la entrega. Intenta de nuevo.',
+      );
+    }
+  }
+
+  async saveIncident(dto: CreateIncidentDto) {
+    const { pedidoId, rutaId, tipo, descripcion } = dto;
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Crear el registro en la tabla de incidencias
+        const incidencia = await tx.incidencias.create({
+          data: {
+            pedido_id: pedidoId,
+            ruta_id: rutaId,
+            tipo,
+            descripcion,
+            // foto_url: null (Podemos implementarlo luego si decides capturar foto)
+          },
+        });
+
+        // 2. Actualizar el estado del pedido a 'fallido'
+        await tx.pedidos.update({
+          where: { id: pedidoId },
+          data: { estado_pedido: 'fallido' },
+        });
+
+        return {
+          success: true,
+          message:
+            'Incidente registrado. El pedido ha sido marcado como fallido.',
+          data: incidencia,
+        };
+      });
+    } catch (error) {
+      console.error('Error al registrar incidencia:', error);
+      throw new InternalServerErrorException(
+        'No se pudo registrar el incidente. Intente de nuevo.',
       );
     }
   }

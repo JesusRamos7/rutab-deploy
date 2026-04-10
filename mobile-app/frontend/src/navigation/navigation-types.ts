@@ -2,28 +2,36 @@
 
 // 1. Enum para nombres de rutas (Evita errores de escritura)
 export enum RootRoutes {
-  AUTH_STACK = "AuthStack",
-  MAIN_DRAWER = "MainDrawer",
+  AUTH_STACK = 'AuthStack',
+  MAIN_DRAWER = 'MainDrawer',
 }
 
 export enum AuthRoutes {
-  LOGIN = "Login",
+  LOGIN = 'Login',
 }
 
 export enum MainRoutes {
-  ROUTES_STACK = "RoutesStack",
-  PROFILE = "Profile",
+  ROUTES_STACK = 'RoutesStack',
+  PROFILE = 'Profile',
 }
 
 export enum RoutesRoutes {
-  HOME = "RoutesHome",
-  DELIVERY_EVIDENCE = "DeliveryEvidence",
+  HOME = 'RoutesHome',
+  DELIVERY_EVIDENCE = 'DeliveryEvidence',
+  REPORT_INCIDENT = 'ReportIncident',
 }
 
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
 export type RoutesStackParamList = {
   [RoutesRoutes.HOME]: undefined;
   [RoutesRoutes.DELIVERY_EVIDENCE]: { pedidoId: string; cliente: string };
+  // Definimos que para reportar necesitamos el ID del pedido, el nombre del cliente
+  // y el ID de la ruta activa para la base de datos.
+  [RoutesRoutes.REPORT_INCIDENT]: {
+    pedidoId: string;
+    cliente: string;
+    rutaId: string;
+  };
 };
 
 export type MainDrawerParamList = {

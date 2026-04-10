@@ -12,6 +12,7 @@ import { commonHeaderOptions } from '../../../navigation/styles/navigation-style
 // Pantallas
 import { RoutesScreen } from '../screens/RoutesScreen';
 import { DeliveryEvidenceScreen } from '../screens/DeliveryEvidenceScreen';
+import { ReportIncidentScreen } from '../screens/ReportIncidentScreen';
 
 const Stack = createNativeStackNavigator<RoutesStackParamList>();
 
@@ -46,6 +47,15 @@ export const RoutesNavigator = () => {
           title: 'Confirmar Entrega',
           // En pantallas internas SI queremos que se vea la flecha,
           // por lo que no tocamos nada o aseguramos que esté en true
+          headerBackVisible: true,
+        }}
+      />
+
+      <Stack.Screen
+        name={RoutesRoutes.REPORT_INCIDENT}
+        component={ReportIncidentScreen}
+        options={{
+          title: 'Reportar Incidente',
           headerBackVisible: true,
         }}
       />
