@@ -162,12 +162,15 @@ CREATE TABLE public.incidencias (
   tipo text,
   descripcion text,
   foto_url text,
+  coordenadas_incidente GEOGRAPHY(Point, 4326);
   created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT incidencias_pkey PRIMARY KEY (id),
   CONSTRAINT incidencias_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id),
   CONSTRAINT incidencias_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id)
 );
+CREATE INDEX idx_incidencias_coordenadas ON public.incidencias USING GIST (coordenadas_incidente);
+
 
 -- Función que revisa si todos los pedidos de una ruta están "entregados"
 CREATE OR REPLACE FUNCTION actualizar_estatus_ruta()
