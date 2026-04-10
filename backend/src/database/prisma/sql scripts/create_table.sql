@@ -158,13 +158,15 @@ CREATE INDEX idx_trayectos_geog ON public.trayectos_finalizados USING GIST (geom
 CREATE TABLE public.incidencias (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   ruta_id uuid,
+  pedido_id uuid,
   tipo text,
   descripcion text,
   foto_url text,
   created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT incidencias_pkey PRIMARY KEY (id),
-  CONSTRAINT incidencias_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id)
+  CONSTRAINT incidencias_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id),
+  CONSTRAINT incidencias_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id)
 );
 
 -- Función que revisa si todos los pedidos de una ruta están "entregados"
