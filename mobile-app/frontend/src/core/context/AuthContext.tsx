@@ -1,4 +1,4 @@
-// src/core/context/AuthContext.tsx
+// /mobile-app/frontend/src/core/context/AuthContext.tsx
 
 import React, {
   createContext,

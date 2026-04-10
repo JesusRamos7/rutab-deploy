@@ -1,4 +1,4 @@
-// src/core/api/apiClient.ts
+// /mobile-app/frontend/src/core/api/apiClient.ts
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
