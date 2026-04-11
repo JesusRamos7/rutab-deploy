@@ -56,7 +56,8 @@ export const RoutesNavigator = () => {
         component={ReportIncidentScreen}
         options={{
           title: 'Reportar Incidente',
-          headerBackVisible: true,
+          headerBackVisible: false,
+          headerShown: false
         }}
       />
     </Stack.Navigator>
