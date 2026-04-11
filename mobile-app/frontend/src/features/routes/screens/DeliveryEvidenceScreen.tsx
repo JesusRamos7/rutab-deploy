@@ -1,4 +1,6 @@
-import React, { useState, useRef } from 'react';
+// /mobile-app/frontend/src/features/routes/screens/DeliveryEvidenceScreen.tsx
+
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,41 +9,62 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { useRoute, useNavigation, RouteProp, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location'; // Nuevo
+import * as Location from 'expo-location';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 
 import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
-import { apiClient } from '../../../core/api/apiClient'; // Importamos tu cliente
+import { apiClient } from '../../../core/api/apiClient';
+import { useFetchRoutes } from '../hooks/useFetchRoutes';
 
+/**
+ * Pantalla para la captura de evidencias de entrega (Foto y Firma).
+ * Implementa una solución de ciclo de vida para evitar bloqueos táctiles en el componente de firma
+ * durante navegaciones consecutivas.
+ */
 export const DeliveryEvidenceScreen = () => {
   const route = useRoute<RouteProp<RoutesStackParamList, RoutesRoutes.DELIVERY_EVIDENCE>>();
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
 
-  const { pedidoId, cliente } = route.params;
+  // Detecta si la pantalla está activa para gestionar el montaje/desmontaje del WebView
+  const isFocused = useIsFocused();
 
+  const { pedidoId, cliente, clientLat, clientLng } = route.params;
+
+  // Estados de captura
   const [image, setImage] = useState<string | null>(null);
   const [signature, setSignature] = useState<string | null>(null);
   const [scrollEnabled, setScrollEnabled] = useState(true);
-  const [isSending, setIsSending] = useState(false); // Estado para el loader del botón
+  const [isSending, setIsSending] = useState(false);
 
   const signatureRef = useRef<SignatureViewRef>(null);
+
+  // Obtenemos los datos de la ruta activa para extraer el ID
+  const { routeData } = useFetchRoutes();
+
+  // Reinicia los campos al cambiar de pedido o navegar fuera
+  useEffect(() => {
+    setImage(null);
+    setSignature(null);
+    setScrollEnabled(true);
+  }, [pedidoId]);
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Se requiere acceso a la cámara.');
+      Alert.alert('Permiso denegado', 'Se requiere acceso a la cámara para documentar la entrega.');
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.5,
+      quality: 0.5, // Optimización de peso para el upload
     });
 
     if (!result.canceled) {
@@ -49,30 +72,34 @@ export const DeliveryEvidenceScreen = () => {
     }
   };
 
-  const handleSignatureOK = (signatureBase64: string) => {
-    setSignature(signatureBase64);
-  };
+  /**
+   * Handlers para la gestión de gestos:
+   * Bloquean el scroll del contenedor padre cuando el usuario inicia el trazo de la firma.
+   */
+  const handleSignatureOK = (signatureBase64: string) => setSignature(signatureBase64);
+  const handleBegin = () => setScrollEnabled(false);
+  const handleEnd = () => setScrollEnabled(true);
 
   const handleClearSignature = () => {
     signatureRef.current?.clearSignature();
     setSignature(null);
   };
 
-  const handleBegin = () => setScrollEnabled(false);
-  const handleEnd = () => setScrollEnabled(true);
-
   const canFinish = image !== null && signature !== null && !isSending;
 
-  // LÓGICA DE INTEGRACIÓN CON BACKEND
   const handleFinishDelivery = async () => {
     if (!canFinish) return;
 
     try {
       setIsSending(true);
 
+      // Verificación de ubicación obligatoria para el registro de auditoría
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Error', 'Se requiere permiso de GPS.');
+        Alert.alert(
+          'Error de GPS',
+          'Es obligatorio registrar la ubicación para finalizar la entrega.'
+        );
         setIsSending(false);
         return;
       }
@@ -80,6 +107,7 @@ export const DeliveryEvidenceScreen = () => {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
+      // Construcción del payload multipart/form-data
       const formData = new FormData();
       const uriParts = image.split('.');
       const fileType = uriParts[uriParts.length - 1];
@@ -99,22 +127,15 @@ export const DeliveryEvidenceScreen = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      Alert.alert('¡Éxito!', `El pedido ha sido finalizado correctamente.`, [
-        { text: 'Entendido', onPress: () => navigation.navigate(RoutesRoutes.HOME) },
+      Alert.alert('¡Éxito!', 'Entrega registrada y sincronizada correctamente.', [
+        { text: 'Finalizar', onPress: () => navigation.navigate(RoutesRoutes.HOME) },
       ]);
     } catch (error: any) {
-      console.error('Error al subir evidencia:', error);
-
-      // --- LÓGICA DE CORRECCIÓN PARA EL CRASH ---
-      const serverMessage = error.response?.data?.message;
-
-      // Si el mensaje es un arreglo (validaciones de NestJS), lo unimos con saltos de línea
-      const finalMessage = Array.isArray(serverMessage)
-        ? serverMessage.join('\n')
-        : serverMessage || 'Hubo un problema al conectar con el servidor.';
-
-      Alert.alert('Error de validación', finalMessage);
-      // ------------------------------------------
+      console.error('Evidence upload error:', error);
+      Alert.alert(
+        'Error de conexión',
+        'No se pudo guardar la evidencia. Verifique su conexión e intente de nuevo.'
+      );
     } finally {
       setIsSending(false);
     }
@@ -134,9 +155,28 @@ export const DeliveryEvidenceScreen = () => {
       </View>
 
       <View className="-mt-4 px-6">
-        {/* Sección de Foto */}
+        {/* NUEVO: Botón de Reportar Incidencia */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate(RoutesRoutes.REPORT_INCIDENT, {
+              pedidoId,
+              cliente,
+              rutaId: routeData?.id,
+              clientLat, // Las pasamos hacia adelante
+              clientLng,
+            })
+          }
+          className="mb-6 flex-row items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4">
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons name="alert-circle-outline" size={24} color="#dc2626" />
+            <Text className="ml-3 font-bold text-red-700">¿Problemas con la entrega?</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#dc2626" />
+        </TouchableOpacity>
+
+        {/* Sección: Captura de Fotografía */}
         <View className="mb-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-black/5">
-          <Text className="text-dark mb-4 text-lg font-bold">Foto del paquete</Text>
+          <Text className="mb-4 text-lg font-bold text-dark">Foto del paquete</Text>
           <TouchableOpacity
             onPress={takePhoto}
             disabled={isSending}
@@ -154,10 +194,10 @@ export const DeliveryEvidenceScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Sección de Firma */}
+        {/* Sección: Captura de Firma */}
         <View className="mb-8 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-black/5">
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-dark text-lg font-bold">Firma del cliente</Text>
+            <Text className="text-lg font-bold text-dark">Firma del cliente</Text>
             {signature && !isSending && (
               <TouchableOpacity onPress={handleClearSignature}>
                 <Text className="text-xs font-bold uppercase text-red-600">Limpiar</Text>
@@ -165,19 +205,35 @@ export const DeliveryEvidenceScreen = () => {
             )}
           </View>
 
-          <View className="h-64 w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
-            <SignatureScreen
-              ref={signatureRef}
-              onOK={handleSignatureOK}
-              onEmpty={() => setSignature(null)}
-              onBegin={handleBegin}
-              onEnd={handleEnd}
-              descriptionText="Firme aquí"
-              webStyle={`.m-signature-pad { border: none; box-shadow: none; height: 100%; } 
-                         .m-signature-pad--footer { display: none; }
-                         body, html { height: 100%; overflow: hidden; }`}
-            />
-          </View>
+          {/* Renderizado condicional basado en useIsFocused:
+            Fuerza la destrucción real del WebView al salir de la pantalla, 
+            evitando que los listeners táctiles se corrompan en el stack de navegación.
+          */}
+          {isFocused ? (
+            <View className="h-64 w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+              <SignatureScreen
+                key={`${pedidoId}_${isFocused}`}
+                ref={signatureRef}
+                onOK={handleSignatureOK}
+                onEmpty={() => setSignature(null)}
+                onBegin={handleBegin}
+                onEnd={handleEnd}
+                descriptionText="Firme aquí"
+                autoClear={false}
+                imageType="image/png"
+                webStyle={`.m-signature-pad { border: none; box-shadow: none; height: 100%; } 
+                           .m-signature-pad--footer { display: none; }
+                           body, html { height: 100%; overflow: hidden; }`}
+                // Optimizaciones para renderizado de trazo en Android
+                androidHardwareAccelerationDisabled={Platform.OS === 'android'}
+                androidLayerType={Platform.OS === 'android' ? 'hardware' : undefined}
+              />
+            </View>
+          ) : (
+            <View className="h-64 w-full items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
+              <ActivityIndicator color="#123a5d" />
+            </View>
+          )}
 
           <TouchableOpacity
             onPress={() => signatureRef.current?.readSignature()}
@@ -189,7 +245,7 @@ export const DeliveryEvidenceScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Botón Final */}
+        {/* Acción Final */}
         <TouchableOpacity
           onPress={handleFinishDelivery}
           disabled={!canFinish}

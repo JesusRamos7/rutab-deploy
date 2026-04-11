@@ -14,9 +14,17 @@ Necesitas crear un archivo `.env` con las siguientes llaves:
 ```env
 DATABASE_URL="url_de_supabase_pooler"
 DIRECT_URL="url_de_supabase_direct"
-JWT_SECRET="tu_clave_secreta"
+SUPABASE_URL = "URL"
+SUPABASE_SERVICE_ROLE_KEY= "SERVICE_ROLE_KEY"
+JWT_SECRET="SECRET"
 FRONTEND_URL="http://localhost:5173" # para pruebas local
 # FRONTEND_URL="url_de_vercel" # para produccion
+GOOGLE_MAPS_API_KEY="KEY"
+ORIGEN_LAT=18.030620604081356
+ORIGEN_LNG=-92.90938963591503
+UPSTASH_REDIS_REST_URL="URL"
+UPSTASH_REDIS_REST_TOKEN="TOKEN"
+
 
 🛠️ Comandos Principales
 Instalar dependencias

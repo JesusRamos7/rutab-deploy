@@ -1,26 +1,23 @@
-// src/core/api/apiClient.ts
+// /mobile-app/frontend/src/core/api/apiClient.ts
 
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configuración de la IP centralizada
-// para conocer tu IP utiliza el comando ipConfig en la terminal
-const IP_RED_LOCAL = "";
 const BASE_URL = __DEV__
-  ? `http://${IP_RED_LOCAL}:3000`
-  : "https://rutab-deploy.onrender.com";
+  ? process.env.EXPO_PUBLIC_API_URL_DEV
+  : process.env.EXPO_PUBLIC_API_URL_PROD;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
 // Interceptor para inyectar el token en cada petición
 apiClient.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem("@token_chofer");
+    const token = await AsyncStorage.getItem('@token_chofer');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,7 +25,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
 // Interceptor para manejar errores globales (ej. sesión expirada)
@@ -37,8 +34,8 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Aquí podrías disparar un logout global si el token ya no es válido
-      await AsyncStorage.multiRemove(["@token_chofer", "@usuario_chofer"]);
+      await AsyncStorage.multiRemove(['@token_chofer', '@usuario_chofer']);
     }
     return Promise.reject(error);
-  },
+  }
 );

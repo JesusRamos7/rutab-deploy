@@ -1,3 +1,5 @@
+// /mobile-app/frontend/src/features/routes/navigation/RoutesNavigator.tsx
+
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,8 +11,8 @@ import { commonHeaderOptions } from '../../../navigation/styles/navigation-style
 
 // Pantallas
 import { RoutesScreen } from '../screens/RoutesScreen';
-import { RoutesDetailScreen } from '../screens/RoutesDetailScreen';
 import { DeliveryEvidenceScreen } from '../screens/DeliveryEvidenceScreen';
+import { ReportIncidentScreen } from '../screens/ReportIncidentScreen';
 
 const Stack = createNativeStackNavigator<RoutesStackParamList>();
 
@@ -39,12 +41,6 @@ export const RoutesNavigator = () => {
       />
 
       <Stack.Screen
-        name={RoutesRoutes.DETAIL}
-        component={RoutesDetailScreen}
-        options={{ title: 'Detalle de Ruta' }}
-      />
-
-      <Stack.Screen
         name={RoutesRoutes.DELIVERY_EVIDENCE}
         component={DeliveryEvidenceScreen}
         options={{
@@ -52,6 +48,16 @@ export const RoutesNavigator = () => {
           // En pantallas internas SI queremos que se vea la flecha,
           // por lo que no tocamos nada o aseguramos que esté en true
           headerBackVisible: true,
+        }}
+      />
+
+      <Stack.Screen
+        name={RoutesRoutes.REPORT_INCIDENT}
+        component={ReportIncidentScreen}
+        options={{
+          title: 'Reportar Incidente',
+          headerBackVisible: false,
+          headerShown: false
         }}
       />
     </Stack.Navigator>
