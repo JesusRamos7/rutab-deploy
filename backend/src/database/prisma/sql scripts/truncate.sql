@@ -2,9 +2,10 @@ BEGIN;
 
 -- Vaciar todas las tablas respetando las FK
 TRUNCATE TABLE
+    public.ubicacion_actual,
+	public.trayectos_finalizados,
     public.detalles_ruta,
     public.evidencias,
-    public.historial_rastreo,
     public.incidencias,
     public.pedidos,
     public.rutas,
