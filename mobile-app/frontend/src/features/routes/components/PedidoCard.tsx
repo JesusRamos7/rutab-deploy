@@ -34,21 +34,21 @@ export const PedidoCard = ({
           : 'border-gray-100 bg-gray-50 opacity-60'
       }`}>
       {/* Badge de Parada y ID */}
-      <View className="mb-3 flex-row items-start justify-between">
+      <View className="mb-4 flex-row items-start justify-between">
         <View className={`rounded-full px-3 py-1 ${canInteract ? 'bg-primary' : 'bg-gray-400'}`}>
-          <Text className="text-[10px] font-bold uppercase text-white">Parada {pedido.orden}</Text>
+          <Text className="text-[10px] font-extrabold uppercase text-white">
+            Parada {pedido.orden}
+          </Text>
         </View>
-        <Text className="font-mono text-[10px] text-gray-400">
+        <Text className="font-mono text-[10px] font-bold text-gray-400">
           {pedido.pedidoId.split('-')[0]}...
         </Text>
       </View>
 
       {/* Info del Cliente */}
-      <View className="mb-4 flex-row items-center">
+      <View className="mb-5 flex-row items-center">
         <View
-          className={`h-12 w-12 items-center justify-center rounded-2xl ${
-            canInteract ? 'bg-primary/10' : 'bg-gray-200'
-          }`}>
+          className={`h-12 w-12 items-center justify-center rounded-2xl ${canInteract ? 'bg-primary/10' : 'bg-gray-200'}`}>
           <MaterialCommunityIcons
             name={canInteract ? 'truck-fast' : 'package-variant-closed'}
             size={24}
@@ -56,71 +56,65 @@ export const PedidoCard = ({
           />
         </View>
         <View className="ml-4 flex-1">
-          <Text className="text-lg font-bold leading-5 text-dark">{pedido.cliente}</Text>
-          <Text className="mt-1 text-xs text-gray-500" numberOfLines={2}>
+          <Text className="text-lg font-black leading-5 text-dark">{pedido.cliente}</Text>
+          <Text className="mt-1 text-xs font-bold text-gray-500" numberOfLines={2}>
             {pedido.direccion}
           </Text>
         </View>
       </View>
 
-      {/* Acciones (Navegar / Cámara) */}
-      {canInteract && (
-        <View className="mt-2 flex-row space-x-3">
-          <TouchableOpacity
-            onPress={() => onPressMaps(pedido.latitude, pedido.longitude)}
-            className="flex-1 flex-row items-center justify-center rounded-2xl bg-primary py-4 shadow-lg shadow-primary/20 active:opacity-90">
-            <MaterialCommunityIcons name="google-maps" size={20} color="white" />
-            <Text className="ml-2 font-bold text-white">Navegar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => onPressDelivery(pedido)}
-            disabled={isCheckingLocation}
-            className={`min-w-[75px] items-center justify-center rounded-2xl px-6 ${
-              isValidated ? 'bg-dark' : 'bg-gray-400'
-            }`}>
-            {isCheckingLocation ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <MaterialCommunityIcons
-                name={isValidated ? 'camera-plus' : 'map-marker-check'}
-                size={24}
-                color="white"
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Footer Informativo del Card */}
+      {/* Acciones e Instrucción */}
       {canInteract ? (
-        <View
-          className={`mt-4 flex-row items-center justify-center rounded-2xl border px-4 py-3 ${
-            isValidated ? 'border-green-100 bg-green-50' : 'border-blue-100 bg-blue-50'
-          }`}>
-          <MaterialCommunityIcons
-            name={isValidated ? 'check-decagram' : 'information-outline'}
-            size={16}
-            color={isValidated ? '#16a34a' : '#123a5d'}
-          />
-          <Text
-            className={`ml-2 text-[11px] font-bold uppercase tracking-tight ${
-              isValidated ? 'text-green-700' : 'text-primary'
-            }`}>
-            {isValidated ? 'Ubicación confirmada. Toma la foto' : 'Valida tu llegada para entregar'}
-          </Text>
+        <View>
+          <View className="flex-row space-x-3">
+            <TouchableOpacity
+              onPress={() => onPressMaps(pedido.latitude, pedido.longitude)}
+              className="flex-1 flex-row items-center justify-center rounded-2xl bg-primary py-4 shadow-lg shadow-primary/20 active:opacity-90">
+              <MaterialCommunityIcons name="google-maps" size={20} color="white" />
+              <Text className="ml-2 font-black text-white">Navegar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => onPressDelivery(pedido)}
+              disabled={isCheckingLocation}
+              className={`flex-1 flex-row items-center justify-center rounded-2xl py-4 shadow-lg active:opacity-90 ${
+                isValidated ? 'bg-dark shadow-dark/20' : 'bg-gray-400 shadow-gray-400/20'
+              }`}>
+              {isCheckingLocation ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name={isValidated ? 'camera-plus' : 'map-marker-check'}
+                    size={20}
+                    color="white"
+                  />
+                  <Text className="ml-2 font-black text-white">
+                    {isValidated ? 'Entregar' : 'Llegué'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Instrucción directa en negrita */}
+          <View className="mt-3 flex-row items-center justify-center">
+            <MaterialCommunityIcons
+              name={isValidated ? 'check-circle' : 'information-outline'}
+              size={14}
+              color={isValidated ? '#16a34a' : '#9ca3af'}
+            />
+            <Text
+              className={`ml-2 text-[11px] font-bold tracking-tight ${isValidated ? 'text-green-700' : 'text-gray-400'}`}>
+              {isValidated ? 'Ubicación confirmada' : "Presiona 'Llegué' al estar en el sitio"}
+            </Text>
+          </View>
         </View>
       ) : (
-        <View className="mt-2 flex-row items-center border-t border-gray-100 pt-3">
-          <MaterialCommunityIcons
-            name={!isInProgress ? 'play-circle-outline' : 'lock'}
-            size={14}
-            color="#9CA3AF"
-          />
-          <Text className="ml-2 text-[11px] font-medium italic text-gray-400">
-            {!isInProgress
-              ? 'Inicia la jornada para desbloquear'
-              : 'Completa la entrega anterior para continuar'}
+        <View className="mt-2 flex-row items-center border-t border-gray-100 pt-4">
+          <MaterialCommunityIcons name="lock" size={14} color="#9CA3AF" />
+          <Text className="ml-2 text-[11px] font-bold italic text-gray-400">
+            {!isInProgress ? 'INICIA RUTA PARA DESBLOQUEAR' : 'COMPLETA LA ENTREGA ANTERIOR'}
           </Text>
         </View>
       )}
