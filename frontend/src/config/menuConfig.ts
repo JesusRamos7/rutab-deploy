@@ -10,6 +10,8 @@ import {
   LucideIcon,
   UserRound,
   Map,
+  Activity,
+  Zap,
 } from "lucide-react";
 
 /**
@@ -46,16 +48,30 @@ export interface MenuItem {
  */
 export const menuConfig: MenuItem[] = [
   {
-    title: "Rutas",
+    title: "Inicio",
     path: "/panel/inicio",
     icon: List,
     roles: ["superAdmin", "logístico", "auditor"],
   },
   {
-    title: "Optimización Rutas", // <-- NUEVO MÓDULO INTEGRADO
-    path: "/panel/optimizacion",
+    // Agrupamos todo lo operativo bajo "Operaciones" o "Rutas"
+    title: "Rutas y Operaciones",
     icon: Map,
     roles: ["superAdmin", "logístico"],
+    subItems: [
+      {
+        title: "Optimización",
+        path: "/panel/optimizacion",
+        icon: Zap, // Zap o Map quedan geniales aquí
+        roles: ["superAdmin", "logístico"],
+      },
+      {
+        title: "Monitoreo en Vivo",
+        path: "/panel/monitoreo",
+        icon: Activity, // El pulso de la flota 📈
+        roles: ["superAdmin", "logístico"],
+      },
+    ],
   },
   {
     title: "Módulo Auditoría",

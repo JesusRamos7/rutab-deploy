@@ -43,6 +43,11 @@ const ModuloOptimizacion = lazy(() =>
     default: m.OptimizationIndex,
   })),
 );
+const ModuloMonitoreo = lazy(() =>
+  import("./modules/index").then((m) => ({
+    default: m.ModuloInicio, //./modules/monitoring/MonitoringPage
+  })),
+);
 const ModuloAuditoria = lazy(() =>
   import("./modules/audit").then((m) => ({ default: m.ModuloAuditoria })),
 );
@@ -62,9 +67,9 @@ const DriversPage = lazy(() =>
   })),
 );
 const OrdersPage = lazy(() =>
-import("./modules/management/orders/OrdersPage").then((m) => ({
-  default: m.OrdersPage,
-}))
+  import("./modules/management/orders/OrdersPage").then((m) => ({
+    default: m.OrdersPage,
+  }))
 );
 
 /**
@@ -125,6 +130,15 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
                     <ModuloOptimizacion />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="monitoreo"
+                element={
+                  <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
+                    <ModuloMonitoreo />
                   </RoleGuard>
                 }
               />
