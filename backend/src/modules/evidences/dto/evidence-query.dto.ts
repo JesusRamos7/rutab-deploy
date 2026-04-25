@@ -12,5 +12,9 @@ export class EvidenceQueryDto {
 
   @IsOptional()
   @IsString()
-  choferNombre?: string;
+  choferCorreo?: string;
+
+  @IsOptional()
+  @IsString()
+  fecha?: string; // Formato YYYY-MM-DD
 }

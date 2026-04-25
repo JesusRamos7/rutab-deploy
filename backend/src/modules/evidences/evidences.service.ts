@@ -57,10 +57,10 @@ export class EvidencesService {
   }
 
   async findAll(query: EvidenceQueryDto) {
-    // Convertimos strings vacíos a null y preparamos el filtro de búsqueda
     const estado = query.estado || null;
     const pedidoId = query.pedidoId || null;
-    const choferNombre = query.choferNombre ? `%${query.choferNombre}%` : null;
+    const choferCorreo = query.choferCorreo ? `%${query.choferCorreo}%` : null;
+    const fecha = query.fecha || null;
 
     const results: any[] = await this.prisma.$queryRaw`
     SELECT 
@@ -85,7 +85,8 @@ export class EvidencesService {
     WHERE 
       (${estado}::text IS NULL OR e.estado_evidencia = ${estado})
       AND (${pedidoId}::text IS NULL OR e.pedido_id::text = ${pedidoId})
-      AND (${choferNombre}::text IS NULL OR ch.nombre ILIKE ${choferNombre})
+      AND (${choferCorreo}::text IS NULL OR ch.correo ILIKE ${choferCorreo})
+      AND (${fecha}::text IS NULL OR DATE(e.fecha_hora) = ${fecha}::date)
     ORDER BY e.fecha_hora DESC
   `;
 

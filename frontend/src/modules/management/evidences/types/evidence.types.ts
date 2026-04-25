@@ -20,5 +20,6 @@ export interface Evidence {
 export interface EvidenceFilters {
   estado?: string;
   pedidoId?: string;
-  choferNombre?: string;
+  choferCorreo?: string;
+  fecha?: string; 
 }

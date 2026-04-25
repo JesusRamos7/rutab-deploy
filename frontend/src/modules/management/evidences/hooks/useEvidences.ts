@@ -10,7 +10,8 @@ export const useEvidences = () => {
   const [filters, setFilters] = useState<EvidenceFilters>({
     estado: "",
     pedidoId: "",
-    choferNombre: "",
+    choferCorreo: "",
+    fecha: "",
   });
 
   const loadEvidences = useCallback(async () => {
