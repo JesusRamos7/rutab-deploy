@@ -1,4 +1,4 @@
-// /backend/src/mobile-app/evidence/evidence.module.ts
+// /backend/src/modules/evidence/evidence.module.ts
 
 import { Module } from '@nestjs/common';
 
