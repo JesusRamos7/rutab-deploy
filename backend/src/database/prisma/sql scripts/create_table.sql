@@ -121,6 +121,7 @@ CREATE TABLE public.evidencias (
   firma_url text,
   coordenadas_entrega GEOGRAPHY(Point, 4326),
   fecha_hora timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  estado_evidencia text DEFAULT 'alerta',
   CONSTRAINT evidencias_pkey PRIMARY KEY (id),
   CONSTRAINT evidencias_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id)
 );
