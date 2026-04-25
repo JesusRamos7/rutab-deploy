@@ -15,8 +15,10 @@ const prisma = new PrismaClient();
  */
 async function main() {
   // Configuración de credenciales de prueba
+  const nombre = 'Claudia Ruth';
   const correo = 'admin@gmail.com';
   const passwordPlana = '1234';
+  const rol = 'superAdmin';
 
   /**
    * Generación de hash seguro:
@@ -35,10 +37,10 @@ async function main() {
     where: { correo: correo },
     update: {},
     create: {
-      nombre: 'JojiDev',
+      nombre: nombre,
       correo: correo,
       password: passwordHasheada,
-      rol: 'superAdmin',
+      rol: rol,
       // Campos opcionales (nullables) se omiten para mantener el seed minimalista
     },
   });
