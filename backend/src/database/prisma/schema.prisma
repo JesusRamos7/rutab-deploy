@@ -62,20 +62,24 @@ model evidencias {
   firma_url           String?
   coordenadas_entrega Unsupported("geography")?
   fecha_hora          DateTime?                 @default(now()) @db.Timestamptz(6)
+  estado_evidencia    String?                   @default("alerta")
   pedidos             pedidos?                  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model incidencias {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ruta_id     String?  @db.Uuid
-  pedido_id   String?  @db.Uuid
-  tipo        String?
-  descripcion String?
-  foto_url    String?
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @default(now()) @db.Timestamp(6)
-  pedidos     pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  rutas       rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruta_id               String?                   @db.Uuid
+  pedido_id             String?                   @db.Uuid
+  tipo                  String?
+  descripcion           String?
+  foto_url              String?
+  coordenadas_incidente Unsupported("geography")?
+  created_at            DateTime                  @default(now()) @db.Timestamp(6)
+  updated_at            DateTime                  @default(now()) @db.Timestamp(6)
+  pedidos               pedidos?                  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas                 rutas?                    @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([coordenadas_incidente], map: "idx_incidencias_coordenadas", type: Gist)
 }
 
 model pedidos {
