@@ -1,18 +1,65 @@
 // /backend/src/modules/evidences/evidences.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { EvidenceQueryDto } from './dto/evidence-query.dto';
+import { createClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class EvidencesService {
-  constructor(private prisma: PrismaService) {}
+  private supabase;
+
+  constructor(private prisma: PrismaService) {
+    this.supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+  }
+
+  /**
+   * Genera URLs firmadas para una lista de evidencias.
+   * Supabase permite generar varias URLs en una sola petición.
+   */
+  private async signUrls(evidencias: any[]) {
+    // Extraemos todos los paths únicos de fotos y firmas
+    const paths = evidencias
+      .flatMap((e) => [e.fotoUrl, e.firmaUrl])
+      .filter(Boolean);
+
+    if (paths.length === 0) return evidencias;
+
+    // Solicitamos URLs firmadas (validez de 60 minutos)
+    const { data, error } = await this.supabase.storage
+      .from('evidencias')
+      .createSignedUrls(paths, 3600);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al firmar URLs: ${error.message}`,
+      );
+    }
+
+    // Mapeamos las URLs de vuelta a cada objeto de evidencia
+    return evidencias.map((e) => {
+      const fotoSigned = data.find((d) => d.path === e.fotoUrl);
+      const firmaSigned = data.find((d) => d.path === e.firmaUrl);
+
+      return {
+        ...e,
+        fotoUrl: fotoSigned?.signedUrl || null,
+        firmaUrl: firmaSigned?.signedUrl || null,
+      };
+    });
+  }
 
   async findAll(query: EvidenceQueryDto) {
     const { estado, pedidoId, choferNombre } = query;
 
-    // Usamos queryRaw porque necesitamos cálculos geográficos de PostGIS
-    // y joins que cruzan varias tablas hasta llegar al chofer.
-    return this.prisma.$queryRaw`
+    const results: any[] = await this.prisma.$queryRaw`
       SELECT 
         e.id,
         e.pedido_id as "pedidoId",
@@ -38,6 +85,9 @@ export class EvidencesService {
         AND (${choferNombre}::text IS NULL OR ch.nombre ILIKE ${'%' + choferNombre + '%'})
       ORDER BY e.fecha_hora DESC
     `;
+
+    // Antes de enviar al frontend, firmamos todas las URLs encontradas
+    return this.signUrls(results);
   }
 
   async approve(id: string) {
