@@ -42,9 +42,10 @@ export class EvidenceService {
 
   async saveEvidence(dto: CreateEvidenceDto, photoFile: Express.Multer.File) {
     const { pedidoId, firmaBase64, latitude, longitude } = dto;
+    const UMBRAL_METROS = 100; // Distancia máxima para auto-aprobación
 
     try {
-      // 1. Procesar Fotografía (Ya viene como Buffer desde el Controller)
+      // 1. Procesar Fotografía
       const fotoFileName = `foto_${pedidoId}_${Date.now()}.jpg`;
       const fotoPath = await this.uploadBufferToSupabase(
         photoFile.buffer,
@@ -52,11 +53,9 @@ export class EvidenceService {
         photoFile.mimetype,
       );
 
-      // 2. Procesar Firma (Base64 -> Buffer)
-      // Removemos el prefijo "data:image/png;base64," para obtener solo los datos binarios
+      // 2. Procesar Firma
       const base64Data = firmaBase64.replace(/^data:image\/\w+;base64,/, '');
       const firmaBuffer = Buffer.from(base64Data, 'base64');
-
       const firmaFileName = `firma_${pedidoId}_${Date.now()}.png`;
       const firmaPath = await this.uploadBufferToSupabase(
         firmaBuffer,
@@ -64,24 +63,43 @@ export class EvidenceService {
         'image/png',
       );
 
-      // 3. Persistencia en Base de Datos (Transacción Atómica)
+      // 3. Persistencia con cálculo de distancia
       return await this.prisma.$transaction(async (tx) => {
-        // Insertamos los PATHS devueltos por Supabase
+        /**
+         * Usamos una consulta que busca la coordenada del cliente a través del pedido
+         * y calcula la distancia vs el punto enviado por el chofer.
+         */
         await tx.$executeRaw`
-          INSERT INTO evidencias (
-            pedido_id, 
-            foto_url, 
-            firma_url, 
-            coordenadas_entrega
-          ) VALUES (
-            ${pedidoId}::uuid, 
-            ${fotoPath}, 
-            ${firmaPath}, 
-            ST_GeomFromText(${`POINT(${longitude} ${latitude})`}, 4326)
-          )
-        `;
+        WITH info_cliente AS (
+          奠 SELECT c.coordenadas 
+          FROM pedidos p
+          JOIN clientes c ON p.cliente_id = c.id
+          WHERE p.id = ${pedidoId}::uuid
+          LIMIT 1
+        )
+        INSERT INTO evidencias (
+          pedido_id, 
+          foto_url, 
+          firma_url, 
+          coordenadas_entrega,
+          estado_evidencia
+        ) 
+        SELECT 
+          ${pedidoId}::uuid, 
+          ${fotoPath}, 
+          ${firmaPath}, 
+          ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
+          CASE 
+            WHEN ST_Distance(
+              ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography, 
+              (SELECT coordenadas FROM info_cliente)
+            ) <= ${UMBRAL_METROS} THEN 'auto aprobada'
+            ELSE 'alerta'
+          END
+        FROM info_cliente;
+      `;
 
-        // Actualizamos el estado del pedido a entregado
+        // Actualizamos el estado del pedido
         await tx.pedidos.update({
           where: { id: pedidoId },
           data: { estado_pedido: 'entregado' },
@@ -89,14 +107,12 @@ export class EvidenceService {
 
         return {
           success: true,
-          message: 'Evidencia guardada y pedido finalizado con éxito',
+          message: 'Evidencia procesada correctamente',
         };
       });
     } catch (error) {
       console.error('Error crítico en saveEvidence:', error);
-      throw new InternalServerErrorException(
-        'No se pudo procesar la entrega. Intenta de nuevo.',
-      );
+      throw new InternalServerErrorException('No se pudo procesar la entrega.');
     }
   }
 
