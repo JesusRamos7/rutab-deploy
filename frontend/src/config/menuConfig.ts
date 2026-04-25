@@ -104,6 +104,12 @@ export const menuConfig: MenuItem[] = [
         roles: ["superAdmin"],
       },
       {
+        title: "Evidencias",
+        path: "/panel/gestion/evidencias",
+        icon: ShieldCheck, // Usamos ShieldCheck para darle ese toque de "Auditoría/Validación"
+        roles: ["superAdmin", "auditor", "logístico"],
+      },
+      {
         title: "Pedidos",
         path: "/panel/gestion/pedidos",
         icon: ShoppingCart,
