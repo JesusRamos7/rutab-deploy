@@ -164,6 +164,7 @@ CREATE TABLE public.incidencias (
   descripcion text,
   foto_url text,
   coordenadas_incidente GEOGRAPHY(Point, 4326),
+  estado_incidencia text DEFAULT 'pendiente',
   created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT incidencias_pkey PRIMARY KEY (id),

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './src/database/prisma/prisma.module';
@@ -13,9 +14,11 @@ import { OrdersModule } from './src/modules/orders/orders.module';
 import { OptimizacionModule } from 'src/modules/optimization/optimization.module';
 import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
+import { EvidencesModule } from 'src/modules/evidences/evidences.module';
+
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule],
+  imports: [ScheduleModule.forRoot(), PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule, EvidencesModule],
   controllers: [AppController],
   providers: [
     AppService,

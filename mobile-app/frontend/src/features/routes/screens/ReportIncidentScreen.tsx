@@ -24,7 +24,6 @@ const TIPOS_INCIDENTE = [
   'Dirección incorrecta',
   'Pedido rechazado',
   'Falta de tiempo',
-  'Vehículo averiado',
   'Otro',
 ];
 

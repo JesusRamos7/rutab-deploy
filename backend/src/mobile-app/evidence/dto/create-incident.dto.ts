@@ -1,12 +1,19 @@
 // /backend/src/mobile-app/evidence/dto/create-incident.dto.ts
-
-import { IsNotEmpty, IsString, IsUUID, IsNumber } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  IsNumber,
+  IsOptional,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateIncidentDto {
+
   @IsUUID()
-  @IsNotEmpty()
-  pedidoId: string;
+  @IsOptional() // <-- Clave para evitar el Error 400
+  pedidoId?: string;
 
   @IsUUID()
   @IsNotEmpty()
@@ -20,8 +27,7 @@ export class CreateIncidentDto {
   @IsNotEmpty()
   descripcion: string;
 
-  // Transformamos de String a Number (porque vienen de un FormData o JSON)
-  @Type(() => Number)
+  @Type(() => Number) // <-- Transforma el string del FormData a número
   @IsNumber()
   @IsNotEmpty()
   latitude: number;
@@ -30,4 +36,9 @@ export class CreateIncidentDto {
   @IsNumber()
   @IsNotEmpty()
   longitude: number;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['abierta', 'urgente', 'resuelta'])
+  estado_incidencia?: string; 
 }
