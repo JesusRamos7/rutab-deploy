@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -77,11 +78,36 @@ export const RoadIncidentsListScreen = () => {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'urgente':
-        return 'text-red-500 bg-red-100';
-      case 'resuelto':
-        return 'text-green-500 bg-green-100';
+        return 'text-red-600 bg-red-100 border-red-200';
+      case 'resuelta':
+        return 'text-green-600 bg-green-100 border-green-200';
       default:
-        return 'text-amber-500 bg-amber-100';
+        return 'text-blue-600 bg-blue-100 border-blue-200'; // Caso 'abierta'
+    }
+  };
+
+  const handleDeletePress = (id: string) => {
+    Alert.alert(
+      'Eliminar Reporte',
+      '¿Estás seguro de que deseas borrar este reporte? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () => confirmDelete(id),
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = async (id: string) => {
+    try {
+      await apiClient.delete(`/mobile-app/evidence/incident/${id}`);
+      // Filtramos el estado local para que desaparezca de inmediato sin recargar todo
+      setIncidents((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo eliminar el reporte.');
     }
   };
 
@@ -114,23 +140,53 @@ export const RoadIncidentsListScreen = () => {
           contentContainerStyle={{ padding: 20 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate(RoadIncidentsRoutes.FORM, { incidentId: item.id })}
-              className="mb-4 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+            <View className="mb-4 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
               <View className="mb-2 flex-row items-start justify-between">
                 <View className={`rounded-full px-3 py-1 ${getStatusColor(item.estado)}`}>
                   <Text className="text-[10px] font-black uppercase">{item.estado}</Text>
                 </View>
-                <Text className="text-[10px] font-bold text-gray-400">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
+
+                {/* Botonera de acciones y Tiempo */}
+                <View className="flex-row items-center">
+                  <View className="mr-3 items-end">
+                    <Text className="text-[10px] font-bold text-gray-400">
+                      {/* Usamos 'UTC' para que no convierta la fecha a la zona local del celular */}
+                      {new Date(item.createdAt).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
+                    </Text>
+                    <Text className="text-[9px] font-medium text-gray-400">
+                      {new Date(item.createdAt).toLocaleTimeString('es-MX', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true, 
+                        timeZone: 'UTC',
+                      })}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => handleDeletePress(item.id)}
+                    className="h-8 w-8 items-center justify-center rounded-full bg-red-50">
+                    <MaterialCommunityIcons name="trash-can-outline" size={18} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              <Text className="mb-1 text-lg font-black text-dark">{item.tipo}</Text>
-              <Text className="text-sm font-bold text-gray-500" numberOfLines={2}>
-                {item.descripcion}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate(RoadIncidentsRoutes.FORM, { incidentId: item.id })
+                }
+                activeOpacity={0.7}>
+                <Text className="mb-1 text-lg font-black text-dark">{item.tipo}</Text>
+                <Text className="text-sm font-bold text-gray-500" numberOfLines={2}>
+                  {item.descripcion}
+                </Text>
+
+                <View className="mt-3 flex-row items-center">
+                  <Text className="text-[11px] font-black text-primary">EDITAR DETALLES</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={16} color="#123a5d" />
+                </View>
+              </TouchableOpacity>
+            </View>
           )}
           ListEmptyComponent={
             <View className="mt-20 items-center">

@@ -77,7 +77,7 @@ export class EvidenceService {
          */
         await tx.$executeRaw`
         WITH info_cliente AS (
-          奠 SELECT c.coordenadas 
+          SELECT c.coordenadas 
           FROM pedidos p
           JOIN clientes c ON p.cliente_id = c.id
           WHERE p.id = ${pedidoId}::uuid
@@ -123,7 +123,15 @@ export class EvidenceService {
   }
 
   async saveIncident(dto: CreateIncidentDto, file?: Express.Multer.File) {
-    const { pedidoId, rutaId, tipo, descripcion, latitude, longitude } = dto;
+    const {
+      pedidoId,
+      rutaId,
+      tipo,
+      descripcion,
+      latitude,
+      longitude,
+      estado_incidencia,
+    } = dto;
     let fotoUrl = null;
 
     try {
@@ -139,13 +147,8 @@ export class EvidenceService {
       return await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`
         INSERT INTO incidencias (
-          ruta_id, 
-          pedido_id, 
-          tipo, 
-          descripcion, 
-          foto_url,
-          coordenadas_incidente,
-          estado_incidencia
+          ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente,
+          estado_incidencia -- Usamos el valor del DTO
         ) VALUES (
           ${rutaId}::uuid, 
           ${pedidoId ? pedidoId : null}::uuid, 
@@ -153,7 +156,7 @@ export class EvidenceService {
           ${descripcion}, 
           ${fotoUrl},
           ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
-          'pendiente'
+          ${estado_incidencia || 'abierta'} -- Fallback a abierta
         )
       `;
         return { success: true, message: 'Incidente registrado.' };
@@ -168,31 +171,50 @@ export class EvidenceService {
     try {
       this.logger.log(`Obteniendo incidencias para el chofer: ${choferId}`);
 
-      const incidents = await this.prisma.$queryRaw`
-        SELECT 
-          i.id,
-          i.tipo,
-          i.descripcion,
-          i.estado_incidencia as "estado",
-          i.foto_url as "fotoUrl",
-          i.pedido_id as "pedidoId",
-          i.ruta_id as "rutaId",
-          i.created_at as "createdAt",
-          ST_X(i.coordenadas_incidente::geometry) as "longitude",
-          ST_Y(i.coordenadas_incidente::geometry) as "latitude",
-          p.codigo_rastreo as "codigoPedido"
-        FROM incidencias i
-        JOIN rutas r ON i.ruta_id = r.id
-        LEFT JOIN pedidos p ON i.pedido_id = p.id
-        WHERE r.chofer_id = ${choferId}::uuid
-        ORDER BY i.created_at DESC
-      `;
+      // 1. Obtener los datos crudos de la DB (Trae el path, ej: "incidentes/foto.jpg")
+      const incidents: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        i.id, i.tipo, i.descripcion, i.estado_incidencia as "estado",
+        i.foto_url as "fotoUrl", i.pedido_id as "pedidoId",
+        i.ruta_id as "rutaId", i.created_at as "createdAt",
+        ST_X(i.coordenadas_incidente::geometry) as "longitude",
+        ST_Y(i.coordenadas_incidente::geometry) as "latitude",
+        p.codigo_rastreo as "codigoPedido"
+      FROM incidencias i
+      JOIN rutas r ON i.ruta_id = r.id
+      LEFT JOIN pedidos p ON i.pedido_id = p.id
+      WHERE r.chofer_id = ${choferId}::uuid
+      ORDER BY i.created_at DESC
+    `;
+
+      // 2. Generar URLs firmadas para las fotos
+      const paths = incidents.map((i) => i.fotoUrl).filter(Boolean);
+
+      if (paths.length > 0) {
+        // Creamos URLs que expiran en 1 hora (3600 segundos)
+        const { data: signedUrls, error } = await this.supabase.storage
+          .from('evidencias')
+          .createSignedUrls(paths, 3600);
+
+        if (error) {
+          this.logger.error(`Error al firmar URLs: ${error.message}`);
+        } else {
+          // Mapeamos las URLs firmadas de vuelta a los incidentes
+          return incidents.map((incident) => {
+            const signed = signedUrls.find((s) => s.path === incident.fotoUrl);
+            return {
+              ...incident,
+              fotoUrl: signed ? signed.signedUrl : null,
+            };
+          });
+        }
+      }
 
       return incidents;
     } catch (error) {
       this.logger.error(`Error al obtener incidencias: ${error.message}`);
       throw new InternalServerErrorException(
-        'Error al consultar el historial de incidentes.',
+        'Error al consultar el historial.',
       );
     }
   }
@@ -232,6 +254,49 @@ export class EvidenceService {
       if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
         'No se pudo actualizar la incidencia.',
+      );
+    }
+  }
+
+  async deleteIncident(id: string) {
+    try {
+      // 1. Buscar la incidencia para obtener la URL de la foto
+      const incident = await this.prisma.incidencias.findUnique({
+        where: { id },
+        select: { foto_url: true },
+      });
+
+      if (!incident) {
+        throw new NotFoundException('La incidencia no existe.');
+      }
+
+      // 2. Si tiene foto, borrarla de Supabase Storage
+      if (incident.foto_url) {
+        const { error } = await this.supabase.storage
+          .from('evidencias')
+          .remove([incident.foto_url]);
+
+        if (error) {
+          this.logger.error(
+            `Error borrando foto de Supabase: ${error.message}`,
+          );
+          // Nota: Continuamos con el borrado del registro aunque falle el storage
+        } else {
+          this.logger.log(`Foto eliminada de Supabase: ${incident.foto_url}`);
+        }
+      }
+
+      // 3. Borrar el registro de la DB
+      await this.prisma.incidencias.delete({
+        where: { id },
+      });
+
+      return { success: true, message: 'Incidencia eliminada correctamente.' };
+    } catch (error) {
+      this.logger.error(`Error al eliminar incidencia ${id}: ${error.message}`);
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(
+        'No se pudo eliminar la incidencia.',
       );
     }
   }

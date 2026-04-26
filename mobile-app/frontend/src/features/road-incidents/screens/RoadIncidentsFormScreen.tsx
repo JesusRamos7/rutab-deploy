@@ -32,7 +32,11 @@ const TIPOS = [
   'Cierre de Vía',
   'Otro',
 ];
-const ESTADOS = ['pendiente', 'en proceso', 'urgente', 'resuelto'];
+const ESTADOS = [
+  { label: 'Normal', value: 'abierta', icon: 'alert-circle-outline', color: 'text-blue-500' },
+  { label: 'Urgente', value: 'urgente', icon: 'shield-alert', color: 'text-red-500' },
+  { label: 'Resuelta', value: 'resuelta', icon: 'check-circle-outline', color: 'text-green-500' },
+];
 
 export const RoadIncidentsFormScreen = () => {
   const route = useRoute<RouteProp<RoadIncidentsStackParamList, RoadIncidentsRoutes.FORM>>();
@@ -44,10 +48,11 @@ export const RoadIncidentsFormScreen = () => {
   // Estados del formulario
   const [tipo, setTipo] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [estado, setEstado] = useState('pendiente');
+  const [estado, setEstado] = useState('abierta');
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(isEditing);
+  const [imageLoading, setImageLoading] = useState(false);
 
   // Cargar datos si es edición
   useEffect(() => {
@@ -60,7 +65,8 @@ export const RoadIncidentsFormScreen = () => {
             setTipo(item.tipo);
             setDescripcion(item.descripcion);
             setEstado(item.estado);
-            setImage(item.fotoUrl); // Solo para visualización
+            // Si item.fotoUrl es null, setImage recibirá null y activará el nuevo diseño
+            setImage(item.fotoUrl || null);
           }
         })
         .finally(() => setFetchingData(false));
@@ -105,6 +111,7 @@ export const RoadIncidentsFormScreen = () => {
         formData.append('latitude', String(location.coords.latitude));
         formData.append('longitude', String(location.coords.longitude));
         formData.append('rutaId', routeData.id);
+        formData.append('estado_incidencia', estado);
 
         if (routeData.pedidos && routeData.pedidos.length > 0) {
           // Usamos 'pedidoId' porque así lo nombraste en el $queryRaw del backend
@@ -181,19 +188,32 @@ export const RoadIncidentsFormScreen = () => {
 
         {isEditing && (
           <View className="mb-6">
-            <Text className="mb-4 text-lg font-black text-dark">Estado del incidente</Text>
-            <View className="flex-row justify-between">
-              {ESTADOS.map((e) => (
-                <TouchableOpacity
-                  key={e}
-                  onPress={() => setEstado(e)}
-                  className={`rounded-xl border px-3 py-2 ${estado === e ? 'border-dark bg-dark' : 'border-gray-200'}`}>
-                  <Text
-                    className={`text-[10px] font-black uppercase ${estado === e ? 'text-white' : 'text-gray-400'}`}>
-                    {e}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Text className="mb-4 text-lg font-black text-dark">Prioridad / Estado</Text>
+            <View className="mb-6 flex-row justify-between">
+              {ESTADOS.map((e) => {
+                // Si estamos CREANDO, no permitimos marcar como "resuelta" (no tiene sentido crear algo resuelto)
+                if (!isEditing && e.value === 'resuelta') return null;
+
+                const isSelected = estado === e.value;
+                return (
+                  <TouchableOpacity
+                    key={e.value}
+                    onPress={() => setEstado(e.value)}
+                    className={`mx-1 flex-1 flex-row items-center justify-center rounded-2xl border-2 py-3 ${
+                      isSelected ? 'border-dark bg-dark' : 'border-gray-100 bg-gray-50'
+                    }`}>
+                    <MaterialCommunityIcons
+                      name={e.icon as any}
+                      size={18}
+                      color={isSelected ? 'white' : '#9CA3AF'}
+                    />
+                    <Text
+                      className={`ml-2 text-[10px] font-black uppercase ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                      {e.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}
@@ -209,19 +229,45 @@ export const RoadIncidentsFormScreen = () => {
         />
 
         <Text className="mb-4 text-lg font-black text-dark">Evidencia Visual</Text>
-        <TouchableOpacity
-          onPress={handlePickImage}
-          disabled={isEditing}
-          className="h-48 w-full items-center justify-center overflow-hidden rounded-[30px] border-2 border-dashed border-gray-300 bg-gray-100">
+        <View className="h-48 w-full overflow-hidden rounded-[30px] border-2 border-dashed border-gray-300 bg-gray-100">
           {image ? (
-            <Image source={{ uri: image }} className="h-full w-full" />
+            /* CASO A: Hay una imagen (ya sea local o de la red) */
+            <View className="h-full w-full">
+              <Image
+                source={{ uri: image }}
+                className="h-full w-full"
+                onLoadStart={() => setImageLoading(true)}
+                onLoadEnd={() => setImageLoading(false)}
+              />
+              {imageLoading && (
+                <View className="absolute inset-0 items-center justify-center bg-gray-100/50">
+                  <ActivityIndicator color="#123a5d" />
+                </View>
+              )}
+              {isEditing && (
+                <View className="absolute bottom-2 right-2 rounded-lg bg-dark/60 px-2 py-1">
+                  <Text className="text-[8px] font-bold uppercase text-white">Solo lectura</Text>
+                </View>
+              )}
+            </View>
+          ) : isEditing ? (
+            /* CASO B: Es edición y NO se tomó foto en un principio */
+            <View className="h-full w-full items-center justify-center bg-gray-50">
+              <MaterialCommunityIcons name="camera-off-outline" size={40} color="#D1D5DB" />
+              <Text className="mt-2 px-10 text-center font-bold text-gray-400">
+                No se adjuntó evidencia visual al crear este reporte.
+              </Text>
+            </View>
           ) : (
-            <>
+            /* CASO C: Es creación y el chofer puede tomar la foto */
+            <TouchableOpacity
+              onPress={handlePickImage}
+              className="h-full w-full items-center justify-center">
               <MaterialCommunityIcons name="camera" size={40} color="#9CA3AF" />
               <Text className="mt-2 font-bold text-gray-400">Tocar para tomar foto</Text>
-            </>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           onPress={handleSubmit}

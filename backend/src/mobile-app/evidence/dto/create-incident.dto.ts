@@ -5,10 +5,12 @@ import {
   IsUUID,
   IsNumber,
   IsOptional,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateIncidentDto {
+
   @IsUUID()
   @IsOptional() // <-- Clave para evitar el Error 400
   pedidoId?: string;
@@ -34,4 +36,9 @@ export class CreateIncidentDto {
   @IsNumber()
   @IsNotEmpty()
   longitude: number;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['abierta', 'urgente', 'resuelta'])
+  estado_incidencia?: string; 
 }

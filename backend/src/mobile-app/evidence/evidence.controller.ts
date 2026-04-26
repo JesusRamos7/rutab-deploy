@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Get,
   Req,
+  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EvidenceService } from './evidence.service';
@@ -57,5 +58,11 @@ export class EvidenceController {
     @Body() dto: UpdateIncidentDto,
   ) {
     return this.evidenceService.updateIncident(id, dto);
+  }
+
+  @Delete('incident/:id')
+  @Roles('chofer')
+  async deleteIncident(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.evidenceService.deleteIncident(id);
   }
 }

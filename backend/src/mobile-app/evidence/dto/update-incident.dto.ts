@@ -9,7 +9,7 @@ export class UpdateIncidentDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['pendiente', 'resuelto', 'urgente', 'en proceso'])
+  @IsIn(['abierta', 'urgente', 'resuelta'])
   estado_incidencia?: string;
 
   @IsOptional()
