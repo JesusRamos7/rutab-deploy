@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './src/database/prisma/prisma.module';
@@ -17,7 +18,7 @@ import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule, EvidencesModule],
+  imports: [ScheduleModule.forRoot(), PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule, EvidencesModule],
   controllers: [AppController],
   providers: [
     AppService,
