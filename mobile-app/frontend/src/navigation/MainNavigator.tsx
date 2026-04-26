@@ -8,6 +8,7 @@ import { MainRoutes, MainDrawerParamList } from './navigation-types';
 import { RoutesNavigator } from '../features/routes/navigation/RoutesNavigator';
 import { CustomDrawerContent } from './components/CustomDrawerContent';
 import { ProfileNavigator } from '../features/profile/navigation/ProfileNavigator';
+import { RoadIncidentsNavigator } from '../features/road-incidents/navigation/RoadIncidentsNavigator';
 
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 
@@ -32,6 +33,17 @@ export const MainNavigator = () => {
           drawerLabel: 'Rutas',
           drawerIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="format-list-checks" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name={MainRoutes.ROAD_INCIDENTS_STACK}
+        component={RoadIncidentsNavigator} // Lo crearemos a continuación
+        options={{
+          drawerLabel: 'Incidencias de Vía',
+          drawerIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="alert-octagon-outline" size={size} color={color} />
           ),
         }}
       />
