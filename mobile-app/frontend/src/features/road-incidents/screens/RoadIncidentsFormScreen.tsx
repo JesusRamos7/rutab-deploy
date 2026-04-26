@@ -106,13 +106,10 @@ export const RoadIncidentsFormScreen = () => {
         formData.append('longitude', String(location.coords.longitude));
         formData.append('rutaId', routeData.id);
 
-        // Intentamos mandar el pedidoId si hay uno activo en la ruta
-        const pedidoActivo = routeData.pedidos?.find(
-          (p: any) => p.estado_pedido === 'en camino' || p.estado_pedido === 'pendiente'
-        );
-
-        if (pedidoActivo) {
-          formData.append('pedidoId', pedidoActivo.id);
+        if (routeData.pedidos && routeData.pedidos.length > 0) {
+          // Usamos 'pedidoId' porque así lo nombraste en el $queryRaw del backend
+          const pedidoActualId = routeData.pedidos[0].pedidoId;
+          formData.append('pedidoId', pedidoActualId);
         }
 
         if (image) {
