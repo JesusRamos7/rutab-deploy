@@ -1,164 +1,47 @@
 // /frontend/src/features/road-incidents/screens/RoadIncidentsFormScreen.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Image,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 
 import {
   RoadIncidentsRoutes,
   RoadIncidentsStackParamList,
 } from '../../../navigation/navigation-types';
-import { apiClient } from '../../../core/api/apiClient';
 import { useFetchRoutes } from '@/features/routes/hooks/useFetchRoutes';
-
-const TIPOS = [
-  'Tráfico Pesado',
-  'Falla Mecánica',
-  'Accidente',
-  'Clima Adverso',
-  'Cierre de Vía',
-  'Otro',
-];
-const ESTADOS = [
-  { label: 'Normal', value: 'abierta', icon: 'alert-circle-outline', color: 'text-blue-500' },
-  { label: 'Urgente', value: 'urgente', icon: 'shield-alert', color: 'text-red-500' },
-  { label: 'Resuelta', value: 'resuelta', icon: 'check-circle-outline', color: 'text-green-500' },
-];
+import { useRoadIncidentForm } from '../hooks/useRoadIncidentForm';
+import { INCIDENT_TYPES, INCIDENT_STATES } from '../constants/road-incidents.constants';
 
 export const RoadIncidentsFormScreen = () => {
   const route = useRoute<RouteProp<RoadIncidentsStackParamList, RoadIncidentsRoutes.FORM>>();
-  const navigation = useNavigation<NativeStackNavigationProp<RoadIncidentsStackParamList>>();
-  const { incidentId } = route.params;
-
-  const isEditing = !!incidentId;
-
-  // Estados del formulario
-  const [tipo, setTipo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [estado, setEstado] = useState('abierta');
-  const [image, setImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchingData, setFetchingData] = useState(isEditing);
+  const navigation = useNavigation();
+  const { routeData, loading: loadingRoute } = useFetchRoutes();
   const [imageLoading, setImageLoading] = useState(false);
 
-  // Cargar datos si es edición
-  useEffect(() => {
-    if (isEditing) {
-      apiClient
-        .get(`/mobile-app/evidence/incidents`) // Buscamos en el listado local por ahora o fetch individual
-        .then(({ data }) => {
-          const item = data.find((i: any) => i.id === incidentId);
-          if (item) {
-            setTipo(item.tipo);
-            setDescripcion(item.descripcion);
-            setEstado(item.estado);
-            // Si item.fotoUrl es null, setImage recibirá null y activará el nuevo diseño
-            setImage(item.fotoUrl || null);
-          }
-        })
-        .finally(() => setFetchingData(false));
-    }
-  }, [incidentId]);
-  const { routeData, loading: loadingRoute } = useFetchRoutes();
+  const { form, setForm, loading, fetchingData, handlePickImage, submitForm, isEditing } =
+    useRoadIncidentForm(route.params.incidentId, routeData);
 
-  const handlePickImage = async () => {
-    if (isEditing) return;
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'], // <-- Corrección de Deprecación
-      allowsEditing: true,
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!tipo || !descripcion) {
-      return Alert.alert('Error', 'Tipo y descripción son obligatorios');
-    }
-
-    setLoading(true);
-    try {
-      if (isEditing) {
-        await apiClient.patch(`/mobile-app/evidence/incident/${incidentId}`, {
-          tipo,
-          descripcion,
-          estado_incidencia: estado,
-        });
-      } else {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        const formData = new FormData();
-        formData.append('tipo', tipo);
-        formData.append('descripcion', descripcion);
-        formData.append('latitude', String(location.coords.latitude));
-        formData.append('longitude', String(location.coords.longitude));
-        formData.append('rutaId', routeData.id);
-        formData.append('estado_incidencia', estado);
-
-        if (routeData.pedidos && routeData.pedidos.length > 0) {
-          // Usamos 'pedidoId' porque así lo nombraste en el $queryRaw del backend
-          const pedidoActualId = routeData.pedidos[0].pedidoId;
-          formData.append('pedidoId', pedidoActualId);
-        }
-
-        if (image) {
-          const uriParts = image.split('.');
-          const fileType = uriParts[uriParts.length - 1];
-
-          formData.append('photo', {
-            uri: image,
-            name: `photo.${fileType}`,
-            type: `image/${fileType}`,
-          } as any);
-        }
-
-        // IMPORTANTE: Axios con FormData
-        await apiClient.post('/mobile-app/evidence/incident', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
-
-      Alert.alert('¡Éxito!', 'Reporte procesado.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (error: any) {
-      console.log('Error 400 Details:', error.response?.data); // Para ver qué campo falló
-      Alert.alert('Error', 'No se pudo enviar el reporte. Verifica tu conexión.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 3. Bloqueo visual si está cargando la ruta o no hay ruta activa (solo en creación)
   if (fetchingData || (!isEditing && loadingRoute)) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#123a5d" />
-        <Text className="mt-4 font-bold text-gray-500">Validando ruta activa...</Text>
+        <Text className="mt-4 font-bold text-gray-500">Sincronizando...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView className="flex-1 bg-white">
+      {/* Header */}
       <View className="rounded-b-[40px] bg-dark px-6 pb-12 pt-14">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -171,70 +54,65 @@ export const RoadIncidentsFormScreen = () => {
       </View>
 
       <View className="mt-8 px-6">
+        {/* Selector de Tipos */}
         <Text className="mb-4 text-lg font-black text-dark">¿Qué está pasando?</Text>
         <View className="mb-6 flex-row flex-wrap">
-          {TIPOS.map((t) => (
+          {INCIDENT_TYPES.map((t) => (
             <TouchableOpacity
               key={t}
-              onPress={() => !isEditing && setTipo(t)}
-              className={`mb-2 mr-2 rounded-2xl border-2 px-4 py-2 ${tipo === t ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
+              onPress={() => !isEditing && setForm({ ...form, tipo: t })}
+              className={`mb-2 mr-2 rounded-2xl border-2 px-4 py-2 ${form.tipo === t ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}>
               <Text
-                className={`text-xs font-bold ${tipo === t ? 'text-primary' : 'text-gray-400'}`}>
+                className={`text-xs font-bold ${form.tipo === t ? 'text-primary' : 'text-gray-400'}`}>
                 {t.toUpperCase()}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {isEditing && (
-          <View className="mb-6">
-            <Text className="mb-4 text-lg font-black text-dark">Prioridad / Estado</Text>
-            <View className="mb-6 flex-row justify-between">
-              {ESTADOS.map((e) => {
-                // Si estamos CREANDO, no permitimos marcar como "resuelta" (no tiene sentido crear algo resuelto)
-                if (!isEditing && e.value === 'resuelta') return null;
+        {/* Selector de Estados */}
+        <Text className="mb-4 text-lg font-black text-dark">Prioridad / Estado</Text>
+        <View className="mb-6 flex-row justify-between">
+          {INCIDENT_STATES.map((e) => {
+            if (!isEditing && e.value === 'resuelta') return null;
+            const isSelected = form.estado === e.value;
+            return (
+              <TouchableOpacity
+                key={e.value}
+                onPress={() => setForm({ ...form, estado: e.value })}
+                className={`mx-1 flex-1 flex-row items-center justify-center rounded-2xl border-2 py-3 ${isSelected ? 'border-dark bg-dark' : 'border-gray-100 bg-gray-50'}`}>
+                <MaterialCommunityIcons
+                  name={e.icon as any}
+                  size={18}
+                  color={isSelected ? 'white' : '#9CA3AF'}
+                />
+                <Text
+                  className={`ml-2 text-[10px] font-black uppercase ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                  {e.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-                const isSelected = estado === e.value;
-                return (
-                  <TouchableOpacity
-                    key={e.value}
-                    onPress={() => setEstado(e.value)}
-                    className={`mx-1 flex-1 flex-row items-center justify-center rounded-2xl border-2 py-3 ${
-                      isSelected ? 'border-dark bg-dark' : 'border-gray-100 bg-gray-50'
-                    }`}>
-                    <MaterialCommunityIcons
-                      name={e.icon as any}
-                      size={18}
-                      color={isSelected ? 'white' : '#9CA3AF'}
-                    />
-                    <Text
-                      className={`ml-2 text-[10px] font-black uppercase ${isSelected ? 'text-white' : 'text-gray-400'}`}>
-                      {e.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
+        {/* Input Descripción */}
         <Text className="mb-2 text-lg font-black text-dark">Descripción</Text>
         <TextInput
           multiline
-          value={descripcion}
-          onChangeText={setDescripcion}
-          placeholder="Describe brevemente la situación..."
+          value={form.descripcion}
+          onChangeText={(text) => setForm({ ...form, descripcion: text })}
+          placeholder="Describe la situación..."
           className="mb-6 h-32 rounded-3xl border-2 border-gray-100 bg-gray-50 p-4 font-bold text-dark"
           textAlignVertical="top"
         />
 
+        {/* Evidencia Visual */}
         <Text className="mb-4 text-lg font-black text-dark">Evidencia Visual</Text>
         <View className="h-48 w-full overflow-hidden rounded-[30px] border-2 border-dashed border-gray-300 bg-gray-100">
-          {image ? (
-            /* CASO A: Hay una imagen (ya sea local o de la red) */
+          {form.image ? (
             <View className="h-full w-full">
               <Image
-                source={{ uri: image }}
+                source={{ uri: form.image }}
                 className="h-full w-full"
                 onLoadStart={() => setImageLoading(true)}
                 onLoadEnd={() => setImageLoading(false)}
@@ -251,15 +129,13 @@ export const RoadIncidentsFormScreen = () => {
               )}
             </View>
           ) : isEditing ? (
-            /* CASO B: Es edición y NO se tomó foto en un principio */
             <View className="h-full w-full items-center justify-center bg-gray-50">
               <MaterialCommunityIcons name="camera-off-outline" size={40} color="#D1D5DB" />
               <Text className="mt-2 px-10 text-center font-bold text-gray-400">
-                No se adjuntó evidencia visual al crear este reporte.
+                Sin evidencia visual.
               </Text>
             </View>
           ) : (
-            /* CASO C: Es creación y el chofer puede tomar la foto */
             <TouchableOpacity
               onPress={handlePickImage}
               className="h-full w-full items-center justify-center">
@@ -269,8 +145,9 @@ export const RoadIncidentsFormScreen = () => {
           )}
         </View>
 
+        {/* Botón Submit */}
         <TouchableOpacity
-          onPress={handleSubmit}
+          onPress={() => submitForm(() => navigation.goBack())}
           disabled={loading}
           className={`mb-10 mt-10 flex-row items-center justify-center rounded-2xl py-5 ${loading ? 'bg-gray-300' : 'bg-primary'}`}>
           {loading ? (
