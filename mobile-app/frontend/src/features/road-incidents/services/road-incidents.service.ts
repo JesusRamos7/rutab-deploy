@@ -20,4 +20,8 @@ export const roadIncidentsService = {
   ) => {
     return await apiClient.patch(`/mobile-app/evidence/incident/${id}`, updateData);
   },
+
+  delete: async (id: string) => {
+    return await apiClient.delete(`/mobile-app/evidence/incident/${id}`);
+  },
 };
