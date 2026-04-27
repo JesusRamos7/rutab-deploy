@@ -44,8 +44,8 @@ const ModuloOptimizacion = lazy(() =>
   })),
 );
 const ModuloMonitoreo = lazy(() =>
-  import("./modules/index").then((m) => ({
-    default: m.ModuloInicio, //./modules/monitoring/MonitoringPage
+  import("./modules/monitoring/store/MonitoringPage").then((m) => ({
+    default: m.MonitoringPage,
   })),
 );
 const ModuloAuditoria = lazy(() =>

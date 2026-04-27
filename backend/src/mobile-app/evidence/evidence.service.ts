@@ -11,12 +11,19 @@ import { createClient } from '@supabase/supabase-js';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
+import { forwardRef, Inject } from '@nestjs/common';
+import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 
 @Injectable()
 export class EvidenceService {
   private supabase;
   private readonly logger = new Logger(EvidenceService.name);
-  constructor(private prisma: PrismaService) {
+
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => MonitoringGateway)) // Inyectamos el gateway
+    private readonly monitoringGateway: MonitoringGateway,
+  ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -110,6 +117,9 @@ export class EvidenceService {
           where: { id: pedidoId },
           data: { estado_pedido: 'entregado' },
         });
+
+        // Emitimos un evento para que el frontend actualice su lista de pedidos
+        this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
           success: true,
@@ -238,7 +248,7 @@ export class EvidenceService {
         throw new NotFoundException('La incidencia no existe.');
       }
 
-      return await this.prisma.incidencias.update({
+      await this.prisma.incidencias.update({
         where: { id },
         data: {
           ...(estado_incidencia && { estado_incidencia }),
@@ -247,6 +257,13 @@ export class EvidenceService {
           updated_at: new Date(),
         },
       });
+
+      this.monitoringGateway.server.emit('fleetListUpdated');
+
+      return {
+        success: true,
+        message: 'Incidente actualizado correctamente.',
+      };
     } catch (error) {
       this.logger.error(
         `Error al actualizar incidencia ${id}: ${error.message}`,
