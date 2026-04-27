@@ -10,13 +10,17 @@ import { PrismaService } from '../../database/prisma/prisma.service';
 import { createClient } from '@supabase/supabase-js';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
-import { UpdateIncidentDto } from './dto/update-incident.dto';
+import { forwardRef, Inject } from '@nestjs/common';
+import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 
 @Injectable()
 export class EvidenceService {
   private supabase;
-  private readonly logger = new Logger(EvidenceService.name);
-  constructor(private prisma: PrismaService) {
+
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => MonitoringGateway)) // Inyectamos el gateway
+    private readonly monitoringGateway: MonitoringGateway,) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -111,6 +115,9 @@ export class EvidenceService {
           data: { estado_pedido: 'entregado' },
         });
 
+        // Emitimos un evento para que el frontend actualice su lista de pedidos
+        this.monitoringGateway.server.emit('fleetListUpdated');
+
         return {
           success: true,
           message: 'Evidencia procesada correctamente',
@@ -171,99 +178,12 @@ export class EvidenceService {
     try {
       this.logger.log(`Obteniendo incidencias para el chofer: ${choferId}`);
 
-      // 1. Obtener los datos crudos de la DB (Trae el path, ej: "incidentes/foto.jpg")
-      const incidents: any[] = await this.prisma.$queryRaw`
-      SELECT 
-        i.id, i.tipo, i.descripcion, i.estado_incidencia as "estado",
-        i.foto_url as "fotoUrl", i.pedido_id as "pedidoId",
-        i.ruta_id as "rutaId", i.created_at as "createdAt",
-        ST_X(i.coordenadas_incidente::geometry) as "longitude",
-        ST_Y(i.coordenadas_incidente::geometry) as "latitude",
-        p.codigo_rastreo as "codigoPedido"
-      FROM incidencias i
-      JOIN rutas r ON i.ruta_id = r.id
-      LEFT JOIN pedidos p ON i.pedido_id = p.id
-      WHERE r.chofer_id = ${choferId}::uuid
-      ORDER BY i.created_at DESC
-    `;
+        this.monitoringGateway.server.emit('fleetListUpdated');
 
-      // 2. Generar URLs firmadas para las fotos
-      const paths = incidents.map((i) => i.fotoUrl).filter(Boolean);
-
-      if (paths.length > 0) {
-        // Creamos URLs que expiran en 1 hora (3600 segundos)
-        const { data: signedUrls, error } = await this.supabase.storage
-          .from('evidencias')
-          .createSignedUrls(paths, 3600);
-
-        if (error) {
-          this.logger.error(`Error al firmar URLs: ${error.message}`);
-        } else {
-          // Mapeamos las URLs firmadas de vuelta a los incidentes
-          return incidents.map((incident) => {
-            const signed = signedUrls.find((s) => s.path === incident.fotoUrl);
-            return {
-              ...incident,
-              fotoUrl: signed ? signed.signedUrl : null,
-            };
-          });
-        }
-      }
-
-      return incidents;
-    } catch (error) {
-      this.logger.error(`Error al obtener incidencias: ${error.message}`);
-      throw new InternalServerErrorException(
-        'Error al consultar el historial.',
-      );
-    }
-  }
-
-  /**
-   * Actualiza el estado o descripción de una incidencia.
-   */
-  async updateIncident(id: string, dto: UpdateIncidentDto) {
-    const { estado_incidencia, descripcion, tipo } = dto;
-
-    try {
-      this.logger.log(
-        `Actualizando incidencia ${id} a estado: ${estado_incidencia}`,
-      );
-
-      const incidenciaExistente = await this.prisma.incidencias.findUnique({
-        where: { id },
-      });
-
-      if (!incidenciaExistente) {
-        throw new NotFoundException('La incidencia no existe.');
-      }
-
-      return await this.prisma.incidencias.update({
-        where: { id },
-        data: {
-          ...(estado_incidencia && { estado_incidencia }),
-          ...(descripcion && { descripcion }),
-          ...(tipo && { tipo }),
-          updated_at: new Date(),
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error al actualizar incidencia ${id}: ${error.message}`,
-      );
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(
-        'No se pudo actualizar la incidencia.',
-      );
-    }
-  }
-
-  async deleteIncident(id: string) {
-    try {
-      // 1. Buscar la incidencia para obtener la URL de la foto
-      const incident = await this.prisma.incidencias.findUnique({
-        where: { id },
-        select: { foto_url: true },
+        return {
+          success: true,
+          message: 'Incidente registrado y ubicación guardada.',
+        };
       });
 
       if (!incident) {

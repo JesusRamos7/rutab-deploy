@@ -46,6 +46,7 @@ export const useLogin = () => {
 
     try {
       const data = await loginService(correoLimpio, passLimpio);
+      
 
       if (data.tipo !== "CHOFER") {
         // Mensaje genérico para no dar pistas sobre la existencia de cuentas

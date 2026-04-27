@@ -14,11 +14,20 @@ import { OrdersModule } from './src/modules/orders/orders.module';
 import { OptimizacionModule } from 'src/modules/optimization/optimization.module';
 import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
-import { EvidencesModule } from 'src/modules/evidences/evidences.module';
+import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
 
 
 @Module({
-  imports: [ScheduleModule.forRoot(), PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule, EvidencesModule],
+  imports: [PrismaModule, 
+            AuthModule, 
+            VehiclesModule, 
+            CustomersModule, 
+            DriversModule, 
+            OrdersModule, 
+            OptimizacionModule, 
+            RoutesModule, 
+            EvidenceModule,
+            MonitoringModule],
   controllers: [AppController],
   providers: [
     AppService,
