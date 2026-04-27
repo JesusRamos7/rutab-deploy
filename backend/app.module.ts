@@ -13,9 +13,20 @@ import { OrdersModule } from './src/modules/orders/orders.module';
 import { OptimizacionModule } from 'src/modules/optimization/optimization.module';
 import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
+import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
+
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, CustomersModule, DriversModule, OrdersModule, OptimizacionModule, RoutesModule, EvidenceModule],
+  imports: [PrismaModule, 
+            AuthModule, 
+            VehiclesModule, 
+            CustomersModule, 
+            DriversModule, 
+            OrdersModule, 
+            OptimizacionModule, 
+            RoutesModule, 
+            EvidenceModule,
+            MonitoringModule],
   controllers: [AppController],
   providers: [
     AppService,

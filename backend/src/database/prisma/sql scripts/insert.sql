@@ -90,3 +90,44 @@ ORDER BY p.id
 OFFSET 30 LIMIT 30;
 
 COMMIT;
+
+-- QUERY MAESTRA
+WITH nueva_ruta AS (
+    -- 1. Creamos la ruta y recuperamos su ID
+    INSERT INTO rutas (vehiculo_id, chofer_id, creado_por, fecha_programada, distancia_total_estimada, estatus_ruta)
+    VALUES (
+        'ffc4277e-a23b-4647-b9b5-6964fc2a776d', -- vehiculo
+        '8953817d-eb6e-4bf3-85b8-c6a48cf67072', -- chofer
+        '9fab2137-130f-4b1c-adf2-09651727a60c', -- admin
+        CURRENT_DATE + INTERVAL '1 day', 
+        0, 
+        'borrador'
+    )
+    RETURNING id
+),
+clientes_seleccionados AS (
+    -- 2. Buscamos los UUIDs de dos clientes existentes (puedes ajustar el LIMIT o los nombres)
+    SELECT id FROM clientes LIMIT 2
+),
+nuevos_pedidos AS (
+    -- 3. Creamos 2 pedidos por cada cliente encontrado (4 en total)
+    -- Usamos CROSS JOIN para emparejar los clientes con datos estáticos
+    INSERT INTO pedidos (cliente_id, descripcion_carga, codigo_rastreo, estado_pedido)
+    SELECT 
+        c.id, 
+        p.descrip, 
+        'RT-' || floor(random() * 10000)::text, 
+        'pendiente'
+    FROM clientes_seleccionados c
+    CROSS JOIN (
+        VALUES ('Carga General A'), ('Carga General B')
+    ) AS p(descrip)
+    RETURNING id
+)
+-- 4. Finalmente, insertamos en detalles_ruta uniendo la ruta y los pedidos generados
+INSERT INTO detalles_ruta (ruta_id, pedido_id, orden_entrega)
+SELECT 
+    (SELECT id FROM nueva_ruta), 
+    np.id, 
+    row_number() OVER () -- Genera el orden 1, 2, 3, 4 automáticamente
+FROM nuevos_pedidos np;

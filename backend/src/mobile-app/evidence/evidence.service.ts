@@ -5,12 +5,17 @@ import { PrismaService } from '../../database/prisma/prisma.service';
 import { createClient } from '@supabase/supabase-js';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
+import { forwardRef, Inject } from '@nestjs/common';
+import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 
 @Injectable()
 export class EvidenceService {
   private supabase;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => MonitoringGateway)) // Inyectamos el gateway
+    private readonly monitoringGateway: MonitoringGateway,) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -87,6 +92,9 @@ export class EvidenceService {
           data: { estado_pedido: 'entregado' },
         });
 
+        // Emitimos un evento para que el frontend actualice su lista de pedidos
+        this.monitoringGateway.server.emit('fleetListUpdated');
+
         return {
           success: true,
           message: 'Evidencia guardada y pedido finalizado con éxito',
@@ -135,6 +143,8 @@ export class EvidenceService {
             updated_at: new Date(),
           },
         });
+
+        this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
           success: true,
