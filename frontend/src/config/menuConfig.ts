@@ -12,6 +12,7 @@ import {
   Map,
   Activity,
   Zap,
+  FolderCheck,
 } from "lucide-react";
 
 /**
@@ -74,10 +75,17 @@ export const menuConfig: MenuItem[] = [
     ],
   },
   {
-    title: "Módulo Auditoría",
-    path: "/panel/auditoria",
+    title: "Auditoría",
     icon: ShieldCheck,
     roles: ["superAdmin", "auditor"],
+    subItems: [
+      {
+        title: "Evidencias",
+        path: "/panel/auditoria/evidencias",
+        icon: FolderCheck,
+        roles: ["superAdmin", "auditor", "logístico"],
+      },
+    ],
   },
   {
     // Elemento tipo acordeón: no redirige, expande sus subItems

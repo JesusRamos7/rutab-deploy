@@ -121,6 +121,7 @@ CREATE TABLE public.evidencias (
   firma_url text,
   coordenadas_entrega GEOGRAPHY(Point, 4326),
   fecha_hora timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  estado_evidencia text DEFAULT 'alerta',
   CONSTRAINT evidencias_pkey PRIMARY KEY (id),
   CONSTRAINT evidencias_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id)
 );
@@ -162,7 +163,8 @@ CREATE TABLE public.incidencias (
   tipo text,
   descripcion text,
   foto_url text,
-  coordenadas_incidente GEOGRAPHY(Point, 4326);
+  coordenadas_incidente GEOGRAPHY(Point, 4326),
+  estado_incidencia text DEFAULT 'pendiente',
   created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT incidencias_pkey PRIMARY KEY (id),
@@ -173,55 +175,55 @@ CREATE INDEX idx_incidencias_coordenadas ON public.incidencias USING GIST (coord
 
 
 -- Función que revisa si todos los pedidos de una ruta están "entregados"
-CREATE OR REPLACE FUNCTION actualizar_estatus_ruta()
-RETURNS TRIGGER AS $$
-DECLARE
-    total_pedidos INT;
-    pedidos_entregados INT;
-    v_ruta_id uuid;
-BEGIN
-    -- Obtener el ruta_id asociado al pedido actualizado
-    SELECT dr.ruta_id
-    INTO v_ruta_id
-    FROM detalles_ruta dr
-    WHERE dr.pedido_id = NEW.id
-    LIMIT 1;
+-- CREATE OR REPLACE FUNCTION actualizar_estatus_ruta()
+-- RETURNS TRIGGER AS $$
+-- DECLARE
+--     total_pedidos INT;
+--     pedidos_entregados INT;
+--     v_ruta_id uuid;
+-- BEGIN
+--     -- Obtener el ruta_id asociado al pedido actualizado
+--     SELECT dr.ruta_id
+--     INTO v_ruta_id
+--     FROM detalles_ruta dr
+--     WHERE dr.pedido_id = NEW.id
+--     LIMIT 1;
 
-    -- Si el pedido no pertenece a ninguna ruta, salir
-    IF v_ruta_id IS NULL THEN
-        RETURN NEW;
-    END IF;
+--     -- Si el pedido no pertenece a ninguna ruta, salir
+--     IF v_ruta_id IS NULL THEN
+--         RETURN NEW;
+--     END IF;
 
-    -- Contar total de pedidos en la ruta
-    SELECT COUNT(*)
-    INTO total_pedidos
-    FROM detalles_ruta
-    WHERE ruta_id = v_ruta_id;
+--     -- Contar total de pedidos en la ruta
+--     SELECT COUNT(*)
+--     INTO total_pedidos
+--     FROM detalles_ruta
+--     WHERE ruta_id = v_ruta_id;
 
-    -- Contar pedidos entregados
-    SELECT COUNT(*)
-    INTO pedidos_entregados
-    FROM detalles_ruta dr
-    JOIN pedidos p ON dr.pedido_id = p.id
-    WHERE dr.ruta_id = v_ruta_id
-      AND p.estado_pedido = 'entregado';
+--     -- Contar pedidos entregados
+--     SELECT COUNT(*)
+--     INTO pedidos_entregados
+--     FROM detalles_ruta dr
+--     JOIN pedidos p ON dr.pedido_id = p.id
+--     WHERE dr.ruta_id = v_ruta_id
+--       AND p.estado_pedido = 'entregado';
 
-    -- Si todos están entregados → completar ruta
-    IF total_pedidos > 0 AND total_pedidos = pedidos_entregados THEN
-        UPDATE rutas
-        SET estatus_ruta = 'completada',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = v_ruta_id;
-    END IF;
+--     -- Si todos están entregados → completar ruta
+--     IF total_pedidos > 0 AND total_pedidos = pedidos_entregados THEN
+--         UPDATE rutas
+--         SET estatus_ruta = 'completada',
+--             updated_at = CURRENT_TIMESTAMP
+--         WHERE id = v_ruta_id;
+--     END IF;
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+--     RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_actualizar_ruta
-AFTER UPDATE OF estado_pedido ON pedidos
-FOR EACH ROW
-WHEN (OLD.estado_pedido IS DISTINCT FROM NEW.estado_pedido)
-EXECUTE FUNCTION actualizar_estatus_ruta();
+-- CREATE TRIGGER trigger_actualizar_ruta
+-- AFTER UPDATE OF estado_pedido ON pedidos
+-- FOR EACH ROW
+-- WHEN (OLD.estado_pedido IS DISTINCT FROM NEW.estado_pedido)
+-- EXECUTE FUNCTION actualizar_estatus_ruta();
 
 COMMIT;

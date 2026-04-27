@@ -13,12 +13,18 @@ export enum AuthRoutes {
 export enum MainRoutes {
   ROUTES_STACK = 'RoutesStack',
   PROFILE = 'Profile',
+  ROAD_INCIDENTS_STACK = 'RoadIncidentsStack',
 }
 
 export enum RoutesRoutes {
   HOME = 'RoutesHome',
   DELIVERY_EVIDENCE = 'DeliveryEvidence',
   REPORT_INCIDENT = 'ReportIncident',
+}
+
+export enum RoadIncidentsRoutes {
+  LIST = 'RoadIncidentsList',
+  FORM = 'RoadIncidentsForm',
 }
 
 // 2. Definición de parámetros por pantalla (Para navigation.navigate)
@@ -44,4 +50,12 @@ export type RoutesStackParamList = {
 export type MainDrawerParamList = {
   [MainRoutes.ROUTES_STACK]: undefined;
   [MainRoutes.PROFILE]: undefined;
+  [MainRoutes.ROAD_INCIDENTS_STACK]: undefined;
+};
+
+export type RoadIncidentsStackParamList = {
+  [RoadIncidentsRoutes.LIST]: undefined;
+  [RoadIncidentsRoutes.FORM]: {
+    incidentId?: string;
+  };
 };
