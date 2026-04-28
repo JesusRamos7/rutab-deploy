@@ -28,6 +28,7 @@ import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
     OrdersModule,
     OptimizacionModule,
     RoutesModule,
+    EvidenceModule,
     EvidencesModule,
     MonitoringModule,
   ],
