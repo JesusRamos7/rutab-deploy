@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsUUID, IsEnum } from "class-validato
 export enum OrderStatus {
   PENDIENTE  = 'pendiente',
   PROCESANDO = 'procesando',
-  EN_RUTA    = 'en_transito',
+  EN_RUTA    = 'en ruta',
   ENTREGADO  = 'entregado',
   CANCELADO  = 'cancelado',
 }
