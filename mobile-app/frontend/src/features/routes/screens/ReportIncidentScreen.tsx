@@ -66,7 +66,7 @@ export const ReportIncidentScreen = () => {
         return;
       }
 
-      await apiClient.post('/mobile-app/evidence/incident', {
+      await apiClient.post('/mobile-app/evidence/failed-delivery', {
         pedidoId,
         rutaId,
         tipo: tipoSeleccionado,
@@ -75,11 +75,11 @@ export const ReportIncidentScreen = () => {
         longitude,
       });
 
-      Alert.alert('¡Éxito!', 'Incidente registrado.', [
+      Alert.alert('¡Éxito!', 'El pedido ha sido marcado como fallido.', [
         { text: 'Aceptar', onPress: () => navigation.navigate(RoutesRoutes.HOME) },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', 'No se pudo procesar el reporte.');
+      Alert.alert('Error', 'No se pudo reportar la entrega fallida.');
     } finally {
       setIsSending(false);
     }

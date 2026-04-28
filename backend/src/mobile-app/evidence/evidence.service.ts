@@ -11,12 +11,19 @@ import { createClient } from '@supabase/supabase-js';
 import { CreateEvidenceDto } from './dto/create-evidence.dto';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
+import { forwardRef, Inject } from '@nestjs/common';
+import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 
 @Injectable()
 export class EvidenceService {
   private supabase;
   private readonly logger = new Logger(EvidenceService.name);
-  constructor(private prisma: PrismaService) {
+
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => MonitoringGateway)) // Inyectamos el gateway
+    private readonly monitoringGateway: MonitoringGateway,
+  ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -111,6 +118,9 @@ export class EvidenceService {
           data: { estado_pedido: 'entregado' },
         });
 
+        // Emitimos un evento para que el frontend actualice su lista de pedidos
+        this.monitoringGateway.server.emit('fleetListUpdated');
+
         return {
           success: true,
           message: 'Evidencia procesada correctamente',
@@ -122,7 +132,15 @@ export class EvidenceService {
     }
   }
 
-  async saveIncident(dto: CreateIncidentDto, file?: Express.Multer.File) {
+  /**
+   * LÓGICA COMPARTIDA: Inserta la incidencia en la DB
+   * Acepta un cliente de Prisma (tx) para poder ser parte de una transacción
+   */
+  private async executeInsertIncident(
+    tx: any,
+    dto: CreateIncidentDto,
+    fotoUrl: string | null,
+  ) {
     const {
       pedidoId,
       rutaId,
@@ -132,9 +150,25 @@ export class EvidenceService {
       longitude,
       estado_incidencia,
     } = dto;
-    let fotoUrl = null;
 
+    return await tx.$executeRaw`
+    INSERT INTO incidencias (
+      ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia
+    ) VALUES (
+      ${rutaId}::uuid, 
+      ${pedidoId ? pedidoId : null}::uuid, 
+      ${tipo}, 
+      ${descripcion}, 
+      ${fotoUrl},
+      ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
+      ${estado_incidencia || 'abierta'}
+    )
+  `;
+  }
+
+  async saveIncident(dto: CreateIncidentDto, file?: Express.Multer.File) {
     try {
+      let fotoUrl = null;
       if (file) {
         const fileName = `incidente_${Date.now()}.jpg`;
         fotoUrl = await this.uploadBufferToSupabase(
@@ -145,25 +179,47 @@ export class EvidenceService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`
-        INSERT INTO incidencias (
-          ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente,
-          estado_incidencia -- Usamos el valor del DTO
-        ) VALUES (
-          ${rutaId}::uuid, 
-          ${pedidoId ? pedidoId : null}::uuid, 
-          ${tipo}, 
-          ${descripcion}, 
-          ${fotoUrl},
-          ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
-          ${estado_incidencia || 'abierta'} -- Fallback a abierta
-        )
-      `;
+        await this.executeInsertIncident(tx, dto, fotoUrl);
         return { success: true, message: 'Incidente registrado.' };
       });
     } catch (error) {
-      this.logger.error(`Error en saveIncident: ${error.message}`);
       throw new InternalServerErrorException('Error al guardar incidente.');
+    }
+  }
+
+  async saveFailedDelivery(dto: CreateIncidentDto, file?: Express.Multer.File) {
+    try {
+      let fotoUrl = null;
+      if (file) {
+        const fileName = `fallido_${dto.pedidoId}_${Date.now()}.jpg`;
+        fotoUrl = await this.uploadBufferToSupabase(
+          file.buffer,
+          `incidentes/fallidos/${fileName}`,
+          file.mimetype,
+        );
+      }
+
+      return await this.prisma.$transaction(async (tx) => {
+        // Reutilizamos el insert
+        await this.executeInsertIncident(tx, dto, fotoUrl);
+
+        // Añadimos la actualización del pedido
+        await tx.pedidos.update({
+          where: { id: dto.pedidoId },
+          data: { estado_pedido: 'fallido' },
+        });
+
+        this.monitoringGateway.server.emit('fleetListUpdated');
+        return {
+          success: true,
+          message: 'Pedido marcado como fallido y reporte guardado.',
+        };
+      });
+    } catch (error) {
+      this.logger.error(`Error en saveFailedDelivery: ${error.message}`);
+      throw new InternalServerErrorException(
+        'No se pudo procesar el fallo de entrega.',
+      );
     }
   }
 
@@ -238,7 +294,7 @@ export class EvidenceService {
         throw new NotFoundException('La incidencia no existe.');
       }
 
-      return await this.prisma.incidencias.update({
+      await this.prisma.incidencias.update({
         where: { id },
         data: {
           ...(estado_incidencia && { estado_incidencia }),
@@ -247,6 +303,13 @@ export class EvidenceService {
           updated_at: new Date(),
         },
       });
+
+      this.monitoringGateway.server.emit('fleetListUpdated');
+
+      return {
+        success: true,
+        message: 'Incidente actualizado correctamente.',
+      };
     } catch (error) {
       this.logger.error(
         `Error al actualizar incidencia ${id}: ${error.message}`,

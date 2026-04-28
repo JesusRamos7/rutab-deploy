@@ -4,16 +4,21 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 
 @Injectable()
 export class RoutesService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    @Inject(forwardRef(() => MonitoringGateway)) // Inyección con forwardRef
+    private readonly monitoringGateway: MonitoringGateway,
   ) {}
 
   // ... (getActiveRoute se mantiene igual)
@@ -43,29 +48,29 @@ export class RoutesService {
     }
 
     const pedidos = await this.prisma.$queryRaw<any[]>`
-      SELECT 
-        dr.id as "detalleId",
-        dr.orden_entrega as "orden",
-        p.id as "pedidoId",
-        p.descripcion_carga as "descripcion",
-        p.estado_pedido as "estado",
-        c.nombre as "cliente",
-        c.direccion as "direccion",
-        ST_X(c.coordenadas::geometry) as "longitude",
-        ST_Y(c.coordenadas::geometry) as "latitude"
-      FROM detalles_ruta dr
-      JOIN pedidos p ON dr.pedido_id = p.id
-      JOIN clientes c ON p.cliente_id = c.id
-      WHERE dr.ruta_id = ${ruta.id}::uuid
-        AND p.estado_pedido = 'pendiente'
-      ORDER BY dr.orden_entrega ASC
-    `;
+    SELECT 
+      dr.id as "detalleId",
+      dr.orden_entrega as "orden",
+      p.id as "pedidoId",
+      p.descripcion_carga as "descripcion",
+      p.estado_pedido as "estado",
+      c.nombre as "cliente",
+      c.direccion as "direccion",
+      ST_X(c.coordenadas::geometry) as "longitude",
+      ST_Y(c.coordenadas::geometry) as "latitude"
+    FROM detalles_ruta dr
+    INNER JOIN pedidos p ON dr.pedido_id = p.id
+    INNER JOIN clientes c ON p.cliente_id = c.id
+    WHERE dr.ruta_id = ${ruta.id}::uuid
+      AND p.estado_pedido IN ('pendiente', 'en_transito')
+    ORDER BY dr.orden_entrega ASC
+  `;
 
     return { ...ruta, pedidos };
   }
 
   /**
-   * ACTUALIZADO: Guarda el inicio real en Redis.
+   * ACTUALIZADO: Inicia la ruta y cambia todos sus pedidos a 'en_transito'
    */
   async startRoute(rutaId: string, choferId: string) {
     const ruta = await this.prisma.rutas.findFirst({
@@ -74,6 +79,9 @@ export class RoutesService {
         chofer_id: choferId,
         estatus_ruta: 'programada',
       },
+      include: {
+        detalles_ruta: true, // Incluimos los detalles para validar si hay pedidos
+      },
     });
 
     if (!ruta) {
@@ -81,17 +89,66 @@ export class RoutesService {
         'La ruta no existe, ya inició o no tienes permiso.',
       );
     }
-
+    
     // Guardamos el timestamp real en Redis
     await this.redis.setStartTime(rutaId);
 
-    return this.prisma.rutas.update({
-      where: { id: rutaId },
+    // Usamos una transacción para asegurar que la ruta Y los pedidos se actualicen juntos
+    return this.prisma.$transaction(async (tx) => {
+      // Cambiamos el estado de la ruta a 'en_proceso'
+      const rutaActualizada = await tx.rutas.update({
+        where: { id: rutaId },
+        data: {
+          estatus_ruta: 'en_proceso',
+          updated_at: new Date(),
+        },
+      });
+
+      // Cambiamos el estado de TODOS los pedidos vinculados a esta ruta
+      // Buscamos los pedidos a través de la tabla intermedia detalles_ruta
+      await tx.pedidos.updateMany({
+        where: {
+          detalles_ruta: {
+            some: {
+              ruta_id: rutaId,
+            },
+          },
+          estado_pedido: 'pendiente', // Solo los que están pendientes
+        },
+        data: {
+          estado_pedido: 'en_transito',
+        },
+      });
+
+      // Guardamos el timestamp en Redis
+      await this.redis.setStartTime(rutaId);
+
+      // Emitimos un evento para actualizar la lista de rutas en el panel de monitoreo
+      this.monitoringGateway.server.emit('fleetListUpdated');
+
+      return rutaActualizada;
+    });
+  }
+
+  async updatePedidoStatus(
+    pedidoId: string,
+    nuevoEstado: string,
+    rutaId: string,
+  ) {
+    // Actualizamos el estado en la base de datos
+    const pedidoActualizado = await this.prisma.pedidos.update({
+      where: { id: pedidoId },
       data: {
-        estatus_ruta: 'en_proceso',
+        estado_pedido: nuevoEstado, // 'entregado', 'cancelado', etc.
         updated_at: new Date(),
       },
     });
+
+    // Emitimos el evento global para que el Dashboard ejecute fetchInitialData()
+    // y los contadores cambien en la pantalla del monitor al instante.
+    this.monitoringGateway.server.emit('fleetListUpdated');
+
+    return pedidoActualizado;
   }
 
   async updateLocation(dto: UpdateLocationDto, choferId: string) {
@@ -109,7 +166,7 @@ export class RoutesService {
       );
     }
 
-    // 1. OBTENER EL ÚLTIMO PUNTO GUARDADO EN REDIS
+    // OBTENER EL ÚLTIMO PUNTO GUARDADO EN REDIS
     const lastPoints = await this.redis.getRoutePoints(dto.rutaId);
     let shouldPushToHistory = true;
 
@@ -220,7 +277,12 @@ export class RoutesService {
     const lineStringWKT = `LINESTRING(${wktPoints})`;
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`
+      const yaExiste =
+        await tx.$queryRaw`SELECT 1 FROM trayectos_finalizados WHERE ruta_id = ${rutaId}::uuid`;
+
+      if ((yaExiste as any[]).length === 0) {
+        // Solo insertamos si no existe
+        await tx.$executeRawUnsafe(`
         INSERT INTO trayectos_finalizados (ruta_id, geometria_ruta, distancia_total_km, fecha_inicio)
         VALUES (
           '${rutaId}'::uuid,
@@ -229,6 +291,11 @@ export class RoutesService {
           '${fechaInicioFinal}'
         )
       `);
+      } else {
+        console.warn(
+          `Ruta ${rutaId} ya contaba con trayecto finalizado. Saltando duplicado. Por favor notifica al equipo de desarrollo para revisar posibles causas.`,
+        );
+      }
 
       await tx.rutas.update({
         where: { id: rutaId },
@@ -239,6 +306,8 @@ export class RoutesService {
     });
 
     await this.redis.clearRouteData(rutaId);
+
+    this.monitoringGateway.server.emit('fleetListUpdated');
 
     return {
       success: true,

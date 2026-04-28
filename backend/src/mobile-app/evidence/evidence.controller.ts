@@ -44,6 +44,17 @@ export class EvidenceController {
     return this.evidenceService.saveIncident(dto, file);
   }
 
+  @Post('failed-delivery')
+  @Roles('chofer')
+  @UseInterceptors(FileInterceptor('photo'))
+  async createFailedDelivery(
+    @Body() dto: CreateIncidentDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    // Llamamos al método especializado que garantiza que AMBAS cosas pasen o NINGUNA pase
+    return this.evidenceService.saveFailedDelivery(dto, file);
+  }
+
   @Get('incidents')
   @Roles('chofer')
   async getMyIncidents(@Req() req: any) {
