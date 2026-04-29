@@ -75,6 +75,7 @@ model incidencias {
   foto_url              String?
   coordenadas_incidente Unsupported("geography")?
   estado_incidencia     String?                   @default("pendiente")
+  categoria             String                    @default("camino")
   created_at            DateTime                  @default(now()) @db.Timestamp(6)
   updated_at            DateTime                  @default(now()) @db.Timestamp(6)
   pedidos               pedidos?                  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
