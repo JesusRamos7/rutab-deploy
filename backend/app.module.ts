@@ -16,6 +16,7 @@ import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
+import { IncidentsModule } from 'src/modules/incidents/incidents.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
     EvidenceModule,
     EvidencesModule,
     MonitoringModule,
+    IncidentsModule,
   ],
   controllers: [AppController],
   providers: [
