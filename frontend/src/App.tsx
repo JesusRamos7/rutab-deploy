@@ -71,6 +71,12 @@ const EvidencesPage = lazy(() =>
     default: m.EvidencesPage,
   })),
 );
+const IncidentsPage = lazy(() =>
+  import("./modules/audit/incidents/pages/IncidentsPage").then((m) => ({
+    default: m.IncidentsPage,
+  })),
+);
+
 const OrdersPage = lazy(() =>
   import("./modules/management/orders/OrdersPage").then((m) => ({
     default: m.OrdersPage,
@@ -199,6 +205,15 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={["superAdmin", "auditor"]}>
                     <EvidencesPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="auditoria/incidencias"
+                element={
+                  <RoleGuard allowedRoles={["superAdmin", "auditor"]}>
+                    <IncidentsPage />
                   </RoleGuard>
                 }
               />

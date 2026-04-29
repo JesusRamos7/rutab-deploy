@@ -154,7 +154,7 @@ export class EvidenceService {
 
     return await tx.$executeRaw`
     INSERT INTO incidencias (
-      ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoriaj
+      ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoria
     ) VALUES (
       ${rutaId}::uuid, 
       ${pedidoId ? pedidoId : null}::uuid, 
@@ -186,7 +186,8 @@ export class EvidenceService {
         await this.executeInsertIncident(tx, dto, fotoUrl);
         return { success: true, message: 'Incidente registrado.' };
       });
-    } catch (error) {
+    } catch (error:any) {
+      console.log('🚨 ERROR EN API:', error.response?.data || error.message);
       throw new InternalServerErrorException('Error al guardar incidente.');
     }
   }

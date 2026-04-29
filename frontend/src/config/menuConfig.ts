@@ -13,6 +13,7 @@ import {
   Activity,
   Zap,
   FolderCheck,
+  AlertTriangle,
 } from "lucide-react";
 
 /**
@@ -83,6 +84,12 @@ export const menuConfig: MenuItem[] = [
         title: "Evidencias",
         path: "/panel/auditoria/evidencias",
         icon: FolderCheck,
+        roles: ["superAdmin", "auditor", "logístico"],
+      },
+      {
+        title: "Incidencias",
+        path: "/panel/auditoria/incidencias",
+        icon: AlertTriangle,
         roles: ["superAdmin", "auditor", "logístico"],
       },
     ],

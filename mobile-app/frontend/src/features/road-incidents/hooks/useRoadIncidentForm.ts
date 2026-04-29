@@ -96,7 +96,8 @@ export const useRoadIncidentForm = (incidentId?: string, routeData?: any) => {
       }
 
       Alert.alert('¡Éxito!', 'Reporte procesado.', [{ text: 'OK', onPress: onSuccess }]);
-    } catch (error) {
+    } catch (error: any) {
+      console.log('🚨 ERROR EN API:', error.response?.data || error.message);
       Alert.alert('Error', 'No se pudo procesar el reporte.');
     } finally {
       setLoading(false);

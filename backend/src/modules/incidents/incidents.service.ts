@@ -68,18 +68,28 @@ export class IncidentsService {
       const result = await Promise.all(
         incidents.map(async (inc) => {
           let signedUrl = null;
+
           if (inc.fotoUrl) {
-            // Asume bucket 'evidencia' y ruta de archivo tipo 'incidentes/archivo.jpg'
-            // Si en la BD se guarda "evidencia/incidentes/foto.jpg", ajusta el string aquí
-            const cleanPath = inc.fotoUrl.replace('evidencia/', '');
-            const { data } = await this.supabase.storage
-              .from('evidencia')
-              .createSignedUrl(cleanPath, 3600); // URL válida por 1 hora
+            // Pasamos la ruta exacta (ej. "incidentes/incidente_1777453002719.jpg")
+            const { data, error } = await this.supabase.storage
+              .from('evidencias') // Tu bucket
+              .createSignedUrl(inc.fotoUrl, 3600);
+
+            if (error) {
+              console.error(
+                `Error al firmar foto ${inc.fotoUrl}:`,
+                error.message,
+              );
+            }
+
             signedUrl = data?.signedUrl || null;
           }
 
           return {
             ...inc,
+            // Forzamos a que siempre sean números de punto flotante
+            lat: inc.lat ? parseFloat(inc.lat) : null,
+            lng: inc.lng ? parseFloat(inc.lng) : null,
             fotoUrlFirmada: signedUrl,
           };
         }),
