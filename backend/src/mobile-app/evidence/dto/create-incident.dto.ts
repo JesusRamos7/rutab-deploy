@@ -10,9 +10,8 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateIncidentDto {
-
   @IsUUID()
-  @IsOptional() // <-- Clave para evitar el Error 400
+  @IsOptional()
   pedidoId?: string;
 
   @IsUUID()
@@ -27,7 +26,7 @@ export class CreateIncidentDto {
   @IsNotEmpty()
   descripcion: string;
 
-  @Type(() => Number) // <-- Transforma el string del FormData a número
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   latitude: number;
@@ -40,5 +39,11 @@ export class CreateIncidentDto {
   @IsString()
   @IsOptional()
   @IsIn(['abierta', 'urgente', 'resuelta'])
-  estado_incidencia?: string; 
+  estado_incidencia?: string;
+
+  // NUEVO CAMPO
+  @IsString()
+  @IsOptional()
+  @IsIn(['entrega', 'camino'])
+  categoria?: string;
 }

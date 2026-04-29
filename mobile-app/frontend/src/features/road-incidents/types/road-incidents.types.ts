@@ -12,4 +12,5 @@ export interface Incident {
   latitude: number;
   longitude: number;
   codigoPedido?: string;
+  categoria?: string;
 }

@@ -149,11 +149,12 @@ export class EvidenceService {
       latitude,
       longitude,
       estado_incidencia,
+      categoria,
     } = dto;
 
     return await tx.$executeRaw`
     INSERT INTO incidencias (
-      ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia
+      ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoriaj
     ) VALUES (
       ${rutaId}::uuid, 
       ${pedidoId ? pedidoId : null}::uuid, 
@@ -161,13 +162,16 @@ export class EvidenceService {
       ${descripcion}, 
       ${fotoUrl},
       ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
-      ${estado_incidencia || 'abierta'}
+      ${estado_incidencia || 'abierta'},
+      ${categoria || 'camino'}
     )
   `;
   }
 
   async saveIncident(dto: CreateIncidentDto, file?: Express.Multer.File) {
     try {
+      // FORZAMOS LA CATEGORÍA PARA INCIDENTES DE RUTA
+      dto.categoria = 'camino';
       let fotoUrl = null;
       if (file) {
         const fileName = `incidente_${Date.now()}.jpg`;
@@ -189,6 +193,8 @@ export class EvidenceService {
 
   async saveFailedDelivery(dto: CreateIncidentDto, file?: Express.Multer.File) {
     try {
+      // FORZAMOS LA CATEGORÍA PARA ENTREGAS FALLIDAS
+      dto.categoria = 'entrega';
       let fotoUrl = null;
       if (file) {
         const fileName = `fallido_${dto.pedidoId}_${Date.now()}.jpg`;
@@ -233,6 +239,7 @@ export class EvidenceService {
         i.id, i.tipo, i.descripcion, i.estado_incidencia as "estado",
         i.foto_url as "fotoUrl", i.pedido_id as "pedidoId",
         i.ruta_id as "rutaId", i.created_at as "createdAt",
+        i.categoria,
         ST_X(i.coordenadas_incidente::geometry) as "longitude",
         ST_Y(i.coordenadas_incidente::geometry) as "latitude",
         p.codigo_rastreo as "codigoPedido"
@@ -240,6 +247,7 @@ export class EvidenceService {
       JOIN rutas r ON i.ruta_id = r.id
       LEFT JOIN pedidos p ON i.pedido_id = p.id
       WHERE r.chofer_id = ${choferId}::uuid
+        AND i.categoria = 'camino' 
       ORDER BY i.created_at DESC
     `;
 

@@ -73,6 +73,7 @@ export const ReportIncidentScreen = () => {
         descripcion,
         latitude,
         longitude,
+        categoria: 'entrega',
       });
 
       Alert.alert('¡Éxito!', 'El pedido ha sido marcado como fallido.', [

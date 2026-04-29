@@ -77,6 +77,7 @@ export const useRoadIncidentForm = (incidentId?: string, routeData?: any) => {
         formData.append('longitude', String(location.coords.longitude));
         formData.append('rutaId', routeData.id);
         formData.append('estado_incidencia', form.estado);
+        formData.append('categoria', 'camino');
 
         if (routeData.pedidos?.length > 0) {
           formData.append('pedidoId', routeData.pedidos[0].pedidoId);
