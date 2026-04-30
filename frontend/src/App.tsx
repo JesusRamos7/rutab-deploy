@@ -12,6 +12,9 @@ import { useAuth } from "./context/AuthContext";
 import { RoleGuard } from "./components/guards/RoleGuard";
 import { ContentLoader } from "./components/ui/ContentLoader";
 import { AdminLayout } from "./layouts/AdminLayout";
+import React, { ReactNode } from 'react';
+import { useAlertListener } from '../src/modules/monitoring/hooks/useAlertListener';
+import { Toaster } from 'react-hot-toast'; // Para que los mensajes se vean
 
 /**
  * Indicador de carga de pantalla completa.
@@ -27,6 +30,38 @@ const FullScreenLoader = () => (
     </div>
   </div>
 );
+
+/**
+ * Diseño de Dashboard Principal.
+ * Este layout se encarga de establecer la estructura base del panel de monitoreo,
+ * incluyendo la barra lateral y el área de contenido. Además, aquí se activa el
+ * hook de escucha de alertas para que esté disponible en todas las vistas hijas.
+ */
+interface Props {
+  children: ReactNode;
+}
+
+export const DashboardLayout = ({ children }: Props) => {
+  // Aquí activamos la escucha de sockets
+  useAlertListener(); 
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* El Toaster permite que las notificaciones floten en la pantalla */}
+      <Toaster position="top-right" />
+      
+      <aside style={{ width: '250px', background: '#123a5d', color: 'white' }}>
+        {/* Aquí irá tu menú lateral después */}
+        <p style={{ padding: '20px' }}>RuTAB Admin</p>
+      </aside>
+
+      <main style={{ flex: 1, padding: '20px', background: '#f4f7f9' }}>
+        {children}
+      </main>
+    </div>
+  );
+};
+
 
 /**
  * Definición de Módulos mediante Lazy Loading.

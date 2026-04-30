@@ -31,13 +31,10 @@ export const useOrderPage = () => {
   const transformedOrders = useMemo(() => {
     return orders.map((order: any, index: number) => {
       const numeroPedido = (index + 1).toString().padStart(3, '0');
-      const prioridades = ['Alta', 'Media', 'Baja'];
-      const prioridadSimulada = prioridades[index % 3];
 
       return {
         ...order,
         id_generado: `PED-${numeroPedido}`,
-        prioridad: prioridadSimulada,
       };
     });
   }, [orders]);

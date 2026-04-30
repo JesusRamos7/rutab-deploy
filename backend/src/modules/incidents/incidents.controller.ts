@@ -8,7 +8,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
-  @Roles('superAdmin', 'auditor')
+  @Roles('superAdmin', 'auditor') 
   @Get()
   async findAll(@Query() query: GetIncidentsDto) {
     return this.incidentsService.findAll(query);

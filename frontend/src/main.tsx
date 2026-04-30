@@ -5,6 +5,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "sonner";
+import { SocketProvider } from "./context/SocketContext"; 
 
 /**
  * Inicialización de la aplicación React 18 utilizando el API de createRoot.
@@ -21,13 +22,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       en todo el árbol de componentes (App y sus rutas).
     */}
     <AuthProvider>
-      <App />
+      {/* SocketProvider: Proveedor de contexto para la conexión WebSocket. */}
+      <SocketProvider>
 
-      {/* Toaster (Sonner): Contenedor global de notificaciones.
-        Configurado con 'richColors' para estilos semánticos (error, success) 
-        y posición superior derecha para no obstruir la navegación principal.
-      */}
+        <App />
+
+      </SocketProvider>
+
       <Toaster richColors position="top-right" />
+
     </AuthProvider>
+    
   </React.StrictMode>,
 );

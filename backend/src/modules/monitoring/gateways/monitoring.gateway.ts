@@ -12,12 +12,12 @@ import { MonitoringService } from '../services/monitoring.service';
 import { UpdateLocationDto } from '../dto/update-location.dto';
 
 @WebSocketGateway({
-  namespace: 'monitoring',
-  cors: {
-    origin: 'http://localhost:8081', // Puerto del frontend
-    credentials: true,
-  },
-  transports: ['websocket'], // Forzamos solo websocket
+    namespace: 'monitoring',
+    cors: {
+        origin: 'http://localhost:8081', // Puerto del frontend
+        credentials: true,
+    },
+    transports: ['websocket'], // Forzamos solo websocket
 })
 
 export class MonitoringGateway implements OnGatewayConnection {
@@ -28,23 +28,29 @@ export class MonitoringGateway implements OnGatewayConnection {
 
     handleConnection(client: Socket) {
         console.log(`Cliente conectado: ${client.id}`);
+
     }
 
     @SubscribeMessage('updateLocation')
-async handleUpdateLocation(@MessageBody() data: UpdateLocationDto) {
-    await this.monitoringService.saveLocation(data);
-    
-    // Emitir a la habitación específica (para vistas de detalle de ruta)
-    this.server.to(`route_${data.rutaId}`).emit('locationUpdate', data);
-    
-    // Emitir a TODOS
-    this.server.emit('fleetUpdate', {
-        rutaId: data.rutaId,
-        latitud: data.latitud,
-        longitud: data.longitud,
-        velocidad: data.velocidad,
-    });
-}
+    async handleUpdateLocation(@MessageBody() data: UpdateLocationDto) {
+        await this.monitoringService.saveLocation(data);
+
+        // ALERTA: Exceso de Velocidad
+        if (data.velocidad > 80) {
+            this.server.emit('securityAlert', {
+                type: 'OVERSPEED',
+                rutaId: data.rutaId,
+                valor: data.velocidad,
+                mensaje: `¡Exceso de velocidad! ${data.velocidad} km/h`
+            });
+        }
+
+        // Emitir a la habitación específica (para vistas de detalle de ruta)
+        this.server.to(`route_${data.rutaId}`).emit('locationUpdate', data);
+
+        // Emitir a TODOS
+        this.server.emit('fleetUpdate', data);
+    }
 
     @SubscribeMessage('joinRoute')
     handleJoinRoute(

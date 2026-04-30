@@ -28,7 +28,7 @@ export const OrdersForm: React.FC<OrderProps> = ({
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2">¿Cancelar Pedido?</h3>
           <p className="text-slate-500 mb-6">
-            Esta acción marcará el pedido como <b>cancelado</b>. El pedido dejará de ser visible en el panel principal.
+            Esta acción marcará el pedido como <b>cancelado</b>. ¿Estás seguro que deseas continuar?
           </p>
           <div className="flex gap-3">
             <button
@@ -82,21 +82,9 @@ export const OrdersForm: React.FC<OrderProps> = ({
                 disabled={isLoading}
               >
                 <option value="pendiente">Pendiente</option>
-                <option value="en transito">En tránsito</option>
+                <option value="en_transito">En tránsito</option>
                 <option value="completado">Completado</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Prioridad</label>
-              <select
-                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.prioridad}
-                onChange={(e) => handleChange("prioridad", e.target.value)}
-                disabled={isLoading}
-              >
-                <option value="Baja">Baja</option>
-                <option value="Media">Media</option>
-                <option value="Alta">Alta</option>
+                <option value="Cancelado">Cancelado</option>
               </select>
             </div>
           </div>

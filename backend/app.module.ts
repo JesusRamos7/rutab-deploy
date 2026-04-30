@@ -16,11 +16,8 @@ import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
-<<<<<<< Updated upstream
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
-=======
 import { ConfigModule } from '@nestjs/config';
->>>>>>> Stashed changes
 
 @Module({
   imports: [
