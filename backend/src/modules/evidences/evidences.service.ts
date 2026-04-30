@@ -14,6 +14,8 @@ export class EvidencesService {
   private supabase;
 
   constructor(private prisma: PrismaService) {
+    console.log('URL:', process.env.SUPABASE_URL);
+
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -64,31 +66,32 @@ export class EvidencesService {
 
     const results: any[] = await this.prisma.$queryRaw`
     SELECT 
-      e.id,
-      e.pedido_id as "pedidoId",
-      e.foto_url as "fotoUrl",
-      e.firma_url as "firmaUrl",
-      e.estado_evidencia as "estado",
-      e.fecha_hora as "fechaHora",
-      p.codigo_rastreo as "codigoRastreo",
-      c.nombre as "clienteNombre",
-      ch.id as "choferId",
-      ch.nombre as "choferNombre",
-      ch.correo as "choferCorreo",
-      ST_Distance(e.coordenadas_entrega, c.coordenadas) as "distanciaMetros"
-    FROM evidencias e
-    JOIN pedidos p ON e.pedido_id = p.id
-    JOIN clientes c ON p.cliente_id = c.id
-    LEFT JOIN detalles_ruta dr ON p.id = dr.pedido_id
-    LEFT JOIN rutas r ON dr.ruta_id = r.id
-    LEFT JOIN choferes ch ON r.chofer_id = ch.id
+    e.id,
+    e.pedido_id as "pedidoId",
+    e.foto_url as "fotoUrl",
+    e.firma_url as "firmaUrl",
+    e.estado_evidencia as "estado",
+    e.fecha_hora as "fechaHora",
+    p.codigo_rastreo as "codigoRastreo",
+    c.nombre as "clienteNombre",
+    ch.id as "choferId",
+    ch.nombre as "choferNombre",
+    ch.correo as "choferCorreo",
+    ST_Distance(e.coordenadas_entrega, c.coordenadas) as "distanciaMetros"
+    FROM public.evidencias e  -- Añadimos public por si acaso
+    INNER JOIN public.pedidos p ON e.pedido_id = p.id
+    INNER JOIN public.clientes c ON p.cliente_id = c.id
+    LEFT JOIN public.detalles_ruta dr ON p.id = dr.pedido_id
+    LEFT JOIN public.rutas r ON dr.ruta_id = r.id
+    LEFT JOIN public.choferes ch ON r.chofer_id = ch.id
     WHERE 
-      (${estado}::text IS NULL OR e.estado_evidencia = ${estado})
-      AND (${pedidoId}::text IS NULL OR e.pedido_id::text = ${pedidoId})
-      AND (${choferCorreo}::text IS NULL OR ch.correo ILIKE ${choferCorreo})
-      AND (${fecha}::text IS NULL OR DATE(e.fecha_hora) = ${fecha}::date)
+    (${estado}::text IS NULL OR e.estado_evidencia = ${estado})
+    -- Cambiamos el casteo para evitar que Postgres se confunda con UUIDs
+    AND (${pedidoId}::text IS NULL OR e.pedido_id = ${pedidoId}::uuid)
+    AND (${choferCorreo}::text IS NULL OR ch.correo ILIKE ${choferCorreo})
+    AND (${fecha}::text IS NULL OR DATE(e.fecha_hora) = ${fecha}::date)
     ORDER BY e.fecha_hora DESC
-  `;
+`;
 
     return this.signUrls(results);
   }
