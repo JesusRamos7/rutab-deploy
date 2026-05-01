@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config'; // Mantenemos esta
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './src/database/prisma/prisma.module';
@@ -16,15 +17,11 @@ import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
-<<<<<<< Updated upstream
-import { IncidentsModule } from 'src/modules/incidents/incidents.module';
-=======
-import { ConfigModule } from '@nestjs/config';
->>>>>>> Stashed changes
+import { IncidentsModule } from 'src/modules/incidents/incidents.module'; // Mantenemos esta
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // Carga variables de entorno
+    ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
