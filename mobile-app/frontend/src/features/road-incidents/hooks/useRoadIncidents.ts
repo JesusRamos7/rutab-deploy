@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { roadIncidentsService } from '../services/road-incidents.service';
 import { Incident } from '../types/road-incidents.types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useRoadIncidents = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -13,9 +14,23 @@ export const useRoadIncidents = () => {
 
   const fetchIncidents = async () => {
     try {
+      // 1. Verificamos el token antes de la llamada
+      const token = await AsyncStorage.getItem('@usuario_chofer');
+
+      if (!token) {
+        console.warn('No hay token disponible. Redirigiendo al login...');
+        // Aquí podrías disparar una lógica de navegación al login
+        return;
+      }
+
       const data = await roadIncidentsService.getAll();
       setIncidents(data);
-    } catch (error) {
+    } catch (error: any) {
+      // Si el error es 401, el token expiró definitivamente
+      if (error.response?.status === 401) {
+        console.error('Sesión expirada. 401 Unauthorized');
+        AsyncStorage.removeItem('@usuario_chofer');
+      }
       console.error('Error fetching incidents:', error);
     } finally {
       setLoading(false);

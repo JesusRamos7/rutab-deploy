@@ -6,7 +6,7 @@ import * as Location from 'expo-location';
 import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
 import { LocationService, getDistance } from '../../../core/services/locationService';
-import { RoutesRoutes } from '../../../navigation/navigation-types'; // <-- Importa tus constantes de ruta
+import { RoutesRoutes } from '../../../navigation/navigation-types'; 
 
 export const useRoutes = () => {
   const { logout } = useAuth();

@@ -103,6 +103,7 @@ export const OrdersPage: React.FC = () => {
             <tr>
               <th className="px-8 py-5 text-sm font-bold text-slate-400 uppercase tracking-widest">ID (UUID)</th>
               <th className="px-8 py-5 text-sm font-bold text-slate-400 uppercase tracking-widest">Cliente</th>
+              <th className="px-8 py-5 text-sm font-bold text-slate-400 uppercase tracking-widest">Codigo Rastreo</th>
               <th className="px-8 py-5 text-sm font-bold text-slate-400 uppercase tracking-widest text-center">Estado</th>
               <th className="px-8 py-5 text-sm font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
             </tr>
@@ -121,6 +122,9 @@ export const OrdersPage: React.FC = () => {
                 <td className="px-8 py-6">
                   <div className="text-base font-bold text-slate-800">{order.clientes?.nombre}</div>
                   <div className="text-sm text-slate-500 mt-0.5">{order.clientes?.direccion}</div>
+                </td>
+                <td className="px-8 py-6">
+                  <div className="text-base font-bold text-slate-800">{order.codigo_rastreo}</div>
                 </td>
                 <td className="px-8 py-6 text-center">
                   <StatusBadge status={order.estado_pedido} />

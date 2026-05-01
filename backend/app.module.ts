@@ -18,6 +18,7 @@ import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
 import { ConfigModule } from '@nestjs/config';
+import { DashboardModule } from './src/modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ConfigModule } from '@nestjs/config';
     EvidencesModule,
     MonitoringModule,
     IncidentsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

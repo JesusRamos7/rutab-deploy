@@ -14,7 +14,7 @@ import { UpdateLocationDto } from '../dto/update-location.dto';
 @WebSocketGateway({
     namespace: 'monitoring',
     cors: {
-        origin: 'http://localhost:8081', // Puerto del frontend
+        origin: 'http://localhost:5173', // Puerto del frontend
         credentials: true,
     },
     transports: ['websocket'], // Forzamos solo websocket
