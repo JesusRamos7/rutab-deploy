@@ -19,8 +19,6 @@ import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
 
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
-import { ConfigModule } from '@nestjs/config';
-import { IncidentsModule } from 'src/modules/incidents/incidents.module'; // Mantenemos esta
 
 @Module({
   imports: [
