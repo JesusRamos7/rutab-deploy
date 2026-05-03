@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { menuConfig } from "../config/menuConfig";
 import { SidebarItem } from "../components/ui/SidebarItem";
-import { LogOut } from "lucide-react";
+import { LogOut, Sidebar } from "lucide-react";
 import logo from "../assets/logo_admin_layout.png";
 
 /**
@@ -58,3 +58,4 @@ export const AdminLayout = () => {
     </div>
   );
 };
+

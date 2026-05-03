@@ -152,7 +152,7 @@ export class EvidenceService {
       categoria,
     } = dto;
 
-    return await tx.$executeRaw`
+    const queryResult = await tx.$executeRaw`
     INSERT INTO incidencias (
       ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoria
     ) VALUES (
@@ -166,6 +166,19 @@ export class EvidenceService {
       ${categoria || 'camino'}
     )
   `;
+
+    // EMITIR ALERTA AL DASHBOARD
+    // Nota: Como es un Raw Query, necesitamos emitir el evento después
+    this.monitoringGateway.server.emit('newIncidentAlert', {
+      tipo: dto.tipo,
+      descripcion: dto.descripcion,
+      rutaId: dto.rutaId,
+      categoria: dto.categoria || 'camino',
+      coordenadas: { lat: dto.latitude, lng: dto.longitude },
+      fecha: new Date(),
+    });
+
+    return queryResult;
   }
 
   async saveIncident(dto: CreateIncidentDto, file?: Express.Multer.File) {
@@ -186,7 +199,7 @@ export class EvidenceService {
         await this.executeInsertIncident(tx, dto, fotoUrl);
         return { success: true, message: 'Incidente registrado.' };
       });
-    } catch (error:any) {
+    } catch (error: any) {
       console.log('🚨 ERROR EN API:', error.response?.data || error.message);
       throw new InternalServerErrorException('Error al guardar incidente.');
     }

@@ -1,17 +1,21 @@
 // src/modules/management/vehicles/VehiclesPage.tsx
-
-import React from "react";
+import React, { useState, useMemo } from "react";
+import { 
+  Truck, 
+  Search, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  Hash, 
+  Gauge, 
+  Tag,
+  Loader2 
+} from "lucide-react";
 import { VehicleForm } from "./VehiclesForm";
 import { useVehiclesPage } from "./hooks/useVehiclesPage";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal";
 
-/**
- * Componente de página principal para la gestión de flota.
- * Orquesta la visualización de datos, estados de carga y la interacción con
- * modales de creación, edición y eliminación.
- */
 export const VehiclesPage: React.FC = () => {
-  // Desacoplamiento de la lógica de negocio mediante hook especializado
   const {
     vehicles,
     isLoading,
@@ -21,7 +25,6 @@ export const VehiclesPage: React.FC = () => {
     openNewModal,
     openEditModal,
     closeModal,
-    // Propiedades del flujo de eliminación segura
     isConfirmOpen,
     vehicleToDelete,
     isDeleting,
@@ -30,105 +33,134 @@ export const VehiclesPage: React.FC = () => {
     executeDelete,
   } = useVehiclesPage();
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Lógica de filtrado dinámico para la barra de búsqueda
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter(v => 
+      v.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.placas.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.marca.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, vehicles]);
+
   return (
-    <div className="p-4 lg:p-8">
-      {/* Header: Título de sección y acción principal de creación */}
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-10 bg-slate-50 min-h-screen">
+      {/* Header con estilo unificado */}
+      <div className="flex justify-between items-end mb-10">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">
-            Panel de Administrador
-          </h1>
-          <p className="text-slate-500 text-sm">Gestión de flota y unidades</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Gestión de Vehiculos</h1>
+          <p className="text-slate-500 text-base mt-1">Control de unidades y rendimiento de RuTAB</p>
         </div>
         <button
           onClick={openNewModal}
-          className="bg-[#123a5d] hover:bg-[#0e2d4a] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all"
+          className="flex items-center gap-2 bg-[#123a5d] hover:bg-[#0e2d4a] text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200"
         >
-          + Nuevo Vehículo
+          <Plus size={20} />
+          Nuevo Vehículo
         </button>
       </div>
 
-      {/* Renderizado Condicional: Estado de Carga / Listado de Datos */}
+      {/* Barra de Búsqueda Minimalista */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-10">
+        <div className="relative max-w-2xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input 
+            type="text"
+            placeholder="Buscar por placas, modelo o marca..."
+            className="w-full pl-12 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Grid de Vehículos con estilo de Cards Compactas e Interactivas */}
       {isLoading ? (
-        <div className="text-center text-slate-500 py-10">
-          Cargando vehículos...
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100">
+          <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+          <p className="text-slate-500 font-medium tracking-wide">Sincronizando flota de unidades...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Mapeo de la colección de vehículos en tarjetas individuales */}
-          {vehicles.map((v) => (
-            <div
-              key={v.id}
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+          {filteredVehicles.map((v) => (
+            <div 
+              key={v.id} 
+              className="bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all group overflow-hidden"
             >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-3 rounded-xl text-2xl">🚗</div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-lg uppercase">
-                      {v.modelo}
-                    </h3>
-                    <p className="text-slate-400 text-xs font-medium">
-                      Vehículo de carga
-                    </p>
+              <div className="p-7 pb-5">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-5">
+                    {/* El icono cambia de color cuando pasas el cursor por la tarjeta */}
+                    <div className="p-4 bg-blue-50 text-blue-500 rounded-2xl group-hover:bg-[#123a5d] group-hover:text-white transition-all duration-300">
+                      <Truck size={26} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight group-hover:text-blue-600 transition-colors">
+                        {v.modelo}
+                      </h3>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                        Vehículo de carga
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${
+                    v.estatus === "disponible" 
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                      : "bg-slate-100 text-slate-500 border-slate-200"
+                  }`}>
+                    {v.estatus === "disponible" ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+
+                {/* Detalles Técnicos Agrupados */}
+                <div className="grid grid-cols-3 gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-100 mb-2">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Tag size={12} />
+                      <span className="text-[9px] font-bold uppercase">Marca</span>
+                    </div>
+                    <span className="text-xs font-black text-slate-700">{v.marca}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Hash size={12} />
+                      <span className="text-[9px] font-bold uppercase">Placas</span>
+                    </div>
+                    <span className="text-xs font-black text-slate-700">{v.placas}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Gauge size={12} />
+                      <span className="text-[9px] font-bold uppercase">Rendimiento</span>
+                    </div>
+                    <span className="text-xs font-black text-slate-700">{v.rendimiento_combustible} km/L</span>
                   </div>
                 </div>
-                {/* Badge dinámico para estatus operativo */}
-                <span
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${v.estatus === "disponible" ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500"}`}
-                >
-                  {v.estatus === "disponible" ? "Activo" : "Inactivo"}
-                </span>
               </div>
 
-              {/* Información técnica resumida */}
-              <div className="space-y-3 border-b border-slate-100 pb-6 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Marca:</span>
-                  <span className="font-semibold text-slate-700">
-                    {v.marca}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Placa:</span>
-                  <span className="font-bold text-slate-700">{v.placas}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Rendimiento:</span>
-                  <span className="font-semibold text-slate-700">
-                    {v.rendimiento_combustible} km/L
-                  </span>
-                </div>
-              </div>
-
-              {/* Acciones por ítem: Edición y Disparador de eliminación */}
-              <div className="flex gap-3 mt-6">
-                <button
+              {/* Botones de Acción integrados en la base */}
+              <div className="flex border-t border-slate-50 mt-auto">
+                <button 
                   onClick={() => openEditModal(v)}
-                  className="flex-1 flex items-center justify-center gap-2 border border-slate-200 text-slate-600 py-2.5 rounded-xl hover:bg-slate-50 font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-4 text-slate-500 font-bold text-sm hover:bg-slate-50 hover:text-blue-600 transition-all border-r border-slate-50"
                 >
-                  ✏️ Editar
+                  <Pencil size={16} />
+                  Editar Unidad
                 </button>
-                <button
+                <button 
                   onClick={() => confirmDelete(v)}
-                  className="px-4 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 py-2.5 rounded-xl transition-all"
+                  className="px-8 flex items-center justify-center py-4 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
                 >
-                  🗑️
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
           ))}
-
-          {/* Estado Vacío: Feedback visual si la colección está vacía tras la carga */}
-          {!isLoading && vehicles.length === 0 && (
-            <div className="col-span-full text-center text-slate-500 py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              No hay vehículos registrados en la flota.
-            </div>
-          )}
         </div>
       )}
 
-      {/* Modal de Formulario: Se monta condicionalmente para limpieza de estados */}
+      {/* Modales de Gestión */}
       {isModalOpen && (
         <VehicleForm
           isOpen={isModalOpen}
@@ -138,18 +170,11 @@ export const VehiclesPage: React.FC = () => {
         />
       )}
 
-      {/* Modal de Confirmación Global: Implementación genérica para seguridad de borrado */}
       <ConfirmModal
         isOpen={isConfirmOpen}
         title="Eliminar Vehículo"
         message={
-          <>
-            ¿Estás seguro de que deseas eliminar la unidad con placas{" "}
-            <strong className="text-slate-700">
-              {vehicleToDelete?.placas}
-            </strong>
-            ? Esta acción no se puede deshacer.
-          </>
+          <>¿Deseas eliminar la unidad con placas <strong className="text-slate-900">{vehicleToDelete?.placas}</strong>?</>
         }
         confirmText="Sí, eliminar"
         isDestructive={true}

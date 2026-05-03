@@ -15,8 +15,8 @@ const prisma = new PrismaClient();
  */
 async function main() {
   // Configuración de credenciales de prueba
-  const nombre = 'Claudia Ruth';
-  const correo = 'admin@gmail.com';
+  const nombre = 'Joji Dev';
+  const correo = 'joji@gmail.com';
   const passwordPlana = '1234';
   const rol = 'superAdmin';
 
@@ -58,30 +58,6 @@ async function main() {
     return;
   }
 
-  // 2. Creamos pedidos asociados a ese cliente
-  await prisma.pedidos.createMany({
-    data: [
-      {
-        cliente_id: cliente.id,
-        descripcion_carga: "50 cajas de refacciones automotrices",
-        codigo_rastreo: "RT-99201",
-        estado_pedido: "en transito",
-      },
-      {
-        cliente_id: cliente.id,
-        descripcion_carga: "Material de oficina y papelería",
-        codigo_rastreo: "RT-99202",
-        estado_pedido: "pendiente",
-      },
-      {
-        cliente_id: cliente.id,
-        descripcion_carga: "Equipos de cómputo (Laptops S15)",
-        codigo_rastreo: "RT-99203",
-        estado_pedido: "completado",
-      }
-    ],
-  });
-  console.log("✅ Pedidos de prueba generados correctamente.");
 }
 
 
