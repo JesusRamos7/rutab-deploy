@@ -55,6 +55,12 @@ export class EvidenceController {
     return this.evidenceService.saveFailedDelivery(dto, file);
   }
 
+  @Post('failed-route')
+  @Roles('chofer')
+  async createFailedRoute(@Body() dto: CreateIncidentDto) {
+    return this.evidenceService.saveFailedRoute(dto);
+  }
+
   @Get('incidents')
   @Roles('chofer')
   async getMyIncidents(@Req() req: any) {

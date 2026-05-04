@@ -41,9 +41,8 @@ export class CreateIncidentDto {
   @IsIn(['abierta', 'urgente', 'resuelta'])
   estado_incidencia?: string;
 
-  // NUEVO CAMPO
   @IsString()
   @IsOptional()
-  @IsIn(['entrega', 'camino'])
+  @IsIn(['entrega', 'camino', 'tiempo'])
   categoria?: string;
 }

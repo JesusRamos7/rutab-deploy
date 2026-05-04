@@ -1,22 +1,22 @@
 // /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
 
 import { useState } from 'react';
-import { Alert, Linking } from 'react-native'; // <-- Añadimos Linking
+import { Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
 import { LocationService, getDistance } from '../../../core/services/locationService';
-import { RoutesRoutes } from '../../../navigation/navigation-types'; // <-- Importa tus constantes de ruta
+import { RoutesRoutes } from '../../../navigation/navigation-types';
 
 export const useRoutes = () => {
   const { logout } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+  const [isReporting, setIsReporting] = useState(false); // NUEVO ESTADO
   const [validatedPedidoId, setValidatedPedidoId] = useState<string | null>(null);
 
   const PROXIMITY_THRESHOLD = 150;
 
-  // --- LÓGICA DE MAPAS MOVIDA AQUÍ ---
   const handleAbrirMaps = (lat: number, lng: number) => {
     const url = `http://maps.google.com/?q=${lat},${lng}`;
     Linking.openURL(url).catch(() => {
@@ -24,7 +24,6 @@ export const useRoutes = () => {
     });
   };
 
-  // --- LÓGICA DE ENTREGA MOVIDA AQUÍ ---
   const handlePressEntrega = async (pedido: any, navigation: any) => {
     const isNear = await validateProximity(pedido.pedidoId, pedido.latitude, pedido.longitude);
 
@@ -43,9 +42,6 @@ export const useRoutes = () => {
     }
   };
 
-  /**
-   * Validación ultra rápida de proximidad
-   */
   const validateProximity = async (
     pedidoId: string,
     clientLat: number,
@@ -60,7 +56,6 @@ export const useRoutes = () => {
         return false;
       }
 
-      // Usamos getLastKnownPositionAsync para que sea instantáneo y no sufra el lag de 20s
       let location = await Location.getLastKnownPositionAsync();
 
       if (!location) {
@@ -78,11 +73,10 @@ export const useRoutes = () => {
 
       const isNear = distance <= PROXIMITY_THRESHOLD;
 
-      // --- LÓGICA DE RE-VALIDACIÓN ---
       if (isNear) {
-        setValidatedPedidoId(pedidoId); // Desbloquea (Botón Negro)
+        setValidatedPedidoId(pedidoId);
       } else {
-        setValidatedPedidoId(null); // Bloquea de nuevo si se alejó (Botón Gris)
+        setValidatedPedidoId(null);
       }
 
       return isNear;
@@ -94,9 +88,6 @@ export const useRoutes = () => {
     }
   };
 
-  /**
-   * Función para verificar proximidad de forma silenciosa (para el OnFocus)
-   */
   const checkProximitySilently = async (pedido: any) => {
     if (!pedido) return;
 
@@ -120,7 +111,7 @@ export const useRoutes = () => {
         setValidatedPedidoId(null);
       }
     } catch (e) {
-      // Silencioso, no queremos alertas aquí
+      // Silencioso
     }
   };
 
@@ -177,6 +168,67 @@ export const useRoutes = () => {
     }
   };
 
+  // --- NUEVA LÓGICA: REPORTAR RUTA FALLIDA ---
+  const handleReportFailedRoute = (rutaId: string, onSuccess: () => void) => {
+    Alert.alert(
+      '¿Reportar fin de jornada?',
+      'Se registrará que el tiempo no fue suficiente para entregar los pedidos restantes. Esta acción requiere tu ubicación actual.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, reportar',
+          style: 'destructive',
+          onPress: () => executeReportFailedRoute(rutaId, onSuccess),
+        },
+      ]
+    );
+  };
+
+  const executeReportFailedRoute = async (rutaId: string, onSuccess: () => void) => {
+    try {
+      setIsReporting(true);
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Error de GPS',
+          'Se requiere acceso a la ubicación para registrar la incidencia.'
+        );
+        setIsReporting(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      // 1. SOLUCIÓN: Enviamos los campos requeridos para que class-validator no bloquee la petición
+      await apiClient.post('/mobile-app/evidence/failed-route', {
+        rutaId,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        tipo: 'ruta fallida',
+        descripcion: 'El dia no fue suficiente para entregar todos los pedidos',
+        categoria: 'tiempo',
+      });
+
+      // ---> NUEVO: Apagamos el rastreo GPS porque la jornada terminó <---
+      await LocationService.stopTracking();
+      Alert.alert('¡Éxito!', 'Incidencia de tiempo reportada correctamente.');
+      onSuccess();
+    } catch (error: any) {
+      // 2. SOLUCIÓN: Conversión segura por si NestJS devuelve un Array de errores
+      const errorMessage = error.response?.data?.message;
+      const parsedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join('\n')
+        : errorMessage || 'No se pudo reportar la incidencia.';
+
+      Alert.alert('Error', parsedMessage);
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   return {
     handleLogout,
     handleStartRouteConfirmation,
@@ -184,8 +236,10 @@ export const useRoutes = () => {
     handleAbrirMaps,
     handlePressEntrega,
     checkProximitySilently,
+    handleReportFailedRoute, // Exportamos la nueva función
     validatedPedidoId,
     isCheckingLocation,
     isStarting,
+    isReporting, // Exportamos el nuevo estado
   };
 };
