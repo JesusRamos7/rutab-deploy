@@ -19,19 +19,12 @@ import * as Location from 'expo-location';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 
 import { RoutesRoutes, RoutesStackParamList } from '../../../navigation/navigation-types';
-import { apiClient } from '../../../core/api/apiClient';
+import { apiClient, getErrorMessage } from '../../../core/api/apiClient'; // Importamos el helper de errores
 import { useFetchRoutes } from '../hooks/useFetchRoutes';
 
-/**
- * Pantalla para la captura de evidencias de entrega (Foto y Firma).
- * Implementa una solución de ciclo de vida para evitar bloqueos táctiles en el componente de firma
- * durante navegaciones consecutivas.
- */
 export const DeliveryEvidenceScreen = () => {
   const route = useRoute<RouteProp<RoutesStackParamList, RoutesRoutes.DELIVERY_EVIDENCE>>();
   const navigation = useNavigation<NativeStackNavigationProp<RoutesStackParamList>>();
-
-  // Detecta si la pantalla está activa para gestionar el montaje/desmontaje del WebView
   const isFocused = useIsFocused();
 
   const { pedidoId, cliente, clientLat, clientLng } = route.params;
@@ -43,39 +36,39 @@ export const DeliveryEvidenceScreen = () => {
   const [isSending, setIsSending] = useState(false);
 
   const signatureRef = useRef<SignatureViewRef>(null);
-
-  // Obtenemos los datos de la ruta activa para extraer el ID
   const { routeData } = useFetchRoutes();
 
   // Reinicia los campos al cambiar de pedido o navegar fuera
   useEffect(() => {
-    setImage(null);
-    setSignature(null);
-    setScrollEnabled(true);
-  }, [pedidoId]);
+    if (isFocused) {
+      setImage(null);
+      setSignature(null);
+      setScrollEnabled(true);
+    }
+  }, [pedidoId, isFocused]);
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Se requiere acceso a la cámara para documentar la entrega.');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Necesitamos la cámara para documentar la entrega.');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.5, // Optimización de peso para el upload
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.4, // Reducimos un poco más para asegurar subidas rápidas en 4G/3G
+      });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo abrir la cámara. Revisa los permisos de tu dispositivo.');
     }
   };
 
-  /**
-   * Handlers para la gestión de gestos:
-   * Bloquean el scroll del contenedor padre cuando el usuario inicia el trazo de la firma.
-   */
   const handleSignatureOK = (signatureBase64: string) => setSignature(signatureBase64);
   const handleBegin = () => setScrollEnabled(false);
   const handleEnd = () => setScrollEnabled(true);
@@ -90,32 +83,55 @@ export const DeliveryEvidenceScreen = () => {
   const handleFinishDelivery = async () => {
     if (!canFinish) return;
 
+    // Validación de seguridad para la Ruta
+    if (!routeData?.id) {
+      Alert.alert(
+        'Error de Sesión',
+        'No se detectó una ruta activa. Por favor, regresa al inicio y reintenta.'
+      );
+      return;
+    }
+
     try {
       setIsSending(true);
 
-      // Verificación de ubicación obligatoria para el registro de auditoría
+      // 1. Obtención de GPS robusta
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Error de GPS',
-          'Es obligatorio registrar la ubicación para finalizar la entrega.'
+          'Ubicación Necesaria',
+          'Debes permitir el acceso al GPS para validar el punto de entrega.'
         );
         setIsSending(false);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
+      let location;
+      try {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          // Timeout de 10 segundos para no dejar la app colgada si el GPS falla
+        });
+      } catch (locError) {
+        // Fallback a la última ubicación conocida si el sensor falla en tiempo real
+        location = await Location.getLastKnownPositionAsync();
+        if (!location) {
+          throw new Error('No se pudo obtener la ubicación GPS. Verifica tu señal.');
+        }
+      }
+
       const { latitude, longitude } = location.coords;
 
-      // Construcción del payload multipart/form-data
+      // 2. Preparación de FormData
       const formData = new FormData();
-      const uriParts = image.split('.');
-      const fileType = uriParts[uriParts.length - 1];
+      const filename = image.split('/').pop() || `entrega_${pedidoId}.jpg`;
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
 
       formData.append('photo', {
         uri: image,
-        name: `entrega_${pedidoId}.${fileType}`,
-        type: `image/${fileType}`,
+        name: filename,
+        type,
       } as any);
 
       formData.append('pedidoId', pedidoId);
@@ -123,19 +139,21 @@ export const DeliveryEvidenceScreen = () => {
       formData.append('latitude', latitude.toString());
       formData.append('longitude', longitude.toString());
 
+      // 3. Envío al Servidor
       await apiClient.post('/mobile-app/evidence/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      Alert.alert('¡Éxito!', 'Entrega registrada y sincronizada correctamente.', [
-        { text: 'Finalizar', onPress: () => navigation.navigate(RoutesRoutes.HOME) },
+      Alert.alert('¡Entrega Exitosa!', 'La evidencia ha sido guardada en el sistema.', [
+        {
+          text: 'Entendido',
+          onPress: () => navigation.navigate(RoutesRoutes.HOME),
+        },
       ]);
     } catch (error: any) {
-      console.error('Evidence upload error:', error);
-      Alert.alert(
-        'Error de conexión',
-        'No se pudo guardar la evidencia. Verifique su conexión e intente de nuevo.'
-      );
+      // Usamos el helper centralizado para manejar arrays de errores o fallos de red
+      const message = getErrorMessage(error);
+      Alert.alert('No se pudo completar', message);
     } finally {
       setIsSending(false);
     }
@@ -148,35 +166,36 @@ export const DeliveryEvidenceScreen = () => {
       scrollEnabled={scrollEnabled}>
       <View className="bg-primary px-6 py-8">
         <Text className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-          Evidencias de Entrega
+          Registro de Evidencias
         </Text>
         <Text className="mt-1 text-2xl font-bold text-white">{cliente}</Text>
-        <Text className="text-sm text-white/80">Folio: {pedidoId}</Text>
+        <Text className="text-sm text-white/80">ID Pedido: {pedidoId}</Text>
       </View>
 
       <View className="-mt-4 px-6">
-        {/* NUEVO: Botón de Reportar Incidencia */}
+        {/* Acceso a Incidencias */}
         <TouchableOpacity
           onPress={() =>
             navigation.navigate(RoutesRoutes.REPORT_INCIDENT, {
               pedidoId,
               cliente,
               rutaId: routeData?.id,
-              clientLat, // Las pasamos hacia adelante
+              clientLat,
               clientLng,
             })
           }
+          disabled={isSending}
           className="mb-6 flex-row items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4">
           <View className="flex-row items-center">
             <MaterialCommunityIcons name="alert-circle-outline" size={24} color="#dc2626" />
-            <Text className="ml-3 font-bold text-red-700">¿Problemas con la entrega?</Text>
+            <Text className="ml-3 font-bold text-red-700">Reportar problema aquí</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#dc2626" />
         </TouchableOpacity>
 
-        {/* Sección: Captura de Fotografía */}
-        <View className="mb-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-black/5">
-          <Text className="mb-4 text-lg font-bold text-dark">Foto del paquete</Text>
+        {/* Cámara */}
+        <View className="mb-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <Text className="mb-4 text-lg font-bold text-dark">Fotografía del paquete</Text>
           <TouchableOpacity
             onPress={takePhoto}
             disabled={isSending}
@@ -187,30 +206,26 @@ export const DeliveryEvidenceScreen = () => {
               <Image source={{ uri: image }} className="h-full w-full" resizeMode="cover" />
             ) : (
               <View className="items-center">
-                <MaterialCommunityIcons name="camera" size={32} color="#123a5d" />
-                <Text className="font-medium text-gray-400">Capturar foto</Text>
+                <MaterialCommunityIcons name="camera-plus-outline" size={40} color="#123a5d" />
+                <Text className="mt-2 font-medium text-gray-400">Capturar foto</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Sección: Captura de Firma */}
-        <View className="mb-8 rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-black/5">
+        {/* Firma */}
+        <View className="mb-8 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-dark">Firma del cliente</Text>
+            <Text className="text-lg font-bold text-dark">Firma de recepción</Text>
             {signature && !isSending && (
               <TouchableOpacity onPress={handleClearSignature}>
-                <Text className="text-xs font-bold uppercase text-red-600">Limpiar</Text>
+                <Text className="text-xs font-bold text-red-600">REINTENTAR</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Renderizado condicional basado en useIsFocused:
-            Fuerza la destrucción real del WebView al salir de la pantalla, 
-            evitando que los listeners táctiles se corrompan en el stack de navegación.
-          */}
-          {isFocused ? (
-            <View className="h-64 w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+          <View className="h-64 w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+            {isFocused ? (
               <SignatureScreen
                 key={`${pedidoId}_${isFocused}`}
                 ref={signatureRef}
@@ -218,45 +233,43 @@ export const DeliveryEvidenceScreen = () => {
                 onEmpty={() => setSignature(null)}
                 onBegin={handleBegin}
                 onEnd={handleEnd}
-                descriptionText="Firme aquí"
+                descriptionText="Área de firma"
                 autoClear={false}
                 imageType="image/png"
                 webStyle={`.m-signature-pad { border: none; box-shadow: none; height: 100%; } 
                            .m-signature-pad--footer { display: none; }
                            body, html { height: 100%; overflow: hidden; }`}
-                // Optimizaciones para renderizado de trazo en Android
                 androidHardwareAccelerationDisabled={Platform.OS === 'android'}
-                androidLayerType={Platform.OS === 'android' ? 'hardware' : undefined}
               />
-            </View>
-          ) : (
-            <View className="h-64 w-full items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
-              <ActivityIndicator color="#123a5d" />
-            </View>
-          )}
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <ActivityIndicator color="#123a5d" />
+              </View>
+            )}
+          </View>
 
           <TouchableOpacity
             onPress={() => signatureRef.current?.readSignature()}
             disabled={isSending}
-            className={`mt-4 items-center rounded-xl py-3 ${signature ? 'bg-green-50' : 'bg-primary'}`}>
-            <Text className={`font-bold ${signature ? 'text-green-700' : 'text-white'}`}>
-              {signature ? '✓ FIRMA CAPTURADA' : 'CONFIRMAR FIRMA'}
+            className={`mt-4 items-center rounded-xl py-4 ${signature ? 'bg-green-100' : 'bg-primary'}`}>
+            <Text className={`font-bold ${signature ? 'text-green-800' : 'text-white'}`}>
+              {signature ? '✓ FIRMA REGISTRADA' : 'CONFIRMAR TRAZO'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Acción Final */}
+        {/* Acción Principal */}
         <TouchableOpacity
           onPress={handleFinishDelivery}
           disabled={!canFinish}
-          className={`mb-10 items-center rounded-2xl py-5 shadow-lg ${
+          className={`mb-12 items-center rounded-2xl py-5 ${
             canFinish ? 'bg-dark' : 'bg-gray-200'
           }`}>
           {isSending ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text className={`text-lg font-bold ${canFinish ? 'text-white' : 'text-gray-400'}`}>
-              Finalizar y Guardar
+              Guardar Entrega
             </Text>
           )}
         </TouchableOpacity>

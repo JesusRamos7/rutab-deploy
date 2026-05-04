@@ -12,6 +12,7 @@ import {
   Get,
   Req,
   Delete,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EvidenceService } from './evidence.service';
@@ -22,8 +23,14 @@ import { UpdateIncidentDto } from './dto/update-incident.dto';
 
 @Controller('mobile-app/evidence')
 export class EvidenceController {
+  private readonly logger = new Logger(EvidenceController.name);
+
   constructor(private readonly evidenceService: EvidenceService) {}
 
+  /**
+   * Carga de evidencia de entrega (Foto y Firma)
+   * Aquí mantenemos 'photo' porque así está en DeliveryEvidenceScreen.tsx
+   */
   @Post('upload')
   @Roles('chofer')
   @UseInterceptors(FileInterceptor('photo'))
@@ -34,24 +41,31 @@ export class EvidenceController {
     return this.evidenceService.saveEvidence(dto, file);
   }
 
+  /**
+   * Reportar incidencia en camino
+   * CAMBIO: Se cambió 'photo' por 'file' para coincidir con useRoadIncidentForm.ts
+   */
   @Post('incident')
   @Roles('chofer')
-  @UseInterceptors(FileInterceptor('photo')) // Habilitamos la subida de foto
+  @UseInterceptors(FileInterceptor('file')) // <-- CORREGIDO: Coincide con el hook
   async createIncident(
     @Body() dto: CreateIncidentDto,
-    @UploadedFile() file?: Express.Multer.File, // La foto es opcional en incidentes de vía
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.evidenceService.saveIncident(dto, file);
   }
 
+  /**
+   * Reportar entrega fallida (pedido específico)
+   * CAMBIO: Se cambió 'photo' por 'file' para mantener consistencia en incidentes
+   */
   @Post('failed-delivery')
   @Roles('chofer')
-  @UseInterceptors(FileInterceptor('photo'))
+  @UseInterceptors(FileInterceptor('file')) // <-- CORREGIDO: Coincide con el hook
   async createFailedDelivery(
     @Body() dto: CreateIncidentDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    // Llamamos al método especializado que garantiza que AMBAS cosas pasen o NINGUNA pase
     return this.evidenceService.saveFailedDelivery(dto, file);
   }
 
@@ -64,14 +78,13 @@ export class EvidenceController {
   @Get('incidents')
   @Roles('chofer')
   async getMyIncidents(@Req() req: any) {
-    // El ID del chofer viene del JWT (inyectado por el Guard)
     return this.evidenceService.getIncidentsByChofer(req.user.userId);
   }
 
   @Patch('incident/:id')
   @Roles('chofer')
   async updateIncident(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', ParseUUIDPipe) id: string, // Simplificado: ParseUUIDPipe sin 'new'
     @Body() dto: UpdateIncidentDto,
   ) {
     return this.evidenceService.updateIncident(id, dto);
@@ -79,7 +92,7 @@ export class EvidenceController {
 
   @Delete('incident/:id')
   @Roles('chofer')
-  async deleteIncident(@Param('id', new ParseUUIDPipe()) id: string) {
+  async deleteIncident(@Param('id', ParseUUIDPipe) id: string) {
     return this.evidenceService.deleteIncident(id);
   }
 }
