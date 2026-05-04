@@ -23,7 +23,6 @@ const TIPOS_INCIDENTE = [
   'Cliente ausente',
   'Dirección incorrecta',
   'Pedido rechazado',
-  'Falta de tiempo',
   'Otro',
 ];
 
