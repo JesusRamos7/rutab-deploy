@@ -2,6 +2,7 @@
 
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import * as Battery from 'expo-battery';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../api/apiClient';
 
@@ -71,12 +72,16 @@ TaskManager.defineTask(LOCATION_TRACKING_TASK, async ({ data, error }: any) => {
         }
       }
 
+      // --- OBTENCIÓN DEL NIVEL DE BATERÍA ---
+      const batteryLevel = await Battery.getBatteryLevelAsync();
+      const batteryPercentage = Math.round(batteryLevel * 100);
+
       const payload = {
         rutaId,
         latitude,
         longitude,
         velocidad: speed ? Math.round(speed * 3.6) : 0, // Convertir m/s a km/h
-        bateria: 0, // Podrías añadir Battery info aquí si fuera necesario
+        bateria: batteryPercentage,
       };
 
       // 4. Intentar envío al servidor
