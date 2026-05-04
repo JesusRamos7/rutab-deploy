@@ -1,13 +1,15 @@
 // /frontend/src/features/road-incidents/hooks/useRoadIncidentForm.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { roadIncidentsService } from '../services/road-incidents.service';
+import { getErrorMessage } from '../../../core/api/apiClient';
 
 export const useRoadIncidentForm = (incidentId?: string, routeData?: any) => {
   const isEditing = !!incidentId;
+  const isMounted = useRef(true);
 
   const [form, setForm] = useState({
     tipo: '',
@@ -19,88 +21,146 @@ export const useRoadIncidentForm = (incidentId?: string, routeData?: any) => {
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(isEditing);
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Cargar datos si es edición
   useEffect(() => {
     if (isEditing) {
+      setFetchingData(true);
       roadIncidentsService
         .getAll()
         .then((data) => {
+          if (!isMounted.current) return;
           const item = data.find((i: any) => i.id === incidentId);
           if (item) {
             setForm({
               tipo: item.tipo,
               descripcion: item.descripcion,
-              estado: item.estado,
+              estado: item.estado || 'abierta',
               image: item.fotoUrl || null,
             });
+          } else {
+            Alert.alert('Error', 'No se encontró la información del reporte.');
           }
         })
-        .finally(() => setFetchingData(false));
+        .catch((err) => {
+          Alert.alert('Error de Carga', getErrorMessage(err));
+        })
+        .finally(() => {
+          if (isMounted.current) setFetchingData(false);
+        });
     }
-  }, [incidentId]);
+  }, [incidentId, isEditing]);
 
   const handlePickImage = async () => {
     if (isEditing) return;
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.5,
-    });
 
-    if (!result.canceled) {
-      setForm((prev) => ({ ...prev, image: result.assets[0].uri }));
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Se necesita la cámara para adjuntar evidencia visual.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && isMounted.current) {
+        setForm((prev) => ({ ...prev, image: result.assets[0].uri }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo activar la cámara.');
     }
   };
 
   const submitForm = async (onSuccess: () => void) => {
-    if (!form.tipo || !form.descripcion) {
-      return Alert.alert('Error', 'Tipo y descripción son obligatorios');
+    // Validaciones básicas antes de disparar procesos pesados (GPS/Upload)
+    if (!form.tipo || !form.descripcion.trim()) {
+      return Alert.alert(
+        'Campos requeridos',
+        'Por favor selecciona un tipo de incidencia y añade una descripción.'
+      );
     }
 
     setLoading(true);
     try {
       if (isEditing) {
+        // ACTUALIZACIÓN (JSON)
         await roadIncidentsService.update(incidentId!, {
           tipo: form.tipo,
-          descripcion: form.descripcion,
+          descripcion: form.descripcion.trim(),
           estado_incidencia: form.estado,
         });
       } else {
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        // CREACIÓN (FormData + GPS)
+        if (!routeData?.id) {
+          throw new Error('No hay una ruta activa asociada para este reporte.');
+        }
+
+        // Obtener ubicación con timeout
+        let location;
+        try {
+          location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+        } catch {
+          location = await Location.getLastKnownPositionAsync();
+        }
+
+        if (!location) {
+          throw new Error(
+            'No pudimos obtener tu ubicación GPS. Verifica tu señal e intenta de nuevo.'
+          );
+        }
 
         const formData = new FormData();
         formData.append('tipo', form.tipo);
-        formData.append('descripcion', form.descripcion);
+        formData.append('descripcion', form.descripcion.trim());
         formData.append('latitude', String(location.coords.latitude));
         formData.append('longitude', String(location.coords.longitude));
         formData.append('rutaId', routeData.id);
         formData.append('estado_incidencia', form.estado);
         formData.append('categoria', 'camino');
 
-        if (routeData.pedidos?.length > 0) {
+        // Vincular al primer pedido de la lista si existe (opcional en backend)
+        if (routeData.pedidos && routeData.pedidos.length > 0) {
           formData.append('pedidoId', routeData.pedidos[0].pedidoId);
         }
 
         if (form.image) {
-          const fileType = form.image.split('.').pop();
-          formData.append('photo', {
-            uri: form.image,
-            name: `photo.${fileType}`,
-            type: `image/${fileType}`,
+          const uri = form.image;
+          const filename = uri.split('/').pop() || 'incidente.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+          // IMPORTANTE: Cambiado a 'file' para coincidir con el backend
+          formData.append('file', {
+            uri,
+            name: filename,
+            type,
           } as any);
         }
 
         await roadIncidentsService.create(formData);
       }
 
-      Alert.alert('¡Éxito!', 'Reporte procesado.', [{ text: 'OK', onPress: onSuccess }]);
+      Alert.alert('¡Éxito!', 'El reporte ha sido procesado correctamente.', [
+        { text: 'Aceptar', onPress: onSuccess },
+      ]);
     } catch (error: any) {
-      console.log('🚨 ERROR EN API:', error.response?.data || error.message);
-      Alert.alert('Error', 'No se pudo procesar el reporte.');
+      const message = getErrorMessage(error);
+      Alert.alert('No se pudo guardar', message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
   };
 

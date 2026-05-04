@@ -8,11 +8,26 @@ import { useAuth } from '../../../core/context/AuthContext';
 import { LocationService, getDistance } from '../../../core/services/locationService';
 import { RoutesRoutes } from '../../../navigation/navigation-types';
 
+/**
+ * Función auxiliar para normalizar los errores que vienen del backend (NestJS)
+ * o de la red de Axios, previniendo crashes en React Native por tipos de datos incorrectos.
+ */
+const extractErrorMessage = (error: any, fallbackMessage: string): string => {
+  if (error?.response?.data?.message) {
+    const msg = error.response.data.message;
+    return Array.isArray(msg) ? msg.join('\n') : msg;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallbackMessage;
+};
+
 export const useRoutes = () => {
   const { logout } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
-  const [isReporting, setIsReporting] = useState(false); // NUEVO ESTADO
+  const [isReporting, setIsReporting] = useState(false);
   const [validatedPedidoId, setValidatedPedidoId] = useState<string | null>(null);
 
   const PROXIMITY_THRESHOLD = 150;
@@ -20,7 +35,10 @@ export const useRoutes = () => {
   const handleAbrirMaps = (lat: number, lng: number) => {
     const url = `http://maps.google.com/?q=${lat},${lng}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
+      Alert.alert(
+        'Error de Navegación',
+        'No se pudo abrir la aplicación de mapas. Verifica que tengas Google Maps o Waze instalados.'
+      );
     });
   };
 
@@ -52,12 +70,14 @@ export const useRoutes = () => {
 
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso Denegado', 'Se requiere GPS para habilitar la entrega.');
+        Alert.alert('Permiso Denegado', 'Se requiere acceso al GPS para validar la entrega.');
         return false;
       }
 
       let location = await Location.getLastKnownPositionAsync();
 
+      // Si no hay última posición, forzamos la obtención.
+      // Esto puede fallar si el sensor GPS del teléfono está apagado físicamente.
       if (!location) {
         location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
@@ -81,7 +101,11 @@ export const useRoutes = () => {
 
       return isNear;
     } catch (error) {
-      console.error('Error GPS:', error);
+      console.error('Error GPS en validateProximity:', error);
+      Alert.alert(
+        'Error de Señal GPS',
+        'No pudimos obtener tu ubicación actual. Verifica que tu GPS esté encendido y que tengas señal, luego intenta de nuevo.'
+      );
       return false;
     } finally {
       setIsCheckingLocation(false);
@@ -111,14 +135,25 @@ export const useRoutes = () => {
         setValidatedPedidoId(null);
       }
     } catch (e) {
-      // Silencioso
+      // Silencioso, si falla simplemente el botón no se auto-desbloquea
+      console.log('Fallo silencioso de GPS:', e);
     }
   };
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Estás seguro de que deseas salir?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sí, salir', style: 'destructive', onPress: async () => await logout() },
+      {
+        text: 'Sí, salir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (error) {
+            Alert.alert('Error', 'Hubo un problema al intentar cerrar sesión.');
+          }
+        },
+      },
     ]);
   };
 
@@ -141,14 +176,20 @@ export const useRoutes = () => {
     try {
       setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
+
       try {
         await LocationService.startTracking(rutaId);
       } catch (locationError: any) {
-        Alert.alert('Aviso de Ubicación', 'La ruta inició, pero el GPS no pudo activarse.');
+        // Fallo no bloqueante: La ruta se inició en backend, pero el GPS local falló
+        Alert.alert(
+          'Aviso de Ubicación',
+          'La ruta inició correctamente, pero el rastreo GPS en segundo plano no pudo activarse. Verifica tus permisos.'
+        );
       }
+
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo iniciar la ruta');
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo iniciar la ruta.'));
     } finally {
       setIsStarting(false);
     }
@@ -158,17 +199,22 @@ export const useRoutes = () => {
     try {
       setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/finish`);
-      await LocationService.stopTracking();
+
+      try {
+        await LocationService.stopTracking();
+      } catch (e) {
+        console.log('Error deteniendo tracking, ignorando...', e);
+      }
+
       Alert.alert('¡Ruta Finalizada!', 'Trayecto guardado con éxito.');
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo finalizar la ruta');
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo finalizar la ruta.'));
     } finally {
       setIsStarting(false);
     }
   };
 
-  // --- NUEVA LÓGICA: REPORTAR RUTA FALLIDA ---
   const handleReportFailedRoute = (rutaId: string, onSuccess: () => void) => {
     Alert.alert(
       '¿Reportar fin de jornada?',
@@ -198,11 +244,20 @@ export const useRoutes = () => {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      let location;
+      try {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      } catch (gpsError) {
+        Alert.alert(
+          'Error de GPS',
+          'No pudimos obtener tu ubicación. Verifica que tu sensor GPS esté encendido.'
+        );
+        setIsReporting(false);
+        return;
+      }
 
-      // 1. SOLUCIÓN: Enviamos los campos requeridos para que class-validator no bloquee la petición
       await apiClient.post('/mobile-app/evidence/failed-route', {
         rutaId,
         latitude: location.coords.latitude,
@@ -212,18 +267,16 @@ export const useRoutes = () => {
         categoria: 'tiempo',
       });
 
-      // ---> NUEVO: Apagamos el rastreo GPS porque la jornada terminó <---
-      await LocationService.stopTracking();
+      try {
+        await LocationService.stopTracking();
+      } catch (e) {
+        console.log('Error deteniendo tracking, ignorando...', e);
+      }
+
       Alert.alert('¡Éxito!', 'Incidencia de tiempo reportada correctamente.');
       onSuccess();
     } catch (error: any) {
-      // 2. SOLUCIÓN: Conversión segura por si NestJS devuelve un Array de errores
-      const errorMessage = error.response?.data?.message;
-      const parsedMessage = Array.isArray(errorMessage)
-        ? errorMessage.join('\n')
-        : errorMessage || 'No se pudo reportar la incidencia.';
-
-      Alert.alert('Error', parsedMessage);
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo reportar la incidencia.'));
     } finally {
       setIsReporting(false);
     }
@@ -236,10 +289,10 @@ export const useRoutes = () => {
     handleAbrirMaps,
     handlePressEntrega,
     checkProximitySilently,
-    handleReportFailedRoute, // Exportamos la nueva función
+    handleReportFailedRoute,
     validatedPedidoId,
     isCheckingLocation,
     isStarting,
-    isReporting, // Exportamos el nuevo estado
+    isReporting,
   };
 };
