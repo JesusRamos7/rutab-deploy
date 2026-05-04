@@ -1,10 +1,18 @@
 // mobile-app/frontend/src/features/routes/screens/RoutesScreen.tsx
 
 import React, { useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { RoutesStackParamList } from '../../../navigation/navigation-types';
 import { useFetchRoutes } from '../hooks/useFetchRoutes';
@@ -26,9 +34,11 @@ export const RoutesScreen = () => {
     handleAbrirMaps,
     handlePressEntrega,
     checkProximitySilently,
+    handleReportFailedRoute, // <-- NUEVO: Función para reportar
     validatedPedidoId,
     isCheckingLocation,
     isStarting,
+    isReporting, // <-- NUEVO: Estado de carga
   } = useRoutes();
 
   // EFECTOS
@@ -106,6 +116,29 @@ export const RoutesScreen = () => {
               onPressDelivery={(p) => handlePressEntrega(p, navigation)}
             />
           ))}
+
+          {/* NUEVO: Botón de ruta fallida por falta de tiempo al final de la lista */}
+          {isInProgress && routeData?.pedidos?.length > 0 && (
+            <TouchableOpacity
+              onPress={() => handleReportFailedRoute(routeData.id, refresh)}
+              disabled={isReporting}
+              className="mb-6 mt-6 flex-row items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+              <View className="flex-1 flex-row items-center">
+                {isReporting ? (
+                  <ActivityIndicator color="#dc2626" className="mr-3" />
+                ) : (
+                  <MaterialCommunityIcons name="clock-alert-outline" size={28} color="#dc2626" />
+                )}
+                <View className="ml-3 flex-1">
+                  <Text className="font-bold text-red-700">¿El día no fue suficiente?</Text>
+                  <Text className="mt-0.5 text-xs text-red-600/80">
+                    Reportar fin de jornada y pedidos no entregados
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#dc2626" />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
