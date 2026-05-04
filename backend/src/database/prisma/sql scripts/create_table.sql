@@ -106,6 +106,7 @@ CREATE TABLE public.detalles_ruta (
   pedido_id uuid,
   orden_entrega integer,
   comentarios text,
+  estado_intento text DEFAULT 'pendiente',
   CONSTRAINT detalles_ruta_pkey PRIMARY KEY (id),
   CONSTRAINT detalles_ruta_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id),
   CONSTRAINT detalles_ruta_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id)
