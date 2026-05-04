@@ -243,6 +243,37 @@ export class EvidenceService {
     }
   }
 
+  async saveFailedRoute(dto: CreateIncidentDto) {
+    try {
+      // FORZAMOS LOS DATOS REQUERIDOS PARA RUTA FALLIDA
+      dto.categoria = 'tiempo';
+      dto.tipo = 'ruta fallida';
+      dto.descripcion =
+        'El dia no fue suficiente para entregar todos los pedidos';
+
+      // En este caso no hay foto ni pedidoId específico
+      dto.pedidoId = undefined;
+
+      return await this.prisma.$transaction(async (tx) => {
+        // Reutilizamos el insert genérico que ya tienes
+        await this.executeInsertIncident(tx, dto, null);
+
+        // Emitimos evento para que el panel de monitoreo se actualice
+        this.monitoringGateway.server.emit('fleetListUpdated');
+
+        return {
+          success: true,
+          message: 'Se ha reportado la ruta fallida por falta de tiempo.',
+        };
+      });
+    } catch (error) {
+      this.logger.error(`Error en saveFailedRoute: ${error.message}`);
+      throw new InternalServerErrorException(
+        'No se pudo procesar el reporte de ruta fallida.',
+      );
+    }
+  }
+
   async getIncidentsByChofer(choferId: string) {
     try {
       this.logger.log(`Obteniendo incidencias para el chofer: ${choferId}`);
