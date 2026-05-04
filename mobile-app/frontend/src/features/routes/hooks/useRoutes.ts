@@ -212,6 +212,8 @@ export const useRoutes = () => {
         categoria: 'tiempo',
       });
 
+      // ---> NUEVO: Apagamos el rastreo GPS porque la jornada terminó <---
+      await LocationService.stopTracking();
       Alert.alert('¡Éxito!', 'Incidencia de tiempo reportada correctamente.');
       onSuccess();
     } catch (error: any) {

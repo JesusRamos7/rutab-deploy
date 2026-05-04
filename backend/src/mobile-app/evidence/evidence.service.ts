@@ -13,6 +13,7 @@ import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
 import { forwardRef, Inject } from '@nestjs/common';
 import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class EvidenceService {
@@ -23,6 +24,7 @@ export class EvidenceService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => MonitoringGateway)) // Inyectamos el gateway
     private readonly monitoringGateway: MonitoringGateway,
+    private readonly redis: RedisService,
   ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
@@ -245,25 +247,99 @@ export class EvidenceService {
 
   async saveFailedRoute(dto: CreateIncidentDto) {
     try {
-      // FORZAMOS LOS DATOS REQUERIDOS PARA RUTA FALLIDA
+      // 1. Forzamos los datos requeridos
       dto.categoria = 'tiempo';
       dto.tipo = 'ruta fallida';
       dto.descripcion =
         'El dia no fue suficiente para entregar todos los pedidos';
-
-      // En este caso no hay foto ni pedidoId específico
       dto.pedidoId = undefined;
 
+      // 2. Obtener información de la ruta para el fallback de fecha
+      const ruta = await this.prisma.rutas.findUnique({
+        where: { id: dto.rutaId },
+      });
+
+      if (!ruta) throw new NotFoundException('Ruta no encontrada');
+
+      // 3. Extraer datos de Redis ANTES de la transacción
+      const redisStartTime = await this.redis.getStartTime(dto.rutaId);
+      const fechaInicioFinal = redisStartTime || ruta.created_at.toISOString();
+      const rawPoints = await this.redis.getRoutePoints(dto.rutaId);
+
+      // Procesamiento de puntos de Redis
+      const points = rawPoints
+        .map((p: any) => {
+          if (typeof p === 'string') {
+            try {
+              return JSON.parse(p);
+            } catch {
+              return null;
+            }
+          }
+          return p;
+        })
+        .filter(
+          (p) => p !== null && p.lng !== undefined && p.lat !== undefined,
+        );
+
+      let lineStringWKT = null;
+      if (points.length >= 2) {
+        const wktPoints = points.map((p) => `${p.lng} ${p.lat}`).join(', ');
+        lineStringWKT = `LINESTRING(${wktPoints})`;
+      }
+
+      // 4. Transacción maestra
       return await this.prisma.$transaction(async (tx) => {
-        // Reutilizamos el insert genérico que ya tienes
+        // A. Insertar la incidencia original
         await this.executeInsertIncident(tx, dto, null);
 
-        // Emitimos evento para que el panel de monitoreo se actualice
+        // B. Cambiar a 'fallido' todos los pedidos pendientes o en tránsito de esta ruta
+        await tx.pedidos.updateMany({
+          where: {
+            detalles_ruta: { some: { ruta_id: dto.rutaId } },
+            estado_pedido: { in: ['pendiente', 'en_transito'] },
+          },
+          data: { estado_pedido: 'fallido' },
+        });
+
+        // C. Procesar trayectoria si hay suficientes puntos
+        if (lineStringWKT) {
+          const yaExiste =
+            await tx.$queryRaw`SELECT 1 FROM trayectos_finalizados WHERE ruta_id = ${dto.rutaId}::uuid`;
+          if ((yaExiste as any[]).length === 0) {
+            await tx.$executeRawUnsafe(`
+              INSERT INTO trayectos_finalizados (ruta_id, geometria_ruta, distancia_total_km, fecha_inicio)
+              VALUES (
+                '${dto.rutaId}'::uuid,
+                ST_GeogFromText('${lineStringWKT}'),
+                ST_Length(ST_GeogFromText('${lineStringWKT}')) / 1000,
+                '${fechaInicioFinal}'
+              )
+            `);
+          }
+        }
+
+        // D. Cambiar estatus de la ruta a 'finalizada' para cerrar el ciclo
+        await tx.rutas.update({
+          where: { id: dto.rutaId },
+          data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+        });
+
+        // E. Limpiar ubicación actual para remover al chofer del mapa en vivo
+        await tx.ubicacion_actual.deleteMany({
+          where: { ruta_id: dto.rutaId },
+        });
+
+        // F. Limpiar Redis
+        await this.redis.clearRouteData(dto.rutaId);
+
+        // G. Notificar al panel web
         this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
           success: true,
-          message: 'Se ha reportado la ruta fallida por falta de tiempo.',
+          message:
+            'Jornada finalizada: Trayecto guardado y pedidos marcados como fallidos.',
         };
       });
     } catch (error) {
