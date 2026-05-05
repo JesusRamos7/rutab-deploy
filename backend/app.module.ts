@@ -22,7 +22,7 @@ import { IncidentsModule } from 'src/modules/incidents/incidents.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }), // Configuración global de variables de entorno
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,

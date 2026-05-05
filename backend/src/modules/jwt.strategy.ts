@@ -3,6 +3,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Estrategia de Validación JWT.
@@ -11,7 +12,7 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private configService: ConfigService) {
     /**
      * Configuración de la estrategia:
      * - jwtFromRequest: Define dónde buscar el token (Cabecera Authorization: Bearer).
@@ -21,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secreto_temporal',
+      secretOrKey: configService.get<string>('JWT_SECRET'),
     });
   }
 

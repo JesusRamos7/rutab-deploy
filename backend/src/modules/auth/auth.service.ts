@@ -77,7 +77,7 @@ export class AuthService {
       }
 
       // Los choferes se marcan con un rol estático 'CHOFER' para el sistema de Guards (RBAC)
-      const payload = { sub: chofer.id, correo: chofer.correo, rol: 'chofer' };
+      const payload = { sub: chofer.id, correo: chofer.correo, rol: 'CHOFER' };
 
       return {
         access_token: await this.jwtService.signAsync(payload),
@@ -89,7 +89,7 @@ export class AuthService {
           licencia: chofer.licencia,
           telefono: chofer.telefono,
           foto_perfil_url: chofer.foto_perfil_url,
-          rol: 'chofer',
+          rol: 'CHOFER',
         },
       };
     }
@@ -104,7 +104,7 @@ export class AuthService {
    */
   async getProfile(userId: string, rol: string) {
     // Lógica de recuperación para perfiles administrativos
-    if (rol !== 'chofer') {
+    if (rol !== 'CHOFER') {
       const admin = await this.prisma.administradores.findUnique({
         where: { id: userId },
       });
