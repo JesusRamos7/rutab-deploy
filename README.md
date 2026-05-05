@@ -11,10 +11,11 @@ Para evitar conflictos de compatibilidad con Prisma y el entorno de ejecución, 
 
 ## 🏗️ Estructura del Proyecto
 
-El proyecto se divide en dos grandes bloques:
+El proyecto se divide en tres grandes bloques:
 
 - **/backend/panel-admin**: API REST construida con NestJS y Prisma ORM.
 - **/frontend**: Aplicación web SPA construida con React, Vite y TypeScript.
+- **/app-mobil**: Aplicación movil construida con React, Vite y TypeScript.
 
 ## 🛠️ Stack Tecnológico
 
@@ -22,8 +23,3 @@ El proyecto se divide en dos grandes bloques:
 - **Backend:** NestJS, Prisma, JWT, Bcrypt.
 - **Frontend:** React 18, Vite, React Router, Context API.
 - **Hosting:** Render (Backend) y Vercel (Frontend).
-
-## 🚀 Despliegue
-
-- **Frontend:** [URL_DE_VERCEL_AQUÍ]
-- **Backend:** [URL_DE_RENDER_AQUÍ]
