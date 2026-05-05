@@ -79,6 +79,12 @@ export const menuConfig: MenuItem[] = [
         icon: ShoppingCart,
         roles: ["superAdmin", "logístico"],
       },
+      {
+        title: "Cargar Rutas",
+        path: "/panel/operaciones/cargar-rutas",
+        icon: Zap, // Puedes usar Upload o Zap
+        roles: ["superAdmin", "logístico"],
+      },
     ],
   },
   {

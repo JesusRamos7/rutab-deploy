@@ -89,6 +89,11 @@ const FailedDeliveriesPage = lazy(() =>
     }),
   ),
 );
+const RouteLoaderPage = lazy(() =>
+  import("./modules/route-loader/pages/RouteLoaderPage").then((m) => ({
+    default: m.RouteLoaderPage,
+  })),
+);
 const ModuloAuditoria = lazy(() =>
   import("./modules/audit").then((m) => ({ default: m.ModuloAuditoria })),
 );
@@ -200,6 +205,15 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
                     <FailedDeliveriesPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="operaciones/cargar-rutas"
+                element={
+                  <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
+                    <RouteLoaderPage />
                   </RoleGuard>
                 }
               />
