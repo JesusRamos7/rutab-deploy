@@ -39,18 +39,20 @@ FROM generate_series(1, 60) AS i;
 -- =========================
 -- RUTAS
 -- =========================
-INSERT INTO rutas (id, vehiculo_id, chofer_id, creado_por, fecha_programada, estatus_ruta)
+INSERT INTO rutas (id, vehiculo_id, chofer_id, creado_por, codigo_rastreo, fecha_programada, estatus_ruta)
 VALUES
 (gen_random_uuid(), 
  (SELECT id FROM vehiculos LIMIT 1 OFFSET 0),
  (SELECT id FROM choferes LIMIT 1 OFFSET 0),
  (SELECT id FROM administradores LIMIT 1),
+  'RUTA-001',
  CURRENT_DATE, 'borrador'),
 
 (gen_random_uuid(),
  (SELECT id FROM vehiculos LIMIT 1 OFFSET 1),
  (SELECT id FROM choferes LIMIT 1 OFFSET 1),
  (SELECT id FROM administradores LIMIT 1),
+  'RUTA-002',
  CURRENT_DATE, 'borrador');
 
 -- =========================

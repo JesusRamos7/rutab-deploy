@@ -104,6 +104,7 @@ model rutas {
   vehiculo_id              String?                @db.Uuid
   chofer_id                String?                @db.Uuid
   creado_por               String?                @db.Uuid
+  codigo_rastreo           String                 @unique
   fecha_programada         DateTime?              @db.Date
   distancia_total_estimada Decimal?               @db.Decimal
   tiempo_estimado_entrega  DateTime?              @db.Timestamptz(6)

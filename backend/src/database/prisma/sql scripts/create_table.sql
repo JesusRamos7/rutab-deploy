@@ -70,6 +70,7 @@ CREATE TABLE public.rutas (
   vehiculo_id uuid,
   chofer_id uuid,
   creado_por uuid,
+  codigo_rastreo text NOT NULL UNIQUE,
   fecha_programada date,
   distancia_total_estimada numeric,
   tiempo_estimado_entrega timestamp with time zone,
