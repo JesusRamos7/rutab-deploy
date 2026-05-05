@@ -148,6 +148,14 @@ export class EvidenceService {
           data: { estado_pedido: 'entregado' },
         });
 
+        await tx.detalles_ruta.updateMany({
+          where: {
+            pedido_id: pedidoId,
+            rutas: { estatus_ruta: 'en_proceso' },
+          },
+          data: { estado_intento: 'entregado' },
+        });
+
         this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
@@ -254,15 +262,32 @@ export class EvidenceService {
   }
 
   async saveFailedDelivery(dto: CreateIncidentDto, file?: Express.Multer.File) {
-    const { pedidoId } = dto;
+    const { pedidoId, rutaId } = dto;
+
+    // 1. Verificación de existencia del pedido
     const pedido = await this.prisma.pedidos.findUnique({
       where: { id: pedidoId },
     });
     if (!pedido) throw new NotFoundException('El pedido no existe.');
 
+    // 2. Verificación de existencia de la relación en la ruta
+    const detalleRuta = await this.prisma.detalles_ruta.findFirst({
+      where: {
+        pedido_id: pedidoId,
+        ruta_id: rutaId,
+      },
+    });
+    if (!detalleRuta) {
+      throw new NotFoundException(
+        'El pedido no pertenece a la ruta especificada.',
+      );
+    }
+
     let fotoUrl = null;
     try {
       dto.categoria = 'entrega';
+
+      // 3. Subida de evidencia a Supabase
       if (file) {
         const fileName = `fallido_${pedidoId}_${Date.now()}.jpg`;
         fotoUrl = await this.uploadBufferToSupabase(
@@ -272,25 +297,46 @@ export class EvidenceService {
         );
       }
 
+      // 4. Transacción de Base de Datos
       return await this.prisma.$transaction(async (tx) => {
+        // Registrar la incidencia detallada
         await this.executeInsertIncident(tx, dto, fotoUrl);
 
+        // Actualizar el estado global del pedido
         await tx.pedidos.update({
           where: { id: pedidoId },
           data: { estado_pedido: 'fallido' },
         });
 
+        // ACTUALIZACIÓN SOLICITADA: Marcar el intento específico en la ruta como fallido
+        await tx.detalles_ruta.updateMany({
+          where: {
+            pedido_id: pedidoId,
+            ruta_id: rutaId,
+          },
+          data: {
+            estado_intento: 'fallido',
+            
+          },
+        });
+
         this.monitoringGateway.server.emit('fleetListUpdated');
+
         return {
           success: true,
-          message: 'Pedido marcado como fallido y reporte guardado.',
+          message:
+            'Pedido y detalle de ruta marcados como fallidos correctamente.',
         };
       });
     } catch (error) {
+      // Rollback de imagen si la DB falla
       if (fotoUrl) await this.deleteFromSupabase([fotoUrl]);
+
       this.logger.error(`Error en saveFailedDelivery: ${error.message}`);
+      if (error instanceof NotFoundException) throw error;
+
       throw new InternalServerErrorException(
-        'Error al procesar el fallo de entrega.',
+        'Error al procesar el fallo de entrega en el sistema.',
       );
     }
   }
@@ -338,14 +384,27 @@ export class EvidenceService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
+        // 1. Registrar la incidencia de la ruta
         await this.executeInsertIncident(tx, dto, null);
 
+        // 2. Actualizar pedidos (Estado Global)
+        // Solo afectamos los que no se lograron entregar
         await tx.pedidos.updateMany({
           where: {
             detalles_ruta: { some: { ruta_id: dto.rutaId } },
             estado_pedido: { in: ['pendiente', 'en_transito'] },
           },
           data: { estado_pedido: 'fallido' },
+        });
+
+        // 3. NUEVO: Actualizar detalles_ruta (Estado del Intento)
+        // Marcamos como fallidos todos los pedidos de esta ruta que quedaron a medias
+        await tx.detalles_ruta.updateMany({
+          where: {
+            ruta_id: dto.rutaId,
+            estado_intento: 'en_transito', // O cualquier estado que no sea 'completado'/'entregado'
+          },
+          data: { estado_intento: 'fallido' },
         });
 
         if (lineStringWKT) {
