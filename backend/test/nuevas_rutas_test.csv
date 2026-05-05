@@ -1,0 +1,3 @@
+placas_vehiculo,correo_chofer,fecha,codigo_ruta,nombre_cliente,correo_cliente,telefono_cliente,direccion_cliente,coordenadas,codigo_cliente,contacto_cliente,codigo_pedido,descripcion_pedido
+ABC-123,chofer@gmail.com,2026-05-25,RT-003,Abarrotes La Bendicion,contacto3@bendicion.com,5551234567,Av. Principal 123 Centro,"19.4326,-99.1332",CLI-003,Sra. Maria,PED-1003,Caja de refrescos y botanas
+XYZ-789,chofer1@test.com,2026-05-25,RT-004,Farmacia Central,admin4@farmacentral.com,5559876543,Calle Reforma 45,"19.4123,-99.1789",CLI-004,Dr. Torres,PED-1004,Medicamentos termolábiles

@@ -73,6 +73,18 @@ export const menuConfig: MenuItem[] = [
         icon: Activity, // El pulso de la flota 📈
         roles: ["superAdmin", "logístico"],
       },
+      {
+        title: "Extraer Pedidos Fallidos", // Nuevo módulo
+        path: "/panel/operaciones/pedidos-fallidos",
+        icon: ShoppingCart,
+        roles: ["superAdmin", "logístico"],
+      },
+      {
+        title: "Cargar Rutas",
+        path: "/panel/operaciones/cargar-rutas",
+        icon: Zap, // Puedes usar Upload o Zap
+        roles: ["superAdmin", "logístico"],
+      },
     ],
   },
   {

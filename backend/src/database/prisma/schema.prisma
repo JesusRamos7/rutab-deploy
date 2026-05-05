@@ -46,13 +46,14 @@ model clientes {
 }
 
 model detalles_ruta {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ruta_id       String?  @db.Uuid
-  pedido_id     String?  @db.Uuid
-  orden_entrega Int?
-  comentarios   String?
-  pedidos       pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  rutas         rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruta_id        String?  @db.Uuid
+  pedido_id      String?  @db.Uuid
+  orden_entrega  Int?
+  comentarios    String?
+  estado_intento String?  @default("pendiente")
+  pedidos        pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas          rutas?   @relation(fields: [ruta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model evidencias {
@@ -103,6 +104,7 @@ model rutas {
   vehiculo_id              String?                @db.Uuid
   chofer_id                String?                @db.Uuid
   creado_por               String?                @db.Uuid
+  codigo_rastreo           String                 @unique
   fecha_programada         DateTime?              @db.Date
   distancia_total_estimada Decimal?               @db.Decimal
   tiempo_estimado_entrega  DateTime?              @db.Timestamptz(6)

@@ -19,6 +19,8 @@ import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
 
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
+import { FailedDeliveriesModule } from 'src/modules/failed-deliveries/failed-deliveries.module';
+import { RouteLoaderModule } from 'src/modules/route-loader/route-loader.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { IncidentsModule } from 'src/modules/incidents/incidents.module';
     EvidencesModule,
     MonitoringModule,
     IncidentsModule,
+    FailedDeliveriesModule,
+    RouteLoaderModule,
   ],
   controllers: [AppController],
   providers: [

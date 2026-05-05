@@ -123,6 +123,14 @@ export class RoutesService {
           data: { estado_pedido: 'en_transito' },
         });
 
+        await tx.detalles_ruta.updateMany({
+          where: {
+            ruta_id: rutaId,
+            estado_intento: 'pendiente',
+          },
+          data: { estado_intento: 'en_transito' },
+        });
+
         return rutaActualizada;
       });
 
@@ -308,15 +316,33 @@ export class RoutesService {
 
   async updatePedidoStatus(pedidoId: string, nuevoEstado: string) {
     try {
-      const pedido = await this.prisma.pedidos.update({
-        where: { id: pedidoId },
-        data: {
-          estado_pedido: nuevoEstado,
-          updated_at: new Date(),
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Actualizar el pedido global
+        const pedido = await tx.pedidos.update({
+          where: { id: pedidoId },
+          data: {
+            estado_pedido: nuevoEstado,
+            updated_at: new Date(),
+          },
+        });
+
+        // 2. NUEVO: Actualizar el estado_intento en la ruta activa
+        // Buscamos el detalle de ruta donde la ruta asociada NO esté finalizada
+        await tx.detalles_ruta.updateMany({
+          where: {
+            pedido_id: pedidoId,
+            rutas: {
+              estatus_ruta: 'en_proceso',
+            },
+          },
+          data: {
+            estado_intento: nuevoEstado, // Ej: 'entregado'
+          },
+        });
+
+        this.monitoringGateway.server.emit('fleetListUpdated');
+        return pedido;
       });
-      this.monitoringGateway.server.emit('fleetListUpdated');
-      return pedido;
     } catch (error) {
       this.logger.error(
         `Error actualizando pedido ${pedidoId}: ${error.message}`,
