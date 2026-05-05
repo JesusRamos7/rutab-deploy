@@ -19,6 +19,7 @@ import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
 
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
+import { FailedDeliveriesModule } from 'src/modules/failed-deliveries/failed-deliveries.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { IncidentsModule } from 'src/modules/incidents/incidents.module';
     EvidencesModule,
     MonitoringModule,
     IncidentsModule,
+    FailedDeliveriesModule,
   ],
   controllers: [AppController],
   providers: [

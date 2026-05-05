@@ -12,9 +12,9 @@ import { useAuth } from "./context/AuthContext";
 import { RoleGuard } from "./components/guards/RoleGuard";
 import { ContentLoader } from "./components/ui/ContentLoader";
 import { AdminLayout } from "./layouts/AdminLayout";
-import React, { ReactNode } from 'react';
-import { useAlertListener } from '../src/modules/monitoring/hooks/useAlertListener';
-import { Toaster } from 'react-hot-toast'; // Para que los mensajes se vean
+import React, { ReactNode } from "react";
+import { useAlertListener } from "../src/modules/monitoring/hooks/useAlertListener";
+import { Toaster } from "react-hot-toast"; // Para que los mensajes se vean
 
 /**
  * Indicador de carga de pantalla completa.
@@ -43,25 +43,24 @@ interface Props {
 
 export const DashboardLayout = ({ children }: Props) => {
   // Aquí activamos la escucha de sockets
-  useAlertListener(); 
+  useAlertListener();
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* El Toaster permite que las notificaciones floten en la pantalla */}
       <Toaster position="top-right" />
-      
-      <aside style={{ width: '250px', background: '#123a5d', color: 'white' }}>
+
+      <aside style={{ width: "250px", background: "#123a5d", color: "white" }}>
         {/* Aquí irá tu menú lateral después */}
-        <p style={{ padding: '20px' }}>RuTAB Admin</p>
+        <p style={{ padding: "20px" }}>RuTAB Admin</p>
       </aside>
 
-      <main style={{ flex: 1, padding: '20px', background: '#f4f7f9' }}>
+      <main style={{ flex: 1, padding: "20px", background: "#f4f7f9" }}>
         {children}
       </main>
     </div>
   );
 };
-
 
 /**
  * Definición de Módulos mediante Lazy Loading.
@@ -82,6 +81,13 @@ const ModuloMonitoreo = lazy(() =>
   import("./modules/monitoring/store/MonitoringPage").then((m) => ({
     default: m.MonitoringPage,
   })),
+);
+const FailedDeliveriesPage = lazy(() =>
+  import("./modules/failed-deliveries/pages/FailedDeliveriesPage").then(
+    (m) => ({
+      default: m.FailedDeliveriesPage,
+    }),
+  ),
 );
 const ModuloAuditoria = lazy(() =>
   import("./modules/audit").then((m) => ({ default: m.ModuloAuditoria })),
@@ -185,6 +191,15 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
                     <ModuloMonitoreo />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="operaciones/pedidos-fallidos"
+                element={
+                  <RoleGuard allowedRoles={["superAdmin", "logístico"]}>
+                    <FailedDeliveriesPage />
                   </RoleGuard>
                 }
               />
