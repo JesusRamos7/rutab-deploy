@@ -17,9 +17,7 @@ import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
-
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
-import { ConfigModule } from '@nestjs/config';
 import { DashboardModule } from './src/modules/dashboard/dashboard.module';
 import { FailedDeliveriesModule } from 'src/modules/failed-deliveries/failed-deliveries.module';
 import { RouteLoaderModule } from 'src/modules/route-loader/route-loader.module';
