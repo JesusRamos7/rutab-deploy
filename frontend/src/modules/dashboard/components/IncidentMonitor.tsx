@@ -61,7 +61,7 @@ export const IncidentMonitor = ({ data }: any) => {
                     </div>
 
                     <button
-                        onClick={() => navigate('/panel-evidencias')}
+                        onClick={() => navigate('/panel/auditoria/incidencias', { state: { category: cat.id } })}
                         disabled={cat.items.length === 0}
                         className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 shadow-sm ${cat.items.length > 0
                                 ? cat.id === 'camino' ? 'bg-red-500 text-white hover:bg-red-600 shadow-red-100' :
