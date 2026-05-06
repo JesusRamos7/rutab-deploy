@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config'; // Mantenemos esta
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './src/database/prisma/prisma.module';
@@ -16,13 +17,16 @@ import { RoutesModule } from 'src/mobile-app/routes/routes.module';
 import { EvidenceModule } from 'src/mobile-app/evidence/evidence.module';
 import { EvidencesModule } from 'src/modules/evidences/evidences.module';
 import { MonitoringModule } from 'src/modules/monitoring/monitoring.module';
+
 import { IncidentsModule } from 'src/modules/incidents/incidents.module';
 import { ConfigModule } from '@nestjs/config';
 import { DashboardModule } from './src/modules/dashboard/dashboard.module';
+import { FailedDeliveriesModule } from 'src/modules/failed-deliveries/failed-deliveries.module';
+import { RouteLoaderModule } from 'src/modules/route-loader/route-loader.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // Carga variables de entorno
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }), // Configuración global de variables de entorno
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -37,6 +41,8 @@ import { DashboardModule } from './src/modules/dashboard/dashboard.module';
     MonitoringModule,
     IncidentsModule,
     DashboardModule,
+    FailedDeliveriesModule,
+    RouteLoaderModule,
   ],
   controllers: [AppController],
   providers: [

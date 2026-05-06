@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from '../jwt.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 /**
  * Módulo de Autenticación.
@@ -23,17 +24,13 @@ import { JwtStrategy } from '../jwt.strategy';
     /**
      * JwtModule: Configuración del motor de firma y verificación de tokens.
      */
-    JwtModule.register({
-      /**
-       * Secreto de firma: Se recupera de las variables de entorno para
-       * garantizar la seguridad del servidor en producción.
-       */
-      secret: process.env.JWT_SECRET || 'secreto_temporal',
-      /**
-       * Tiempo de vida del token: Configurado a 24 horas (1d) para
-       * equilibrar seguridad y experiencia de usuario.
-       */
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '7d' },
+      }),
     }),
   ],
   controllers: [AuthController],

@@ -1,30 +1,47 @@
 // /mobile-app/frontend/src/features/routes/hooks/useRoutes.ts
 
 import { useState } from 'react';
-import { Alert, Linking } from 'react-native'; // <-- Añadimos Linking
+import { Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { apiClient } from '../../../core/api/apiClient';
 import { useAuth } from '../../../core/context/AuthContext';
 import { LocationService, getDistance } from '../../../core/services/locationService';
-import { RoutesRoutes } from '../../../navigation/navigation-types'; 
+import { RoutesRoutes } from '../../../navigation/navigation-types';
+
+/**
+ * Función auxiliar para normalizar los errores que vienen del backend (NestJS)
+ * o de la red de Axios, previniendo crashes en React Native por tipos de datos incorrectos.
+ */
+const extractErrorMessage = (error: any, fallbackMessage: string): string => {
+  if (error?.response?.data?.message) {
+    const msg = error.response.data.message;
+    return Array.isArray(msg) ? msg.join('\n') : msg;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallbackMessage;
+};
 
 export const useRoutes = () => {
   const { logout } = useAuth();
   const [isStarting, setIsStarting] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [validatedPedidoId, setValidatedPedidoId] = useState<string | null>(null);
 
   const PROXIMITY_THRESHOLD = 150;
 
-  // --- LÓGICA DE MAPAS MOVIDA AQUÍ ---
   const handleAbrirMaps = (lat: number, lng: number) => {
     const url = `http://maps.google.com/?q=${lat},${lng}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir la aplicación de mapas.');
+      Alert.alert(
+        'Error de Navegación',
+        'No se pudo abrir la aplicación de mapas. Verifica que tengas Google Maps o Waze instalados.'
+      );
     });
   };
 
-  // --- LÓGICA DE ENTREGA MOVIDA AQUÍ ---
   const handlePressEntrega = async (pedido: any, navigation: any) => {
     const isNear = await validateProximity(pedido.pedidoId, pedido.latitude, pedido.longitude);
 
@@ -43,9 +60,6 @@ export const useRoutes = () => {
     }
   };
 
-  /**
-   * Validación ultra rápida de proximidad
-   */
   const validateProximity = async (
     pedidoId: string,
     clientLat: number,
@@ -56,13 +70,14 @@ export const useRoutes = () => {
 
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso Denegado', 'Se requiere GPS para habilitar la entrega.');
+        Alert.alert('Permiso Denegado', 'Se requiere acceso al GPS para validar la entrega.');
         return false;
       }
 
-      // Usamos getLastKnownPositionAsync para que sea instantáneo y no sufra el lag de 20s
       let location = await Location.getLastKnownPositionAsync();
 
+      // Si no hay última posición, forzamos la obtención.
+      // Esto puede fallar si el sensor GPS del teléfono está apagado físicamente.
       if (!location) {
         location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
@@ -78,25 +93,25 @@ export const useRoutes = () => {
 
       const isNear = distance <= PROXIMITY_THRESHOLD;
 
-      // --- LÓGICA DE RE-VALIDACIÓN ---
       if (isNear) {
-        setValidatedPedidoId(pedidoId); // Desbloquea (Botón Negro)
+        setValidatedPedidoId(pedidoId);
       } else {
-        setValidatedPedidoId(null); // Bloquea de nuevo si se alejó (Botón Gris)
+        setValidatedPedidoId(null);
       }
 
       return isNear;
     } catch (error) {
-      console.error('Error GPS:', error);
+      console.error('Error GPS en validateProximity:', error);
+      Alert.alert(
+        'Error de Señal GPS',
+        'No pudimos obtener tu ubicación actual. Verifica que tu GPS esté encendido y que tengas señal, luego intenta de nuevo.'
+      );
       return false;
     } finally {
       setIsCheckingLocation(false);
     }
   };
 
-  /**
-   * Función para verificar proximidad de forma silenciosa (para el OnFocus)
-   */
   const checkProximitySilently = async (pedido: any) => {
     if (!pedido) return;
 
@@ -120,14 +135,25 @@ export const useRoutes = () => {
         setValidatedPedidoId(null);
       }
     } catch (e) {
-      // Silencioso, no queremos alertas aquí
+      // Silencioso, si falla simplemente el botón no se auto-desbloquea
+      console.log('Fallo silencioso de GPS:', e);
     }
   };
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Estás seguro de que deseas salir?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sí, salir', style: 'destructive', onPress: async () => await logout() },
+      {
+        text: 'Sí, salir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (error) {
+            Alert.alert('Error', 'Hubo un problema al intentar cerrar sesión.');
+          }
+        },
+      },
     ]);
   };
 
@@ -150,14 +176,20 @@ export const useRoutes = () => {
     try {
       setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/start`);
+
       try {
         await LocationService.startTracking(rutaId);
       } catch (locationError: any) {
-        Alert.alert('Aviso de Ubicación', 'La ruta inició, pero el GPS no pudo activarse.');
+        // Fallo no bloqueante: La ruta se inició en backend, pero el GPS local falló
+        Alert.alert(
+          'Aviso de Ubicación',
+          'La ruta inició correctamente, pero el rastreo GPS en segundo plano no pudo activarse. Verifica tus permisos.'
+        );
       }
+
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo iniciar la ruta');
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo iniciar la ruta.'));
     } finally {
       setIsStarting(false);
     }
@@ -167,13 +199,86 @@ export const useRoutes = () => {
     try {
       setIsStarting(true);
       await apiClient.patch(`/mobile-app/routes/${rutaId}/finish`);
-      await LocationService.stopTracking();
+
+      try {
+        await LocationService.stopTracking();
+      } catch (e) {
+        console.log('Error deteniendo tracking, ignorando...', e);
+      }
+
       Alert.alert('¡Ruta Finalizada!', 'Trayecto guardado con éxito.');
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo finalizar la ruta');
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo finalizar la ruta.'));
     } finally {
       setIsStarting(false);
+    }
+  };
+
+  const handleReportFailedRoute = (rutaId: string, onSuccess: () => void) => {
+    Alert.alert(
+      '¿Reportar fin de jornada?',
+      'Se registrará que el tiempo no fue suficiente para entregar los pedidos restantes. Esta acción requiere tu ubicación actual.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, reportar',
+          style: 'destructive',
+          onPress: () => executeReportFailedRoute(rutaId, onSuccess),
+        },
+      ]
+    );
+  };
+
+  const executeReportFailedRoute = async (rutaId: string, onSuccess: () => void) => {
+    try {
+      setIsReporting(true);
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Error de GPS',
+          'Se requiere acceso a la ubicación para registrar la incidencia.'
+        );
+        setIsReporting(false);
+        return;
+      }
+
+      let location;
+      try {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      } catch (gpsError) {
+        Alert.alert(
+          'Error de GPS',
+          'No pudimos obtener tu ubicación. Verifica que tu sensor GPS esté encendido.'
+        );
+        setIsReporting(false);
+        return;
+      }
+
+      await apiClient.post('/mobile-app/evidence/failed-route', {
+        rutaId,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        tipo: 'ruta fallida',
+        descripcion: 'El dia no fue suficiente para entregar todos los pedidos',
+        categoria: 'tiempo',
+      });
+
+      try {
+        await LocationService.stopTracking();
+      } catch (e) {
+        console.log('Error deteniendo tracking, ignorando...', e);
+      }
+
+      Alert.alert('¡Éxito!', 'Incidencia de tiempo reportada correctamente.');
+      onSuccess();
+    } catch (error: any) {
+      Alert.alert('Error', extractErrorMessage(error, 'No se pudo reportar la incidencia.'));
+    } finally {
+      setIsReporting(false);
     }
   };
 
@@ -184,8 +289,10 @@ export const useRoutes = () => {
     handleAbrirMaps,
     handlePressEntrega,
     checkProximitySilently,
+    handleReportFailedRoute,
     validatedPedidoId,
     isCheckingLocation,
     isStarting,
+    isReporting,
   };
 };

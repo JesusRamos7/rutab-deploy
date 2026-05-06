@@ -70,6 +70,7 @@ CREATE TABLE public.rutas (
   vehiculo_id uuid,
   chofer_id uuid,
   creado_por uuid,
+  codigo_rastreo text NOT NULL UNIQUE,
   fecha_programada date,
   distancia_total_estimada numeric,
   tiempo_estimado_entrega timestamp with time zone,
@@ -106,6 +107,7 @@ CREATE TABLE public.detalles_ruta (
   pedido_id uuid,
   orden_entrega integer,
   comentarios text,
+  estado_intento text DEFAULT 'pendiente',
   CONSTRAINT detalles_ruta_pkey PRIMARY KEY (id),
   CONSTRAINT detalles_ruta_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id),
   CONSTRAINT detalles_ruta_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES public.rutas(id)

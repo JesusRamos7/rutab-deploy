@@ -1,10 +1,18 @@
 // mobile-app/frontend/src/features/routes/screens/RoutesScreen.tsx
 
 import React, { useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { RoutesStackParamList } from '../../../navigation/navigation-types';
 import { useFetchRoutes } from '../hooks/useFetchRoutes';
@@ -26,9 +34,11 @@ export const RoutesScreen = () => {
     handleAbrirMaps,
     handlePressEntrega,
     checkProximitySilently,
+    handleReportFailedRoute,
     validatedPedidoId,
     isCheckingLocation,
     isStarting,
+    isReporting,
   } = useRoutes();
 
   // EFECTOS
@@ -40,8 +50,14 @@ export const RoutesScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (routeData?.estatus_ruta === 'en_proceso' && routeData?.pedidos?.length > 0) {
-        checkProximitySilently(routeData.pedidos[0]);
+      // Validación segura antes de acceder al índice [0]
+      const pedidos = routeData?.pedidos;
+      if (
+        routeData?.estatus_ruta === 'en_proceso' &&
+        Array.isArray(pedidos) &&
+        pedidos.length > 0
+      ) {
+        checkProximitySilently(pedidos[0]);
       }
     }, [routeData, checkProximitySilently])
   );
@@ -55,10 +71,23 @@ export const RoutesScreen = () => {
   if (loading) return <RoutesLoadingView />;
   if (error) return <RoutesErrorView error={error} onRefresh={refresh} />;
 
-  const isInProgress = routeData?.estatus_ruta === 'en_proceso';
-  const hasNoPedidos = routeData?.pedidos?.length === 0;
+  // Si por alguna anomalía el backend devuelve 200 OK pero routeData es null
+  if (!routeData) {
+    return (
+      <RoutesErrorView
+        error="No se encontró información de la ruta. Por favor, actualiza la pantalla."
+        onRefresh={refresh}
+      />
+    );
+  }
 
-  if (routeData && hasNoPedidos && isInProgress) {
+  // Evaluaciones seguras
+  const isInProgress = routeData.estatus_ruta === 'en_proceso';
+  const pedidosArray = Array.isArray(routeData.pedidos) ? routeData.pedidos : [];
+  const hasNoPedidos = pedidosArray.length === 0;
+
+  // ESTADO: Ruta terminada / Sin pedidos restantes
+  if (hasNoPedidos && isInProgress) {
     return (
       <RoutesCompletedView
         onFinish={() => handleFinishRoute(routeData.id, refresh)}
@@ -79,7 +108,7 @@ export const RoutesScreen = () => {
         }>
         <RouteHeader
           placas={routeData?.vehiculos?.placas}
-          pedidosCount={routeData?.pedidos?.length || 0}
+          pedidosCount={pedidosArray.length}
           isInProgress={isInProgress}
           isStarting={isStarting}
           onStartRoute={handleComenzarRuta}
@@ -94,9 +123,10 @@ export const RoutesScreen = () => {
             </View>
           )}
 
-          {routeData?.pedidos.map((pedido: any, index: number) => (
+          {/* Renderizado defensivo: mapeo seguro asegurando que usamos pedidosArray */}
+          {pedidosArray.map((pedido: any, index: number) => (
             <PedidoCard
-              key={pedido.pedidoId}
+              key={pedido.pedidoId || index.toString()} // Fallback de key por seguridad
               pedido={pedido}
               index={index}
               isInProgress={isInProgress}
@@ -106,6 +136,29 @@ export const RoutesScreen = () => {
               onPressDelivery={(p) => handlePressEntrega(p, navigation)}
             />
           ))}
+
+          {/* Botón de ruta fallida por falta de tiempo al final de la lista */}
+          {isInProgress && pedidosArray.length > 0 && (
+            <TouchableOpacity
+              onPress={() => handleReportFailedRoute(routeData.id, refresh)}
+              disabled={isReporting}
+              className="mb-6 mt-6 flex-row items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+              <View className="flex-1 flex-row items-center">
+                {isReporting ? (
+                  <ActivityIndicator color="#dc2626" className="mr-3" />
+                ) : (
+                  <MaterialCommunityIcons name="clock-alert-outline" size={28} color="#dc2626" />
+                )}
+                <View className="ml-3 flex-1">
+                  <Text className="font-bold text-red-700">¿El día no fue suficiente?</Text>
+                  <Text className="mt-0.5 text-xs text-red-600/80">
+                    Reportar fin de jornada y pedidos no entregados
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#dc2626" />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
