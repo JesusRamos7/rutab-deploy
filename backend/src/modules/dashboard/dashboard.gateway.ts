@@ -57,17 +57,10 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
    * Se llama cada vez que algo cambia en la base de datos (pedidos, rutas, incidencias).
    */
   async emitDashboardUpdate() {
-    const inicioDia = new Date();
-    inicioDia.setHours(0, 0, 0, 0);
-
-    const finDia = new Date();
-    finDia.setHours(23, 59, 59, 999);
-
     const incidencias = await this.prisma.incidencias.findMany({
       where: {
-        created_at: {
-          gte: inicioDia,
-          lte: finDia,
+        rutas: {
+          estatus_ruta: 'en_proceso',
         },
       },
       include: {
@@ -100,9 +93,37 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   async emitUpdate() {
-    const stats = await this.dashboardService.getDailyStats();
+    const incidencias = await this.prisma.incidencias.findMany({
+      where: {
+        rutas: {
+          estatus_ruta: 'en_proceso',
+        },
+      },
+      include: {
+        rutas: {
+          include: {
+            vehiculos: true,
+            administradores: true,
+            choferes: true,
+          }
+        }
+      }
+    });
+
+    const stats = {
+      urgentes: incidencias.filter(i => i.estado_incidencia === 'urgente').length,
+      fallidos: incidencias.filter(i => i.categoria === 'entrega' || i.categoria === 'tiempo').length,
+      alertasCriticas: incidencias.filter(i => i.categoria === 'camino').length,
+      ...(await this.dashboardService.getDailyStats()),
+    };
+
     const operacion = await this.dashboardService.getActiveOperations();
 
-    this.server.emit('dashboard:update', { stats, operacion });
+    this.server.emit('dashboard:update', {
+      stats,
+      operacion,
+      rawIncidencias: incidencias,
+      timestamp: new Date(),
+    });
   }
 }
