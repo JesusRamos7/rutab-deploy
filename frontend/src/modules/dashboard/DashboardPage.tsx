@@ -2,6 +2,8 @@ import React from 'react';
 import { useDashboard } from './hooks/useDashboard';
 import { StatsGrid } from './components/StatsGrid';
 import { ActiveOperationTable } from './components/ActiveOperationTable';
+import { IncidentMonitor } from './components/IncidentMonitor';
+import { DailyOrdersCard } from './components/DailyOrdersCard';
 
 export const DashboardPage: React.FC = () => {
   const { stats, operations, isLoading } = useDashboard();
@@ -18,17 +20,34 @@ export const DashboardPage: React.FC = () => {
       {/* Fila de Estadísticas (KPIs) */}
       <StatsGrid stats={stats} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-10">
-        {/* Tabla de Operación en Vivo (Ocupa 2 columnas) */}
-        <div className="xl:col-span-2">
-          <ActiveOperationTable operations={operations} />
+      <div className="mt-8">
+         <IncidentMonitor data={stats?.monitorIncidencias} />
+         <br></br>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+
+        {/* COLUMNA IZQUIERDA: Operación Activa */}
+        <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-100/50 border border-gray-50 flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xl font-black text-gray-950 uppercase tracking-tighter">Operación Activa</h2>
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">
+              {operations.length} Unidades en calle
+            </span>
+          </div>
+          {/* Asegúrate de que la tabla no tenga un ancho fijo que rompa el grid */}
+          <div className="flex-1">
+            <ActiveOperationTable operations={operations} />
+          </div>
         </div>
 
-        {/* Sidebar de Incidencias/Timeline (Ocupa 1 columna) */}
-        <div className="xl:col-span-1">
-          {/* Aquí irá el IncidentTimeline que planeamos */}
+        {/* COLUMNA DERECHA: Pedidos del Día */}
+        <div className="flex flex-col">
+          <DailyOrdersCard pedidos={stats?.pedidos} />
         </div>
+
       </div>
+
     </div>
   );
 };

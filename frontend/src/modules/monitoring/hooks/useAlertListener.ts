@@ -1,29 +1,34 @@
-import { useEffect } from 'react';
+// monitoring/src/hooks/useAlertListener.ts
+import { useEffect, useState } from 'react';
 import { useSocket } from '../../../context/SocketContext';
-import { toast } from 'sonner';
 
 export const useAlertListener = () => {
     const { socket } = useSocket();
+    const [incidencias, setIncidencias] = useState<any[]>([]);
 
     useEffect(() => {
         if (!socket) return;
 
-        // Escuchamos cuando un chofer reporta algo (bache, choque, etc.)
-        socket.on('newIncidentAlert', (data: any) => {
-            toast.error(`🚨 INCIDENCIA: ${data.tipo}\n${data.descripcion}`);
-        });
-
-        // Escuchamos excesos de velocidad automáticos
-        socket.on('securityAlert', (data: any) => {
-            toast(`⚠️ VELOCIDAD: ${data.mensaje}`, {
-                style: { background: '#ff4b4b', color: '#fff' }
-            });
-        });
-
-        // Limpiamos los eventos al cerrar para no duplicar alertas
-        return () => {
-            socket.off('newIncidentAlert');
-            socket.off('securityAlert');
+        const handleUpdate = (data: any) => {
+            if (data.rawIncidencias) setIncidencias(data.rawIncidencias);
         };
+
+        socket.on('dashboard:update', handleUpdate);
+
+        if (socket.connected) { // Si ya estamos conectados, solicitamos la data inicial
+            socket.emit('requestInitialData');
+        }
+
+        socket.on('connect', () => { // Cuando nos conectamos, pedimos la data inicial
+            socket.emit('requestInitialData');
+        });
+
+        return () => { // Limpiamos los listeners al desmontar
+            socket.off('dashboard:update', handleUpdate);
+            socket.off('connect');
+        };
+
     }, [socket]);
+
+    return { incidencias }; // Devolvemos el array para el componente
 };

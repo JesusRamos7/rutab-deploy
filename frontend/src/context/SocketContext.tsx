@@ -11,9 +11,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    // Conectamos al namespace 'monitoring' que definiste en el backend
-    const newSocket = io('http://localhost:3000/monitoring', {
+    // Conectamos al namespace 'monitoring' definido en el backend
+    const newSocket = io('http://localhost:3000/dashboard', {
       transports: ['websocket'],
+      withCredentials: true,
+      forceNew: true, // Fuerza una nueva conexión
+      reconnectionAttempts: 5, // Reintenta si falla
+      timeout: 10000, // Tiempo de espera
     });
 
     setSocket(newSocket);

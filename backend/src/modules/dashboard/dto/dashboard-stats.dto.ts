@@ -3,9 +3,10 @@ export class DashboardStatsDto {
   pedidos: {
     totales: number;
     entregados: number;
-    cancelados: number;
+    fallidos: number;
     enRuta: number;
   };
   incidenciasHoy: number;
   unidadesOperando: number;
+  alertasCriticas: number; 
 }

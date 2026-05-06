@@ -8,6 +8,11 @@ export interface DashboardStats {
   };
   incidenciasHoy: number;
   unidadesOperando: number;
+  monitorIncidencias: {
+    camino: any[];
+    entrega: any[];
+    tiempo: any[];
+  };
 }
 
 export interface ActiveOperation {

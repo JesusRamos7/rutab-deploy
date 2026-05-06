@@ -16,7 +16,6 @@ export const roadIncidentsService = {
   },
 
   create: async (formData: FormData) => {
-    console.log('--- DEBUG CREATE INCIDENT ---');
     // Recuperamos el token manualmente para asegurar que no vaya vacío
     const token = await AsyncStorage.getItem('@token_chofer');    
     // Verificamos si el token va en el Authorization header

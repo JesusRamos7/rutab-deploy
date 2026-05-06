@@ -70,9 +70,6 @@ export const DashboardLayout = ({ children }: Props) => {
 const ModuloAuth = lazy(() =>
   import("./modules/auth").then((m) => ({ default: m.ModuloAuth })),
 );
-const ModuloInicio = lazy(() =>
-  import("./modules/index").then((m) => ({ default: m.ModuloInicio })),
-);
 const DashboardPage = lazy(() =>
   import("./modules/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
