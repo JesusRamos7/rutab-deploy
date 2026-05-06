@@ -15,6 +15,7 @@ import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
 import { forwardRef, Inject } from '@nestjs/common';
 import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
+import { DashboardGateway } from '../../modules/dashboard/dashboard.gateway';
 import { RedisService } from '../redis/redis.service';
 
 @Injectable()
@@ -26,6 +27,8 @@ export class EvidenceService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => MonitoringGateway))
     private readonly monitoringGateway: MonitoringGateway,
+    @Inject(forwardRef(() => DashboardGateway))
+    private readonly dashboardGateway: DashboardGateway,
     private readonly redis: RedisService,
   ) {
     this.supabase = createClient(
@@ -116,7 +119,7 @@ export class EvidenceService {
       uploadedPaths.push(firmaPath);
 
       // 4. Persistencia transaccional
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`
           WITH info_cliente AS (
             SELECT c.coordenadas 
@@ -156,13 +159,15 @@ export class EvidenceService {
           data: { estado_intento: 'entregado' },
         });
 
-        this.monitoringGateway.server.emit('fleetListUpdated');
-
         return {
           success: true,
           message: 'Evidencia procesada correctamente',
         };
       });
+
+      this.monitoringGateway.server.emit('fleetListUpdated');
+      await this.dashboardGateway.emitUpdate();
+      return result;
     } catch (error) {
       // Rollback manual de archivos en Supabase si la DB falla
       await this.deleteFromSupabase(uploadedPaths);
@@ -248,10 +253,13 @@ export class EvidenceService {
         );
       }
 
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         await this.executeInsertIncident(tx, dto, fotoUrl);
         return { success: true, message: 'Incidente registrado.' };
       });
+
+      await this.dashboardGateway.emitUpdate();
+      return result;
     } catch (error) {
       if (fotoUrl) await this.deleteFromSupabase([fotoUrl]);
       this.logger.error(`Error en saveIncident: ${error.message}`);
@@ -298,7 +306,7 @@ export class EvidenceService {
       }
 
       // 4. Transacción de Base de Datos
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         // Registrar la incidencia detallada
         await this.executeInsertIncident(tx, dto, fotoUrl);
 
@@ -316,11 +324,8 @@ export class EvidenceService {
           },
           data: {
             estado_intento: 'fallido',
-            
           },
         });
-
-        this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
           success: true,
@@ -328,6 +333,10 @@ export class EvidenceService {
             'Pedido y detalle de ruta marcados como fallidos correctamente.',
         };
       });
+
+      this.monitoringGateway.server.emit('fleetListUpdated');
+      await this.dashboardGateway.emitUpdate();
+      return result;
     } catch (error) {
       // Rollback de imagen si la DB falla
       if (fotoUrl) await this.deleteFromSupabase([fotoUrl]);
@@ -383,7 +392,7 @@ export class EvidenceService {
         lineStringWKT = `LINESTRING(${wktPoints})`;
       }
 
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         // 1. Registrar la incidencia de la ruta
         await this.executeInsertIncident(tx, dto, null);
 
@@ -432,13 +441,16 @@ export class EvidenceService {
           where: { ruta_id: dto.rutaId },
         });
         await this.redis.clearRouteData(dto.rutaId);
-        this.monitoringGateway.server.emit('fleetListUpdated');
 
         return {
           success: true,
           message: 'Jornada finalizada y pedidos marcados como fallidos.',
         };
       });
+
+      this.monitoringGateway.server.emit('fleetListUpdated');
+      await this.dashboardGateway.emitUpdate();
+      return result;
     } catch (error) {
       this.logger.error(`Error en saveFailedRoute: ${error.message}`);
       if (
@@ -523,6 +535,7 @@ export class EvidenceService {
       });
 
       this.monitoringGateway.server.emit('fleetListUpdated');
+      await this.dashboardGateway.emitUpdate();
       return { success: true, message: 'Incidente actualizado correctamente.' };
     } catch (error) {
       this.logger.error(`Error en updateIncident ${id}: ${error.message}`);
@@ -548,6 +561,7 @@ export class EvidenceService {
 
       await this.prisma.incidencias.delete({ where: { id } });
       this.monitoringGateway.server.emit('fleetListUpdated');
+      await this.dashboardGateway.emitUpdate();
 
       return { success: true, message: 'Incidencia eliminada correctamente.' };
     } catch (error) {

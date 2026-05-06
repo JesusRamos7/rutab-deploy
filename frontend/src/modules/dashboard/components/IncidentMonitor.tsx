@@ -1,11 +1,9 @@
-// src/modules/dashboard/components/IncidentMonitor.tsx
 import React from 'react';
-import { AlertCircle, Truck, Clock, ExternalLink, ChevronRight } from 'lucide-react';
+import { AlertCircle, Truck, Clock, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const IncidentMonitor = ({ data }: any) => {
     const navigate = useNavigate();
-
 
     const categories = [
         {
@@ -37,7 +35,7 @@ export const IncidentMonitor = ({ data }: any) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
             {categories.map((cat) => (
-                <div key={cat.id} className={`bg-white rounded-3xl p-6 shadow-sm border ${cat.border} flex flex-col`}>
+                <div key={cat.id} className={`bg-white rounded-3xl p-6 shadow-sm border ${cat.border} flex flex-col h-[400px]`}>
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-xl ${cat.bg}`}>{cat.icon}</div>
@@ -46,17 +44,26 @@ export const IncidentMonitor = ({ data }: any) => {
                         <span className="text-2xl font-black text-gray-900">{cat.items.length}</span>
                     </div>
 
-                    <div className="flex-1 space-y-3 mb-6">
-                        {cat.items.slice(0, 2).map((item: any) => (
-                            <div key={item.id} className="text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                <p className="font-bold text-gray-800 truncate">{item.descripcion}</p>
-                                <p className="text-gray-400 mt-1 uppercase font-black tracking-widest text-[9px]">
-                                    Unidad: {item.rutas?.vehiculos?.placas || 'N/A'}
-                                </p>
+                    {/* Contenedor con SCROLL: Muestra todas, pero mantiene el tamaño de la card */}
+                    <div className="flex-1 overflow-y-auto pr-2 space-y-3 mb-6 custom-scrollbar">
+                        {cat.items.length > 0 ? (
+                            cat.items.map((item: any) => (
+                                <div key={item.id} className="text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-100 transition-all hover:bg-slate-100">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <p className="font-bold text-gray-800 flex-1">{item.descripcion}</p>
+                                        <span className="text-[8px] text-gray-400 font-bold whitespace-nowrap">
+                                            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    <p className="text-blue-600 mt-2 uppercase font-black tracking-widest text-[9px]">
+                                        Unidad: {item.rutas?.vehiculos?.placas || 'N/A'}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="h-full flex items-center justify-center">
+                                <p className="text-center text-gray-300 text-xs italic">Sin incidencias pendientes</p>
                             </div>
-                        ))}
-                        {cat.items.length === 0 && (
-                            <p className="text-center text-gray-300 text-xs py-4 italic">Sin incidencias pendientes</p>
                         )}
                     </div>
 

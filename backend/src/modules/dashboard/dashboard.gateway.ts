@@ -9,6 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { forwardRef, Inject } from '@nestjs/common';
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:5173', // Puerto del frontend
@@ -24,12 +25,20 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
 
 
   constructor(
-    private readonly dashboardService: DashboardService,
+    @Inject(forwardRef(() => DashboardService)) private readonly dashboardService: DashboardService,
     private readonly prisma: PrismaService
   ) { }
 
-  @SubscribeMessage('requestInitialData')
+  @SubscribeMessage('getInitialData')
   async handleInitialData(client: Socket) {
+    const stats = await this.dashboardService.getDailyStats();
+    const operacion = await this.dashboardService.getActiveOperations();
+
+    client.emit('dashboard:initialData', {
+      stats,
+      operacion
+    });
+
     await this.emitDashboardUpdate();
   }
 
@@ -88,5 +97,12 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
       rawIncidencias: incidencias, // Enviamos las incidencias sin procesar para que el frontend las clasifique
       timestamp: new Date(),
     });
+  }
+
+  async emitUpdate() {
+    const stats = await this.dashboardService.getDailyStats();
+    const operacion = await this.dashboardService.getActiveOperations();
+
+    this.server.emit('dashboard:update', { stats, operacion });
   }
 }
