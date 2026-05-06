@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { roadIncidentsService } from '../services/road-incidents.service';
 import { Incident } from '../types/road-incidents.types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getErrorMessage } from '../../../core/api/apiClient'; // Importamos el helper global
 
 export const useRoadIncidents = () => {

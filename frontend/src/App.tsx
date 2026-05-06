@@ -50,7 +50,7 @@ export const DashboardLayout = ({ children }: Props) => {
       {/* El Toaster permite que las notificaciones floten en la pantalla */}
       <Toaster position="top-right" />
 
-      <aside style={{ width: "250px", background: "#123a5d", color: "white" }}>
+      <aside style={{ width: '250px', background: '#123a5d', color: 'white' }}>
         {/* Aquí irá tu menú lateral después */}
         <p style={{ padding: "20px" }}>RuTAB Admin</p>
       </aside>
@@ -69,8 +69,8 @@ export const DashboardLayout = ({ children }: Props) => {
 const ModuloAuth = lazy(() =>
   import("./modules/auth").then((m) => ({ default: m.ModuloAuth })),
 );
-const ModuloInicio = lazy(() =>
-  import("./modules/index").then((m) => ({ default: m.ModuloInicio })),
+const DashboardPage = lazy(() =>
+  import("./modules/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
 const ModuloOptimizacion = lazy(() =>
   import("./modules/optimization/OptimizationIndex").then((m) => ({
@@ -180,7 +180,12 @@ export default function App() {
               }
             >
               {/* Ruta pública para cualquier usuario autenticado */}
-              <Route path="inicio" element={<ModuloInicio />} />
+              <Route path="inicio"
+                element={<RoleGuard allowedRoles={["superAdmin", "logístico"]}>
+                  <DashboardPage />
+                </RoleGuard>
+                }
+              />
 
               <Route
                 path="optimizacion"

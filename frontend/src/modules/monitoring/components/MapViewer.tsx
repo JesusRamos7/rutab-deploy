@@ -6,12 +6,13 @@ import { renderToString } from 'react-dom/server';
 // Componente para el botón de centrado flotante
 const MapControls = ({ vehicles }: any) => {
   const map = useMap();
+  const validVehicles = vehicles.filter((v: any) => Number.isFinite(v.latitud) && Number.isFinite(v.longitud));
 
   const handleCenterAll = () => {
-    if (vehicles.length === 0) return;
+    if (validVehicles.length === 0) return;
 
     // Creamos un "bound" (límite) que abarque a todos los vehículos
-    const bounds = L.latLngBounds(vehicles.map((v: any) => [v.latitud, v.longitud]));
+    const bounds = L.latLngBounds(validVehicles.map((v: any) => [v.latitud, v.longitud] as [number, number]));
     map.fitBounds(bounds, { padding: [50, 50], animate: true });
   };
 
@@ -41,10 +42,15 @@ const carIcon = L.divIcon({
 });
 
 export const MapViewer = ({ vehicles }: any) => {
+  const validVehicles = vehicles.filter((v: any) => Number.isFinite(v.latitud) && Number.isFinite(v.longitud));
+  const center: [number, number] = validVehicles.length > 0
+    ? [validVehicles[0].latitud, validVehicles[0].longitud]
+    : [17.9895, -92.9475];
+
   return (
     <div className="relative h-full w-full">
       <MapContainer 
-        center={[17.9895, -92.9475]} 
+        center={center} 
         zoom={13} 
         className="h-full w-full"
         zoomControl={false} // Desactivamos el default para poner los nuestros si queremos
@@ -52,9 +58,9 @@ export const MapViewer = ({ vehicles }: any) => {
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
         {/* Renderizamos el botón sobre el mapa */}
-        <MapControls vehicles={vehicles} />
+        <MapControls vehicles={validVehicles} />
 
-        {vehicles.map((v: any) => (
+        {validVehicles.map((v: any) => (
           <Marker 
             key={v.rutaId} 
             position={[v.latitud, v.longitud]} 

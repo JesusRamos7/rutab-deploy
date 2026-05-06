@@ -8,7 +8,7 @@ export const getActiveFleet = async () => {
   try {
     const response = await axios.get('http://localhost:3000/monitoring/active-fleet', {
       headers: {
-        Authorization: `Bearer ${token}` // <--- Enviamos el "gafete"
+        Authorization: `Bearer ${token}` 
       }
     });
     return response.data;

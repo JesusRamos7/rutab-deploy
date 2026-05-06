@@ -50,6 +50,9 @@ export class MonitoringService {
         const entregados = detalles.filter(d => d.pedidos?.estado_pedido === 'entregado').length;
         const enTransito = detalles.filter(d => d.pedidos?.estado_pedido === 'en_transito').length;
         const cancelados = detalles.filter(d => d.pedidos?.estado_pedido === 'cancelado').length;
+        const fallidos = detalles.filter(d =>
+          d.pedidos?.estado_pedido === 'fallido' || d.pedidos?.estado_pedido === 'cancelado'
+        ).length;
 
         const proximo = detalles
           .sort((a, b) => a.orden_entrega - b.orden_entrega)
@@ -69,6 +72,7 @@ export class MonitoringService {
             entregados,
             enTransito,
             cancelados,
+            fallidos,
           },
           stops: `${entregados}/${total}`,
           eta: item.eta

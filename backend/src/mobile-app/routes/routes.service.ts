@@ -14,6 +14,7 @@ import { PrismaService } from '../../database/prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
+import { DashboardGateway } from '../../modules/dashboard/dashboard.gateway';
 
 @Injectable()
 export class RoutesService {
@@ -24,6 +25,8 @@ export class RoutesService {
     private redis: RedisService,
     @Inject(forwardRef(() => MonitoringGateway))
     private readonly monitoringGateway: MonitoringGateway,
+    @Inject(forwardRef(() => DashboardGateway))
+    private readonly dashboardGateway: DashboardGateway,
   ) {}
 
   async getActiveRoute(choferId: string) {
@@ -341,6 +344,7 @@ export class RoutesService {
         });
 
         this.monitoringGateway.server.emit('fleetListUpdated');
+        this.dashboardGateway.emitUpdate();
         return pedido;
       });
     } catch (error) {
