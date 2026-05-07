@@ -17,6 +17,7 @@ import { forwardRef, Inject } from '@nestjs/common';
 import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 import { DashboardGateway } from '../../modules/dashboard/dashboard.gateway';
 import { RedisService } from '../redis/redis.service';
+import { getCDMXDate } from 'src/common/formatter/dateFormat';
 
 @Injectable()
 export class EvidenceService {
@@ -148,7 +149,10 @@ export class EvidenceService {
 
         await tx.pedidos.update({
           where: { id: pedidoId },
-          data: { estado_pedido: 'entregado' },
+          data: {
+            estado_pedido: 'entregado',
+            updated_at: getCDMXDate(),
+          },
         });
 
         await tx.detalles_ruta.updateMany({
@@ -205,7 +209,7 @@ export class EvidenceService {
     try {
       const queryResult = await tx.$executeRaw`
         INSERT INTO incidencias (
-          ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoria
+          ruta_id, pedido_id, tipo, descripcion, foto_url, coordenadas_incidente, estado_incidencia, categoria, updated_at
         ) VALUES (
           ${rutaId}::uuid, 
           ${pedidoId ? pedidoId : null}::uuid, 
@@ -214,7 +218,8 @@ export class EvidenceService {
           ${fotoUrl},
           ST_SetSRID(ST_MakePoint(${+longitude}, ${+latitude}), 4326)::geography,
           ${estado_incidencia || 'abierta'},
-          ${categoria || 'camino'}
+          ${categoria || 'camino'},
+          NOW()
         )
       `;
 
@@ -224,7 +229,7 @@ export class EvidenceService {
         rutaId: dto.rutaId,
         categoria: dto.categoria || 'camino',
         coordenadas: { lat: dto.latitude, lng: dto.longitude },
-        fecha: new Date(),
+        fecha: getCDMXDate(),
       });
 
       return queryResult;
@@ -313,7 +318,10 @@ export class EvidenceService {
         // Actualizar el estado global del pedido
         await tx.pedidos.update({
           where: { id: pedidoId },
-          data: { estado_pedido: 'fallido' },
+          data: {
+            estado_pedido: 'fallido',
+            updated_at: getCDMXDate(),
+          },
         });
 
         // ACTUALIZACIÓN SOLICITADA: Marcar el intento específico en la ruta como fallido
@@ -403,7 +411,10 @@ export class EvidenceService {
             detalles_ruta: { some: { ruta_id: dto.rutaId } },
             estado_pedido: { in: ['pendiente', 'en_transito'] },
           },
-          data: { estado_pedido: 'fallido' },
+          data: {
+            estado_pedido: 'fallido',
+            updated_at: getCDMXDate(),
+          },
         });
 
         // 3. NUEVO: Actualizar detalles_ruta (Estado del Intento)
@@ -434,7 +445,10 @@ export class EvidenceService {
 
         await tx.rutas.update({
           where: { id: dto.rutaId },
-          data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+          data: {
+            estatus_ruta: 'finalizada',
+            updated_at: getCDMXDate(),
+          },
         });
 
         await tx.ubicacion_actual.deleteMany({
@@ -530,7 +544,7 @@ export class EvidenceService {
           }),
           ...(dto.descripcion && { descripcion: dto.descripcion }),
           ...(dto.tipo && { tipo: dto.tipo }),
-          updated_at: new Date(),
+          updated_at: getCDMXDate(),
         },
       });
 

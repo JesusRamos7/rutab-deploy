@@ -8,6 +8,7 @@ import {
   PublicarRutaDto,
   DetalleRutaOrdenado,
 } from './dto/optimization.dto';
+import { getCDMXDate } from 'src/common/formatter/dateFormat';
 
 @Injectable()
 export class OptimizacionService {
@@ -117,7 +118,7 @@ export class OptimizacionService {
           estatus_ruta: 'programada',
           distancia_total_estimada: dto.distanciaTotalMetros / 1000,
           tiempo_estimado_entrega: tiempoEstimado,
-          updated_at: new Date(),
+          updated_at: getCDMXDate(),
         },
       });
 

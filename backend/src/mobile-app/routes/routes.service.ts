@@ -15,6 +15,7 @@ import { RedisService } from '../redis/redis.service';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { MonitoringGateway } from '../../modules/monitoring/gateways/monitoring.gateway';
 import { DashboardGateway } from '../../modules/dashboard/dashboard.gateway';
+import { getCDMXDate } from 'src/common/formatter/dateFormat';
 
 @Injectable()
 export class RoutesService {
@@ -114,7 +115,7 @@ export class RoutesService {
           where: { id: rutaId },
           data: {
             estatus_ruta: 'en_proceso',
-            updated_at: new Date(),
+            updated_at: getCDMXDate(),
           },
         });
 
@@ -123,7 +124,7 @@ export class RoutesService {
             detalles_ruta: { some: { ruta_id: rutaId } },
             estado_pedido: 'pendiente',
           },
-          data: { estado_pedido: 'en_transito' },
+          data: { estado_pedido: 'en_transito', updated_at: getCDMXDate() },
         });
 
         await tx.detalles_ruta.updateMany({
@@ -243,7 +244,7 @@ export class RoutesService {
       if (!rawPoints || rawPoints.length < 2) {
         await this.prisma.rutas.update({
           where: { id: rutaId },
-          data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+          data: { estatus_ruta: 'finalizada', updated_at: getCDMXDate() },
         });
         await this.prisma.ubicacion_actual.deleteMany({
           where: { ruta_id: rutaId },
@@ -291,7 +292,7 @@ export class RoutesService {
 
         await tx.rutas.update({
           where: { id: rutaId },
-          data: { estatus_ruta: 'finalizada', updated_at: new Date() },
+          data: { estatus_ruta: 'finalizada', updated_at: getCDMXDate() },
         });
 
         await tx.ubicacion_actual.deleteMany({ where: { ruta_id: rutaId } });
@@ -325,7 +326,7 @@ export class RoutesService {
           where: { id: pedidoId },
           data: {
             estado_pedido: nuevoEstado,
-            updated_at: new Date(),
+            updated_at: getCDMXDate(),
           },
         });
 

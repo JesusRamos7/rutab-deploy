@@ -31,7 +31,7 @@ export class FailedDeliveriesService {
     return orders.map((order) => ({
       codigo_rastreo: order.codigo_rastreo,
       descripcion: order.descripcion_carga || 'Sin descripción',
-      fecha: order.created_at,
+      fecha: order.updated_at,
       cliente: order.clientes?.nombre || 'N/A',
       telefono: order.clientes?.telefono || 'N/A',
       direccion: order.clientes?.direccion || 'N/A',

@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { forwardRef, Inject } from '@nestjs/common';
+import { getCDMXDate } from 'src/common/formatter/dateFormat';
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:5173', // Puerto del frontend
@@ -88,7 +89,7 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
       stats,
       operacion,
       rawIncidencias: incidencias, // Enviamos las incidencias sin procesar para que el frontend las clasifique
-      timestamp: new Date(),
+      timestamp: getCDMXDate(),
     });
   }
 
@@ -123,7 +124,7 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
       stats,
       operacion,
       rawIncidencias: incidencias,
-      timestamp: new Date(),
+      timestamp: getCDMXDate(),
     });
   }
 }
