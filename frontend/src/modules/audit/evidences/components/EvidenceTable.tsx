@@ -1,11 +1,5 @@
 // src/modules/management/evidences/components/EvidenceTable.tsx
-import {
-  Eye,
-  FileImage,
-  PenTool,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+import { FileImage, PenTool, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Evidence, EstadoEvidencia } from "../types/evidence.types";
 import { formatToLocalDateTime } from "../../../../utils/dateHelpers";
 

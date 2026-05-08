@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertCircle, Truck, Clock, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatToLocalTime } from '../../../utils/dateHelpers';
