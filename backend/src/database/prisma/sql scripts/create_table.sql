@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS postgis;
 
+ALTER DATABASE rutab SET timezone TO 'UTC';
 
 BEGIN;
 -- =========================
