@@ -2,6 +2,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 ALTER DATABASE rutab SET timezone TO 'UTC';
+/*
+Cierra tu conexion con el cliente que estes usando, vuelve a conectarte y verifica que haya funcionado:
+  SHOW TIMEZONE;
+Es probable que veas algo distinto a UTC si es asi busca como cambiar la zona horaria de tu cliente porque la bd ya esta en UTC
+*/
 
 BEGIN;
 -- =========================
