@@ -7,6 +7,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Evidence, EstadoEvidencia } from "../types/evidence.types";
+import { formatToLocalDateTime } from "../../../../utils/dateHelpers";
 
 interface Props {
   evidences: Evidence[];
@@ -70,7 +71,7 @@ export const EvidenceTable = ({ evidences, onReview }: Props) => {
                 <div className="text-xs text-gray-400">{item.choferCorreo}</div>
               </td>
               <td className="px-6 py-4 text-sm text-gray-600">
-                {new Date(item.fechaHora).toLocaleString()}
+                {formatToLocalDateTime(item.fechaHora)}
               </td>
               <td className="px-6 py-4">
                 <span
